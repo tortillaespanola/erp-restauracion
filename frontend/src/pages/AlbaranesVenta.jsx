@@ -1,4 +1,4 @@
-function Albaranes() {
+function AlbaranesVenta() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">Entradas de albaranes</h1>
@@ -7,4 +7,4 @@ function Albaranes() {
   )
 }
 
-export default Albaranes
+export default AlbaranesVenta

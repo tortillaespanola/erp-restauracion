@@ -1,4 +1,4 @@
-function Facturas() {
+function FacturasVenta() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold">Entradas de facturas</h1>
@@ -7,4 +7,4 @@ function Facturas() {
   )
 }
 
-export default Facturas
+export default FacturasVenta
