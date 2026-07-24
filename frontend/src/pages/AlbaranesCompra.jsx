@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const lineaVacia = { articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '' }
+const lineaVacia = { articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '' }
 
 function AlbaranesCompra() {
   const [albaranes, setAlbaranes] = useState([])
@@ -20,7 +20,7 @@ function AlbaranesCompra() {
     const [resAlbaranes, resProveedores, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_compra')
-        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, articulos_compra(nombre, unidad))')
+        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
@@ -95,6 +95,7 @@ function AlbaranesCompra() {
       cantidad: parseFloat(l.cantidad),
       precio: l.precio ? parseFloat(l.precio) : null,
       fecha_caducidad: l.fecha_caducidad || null,
+      notas: l.notas || null,
     }))
 
     const { error: errorLineas } = await supabase
@@ -145,30 +146,36 @@ function AlbaranesCompra() {
 
         <div>
           <h3 className="text-sm font-semibold text-slate-600 mb-2">Líneas</h3>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {lineas.map((linea, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
-                <select value={linea.articulo_id}
-                  onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                  required className="border rounded px-3 py-2">
-                  <option value="">Selecciona artículo</option>
-                  {articulos.map((a) => (
-                    <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                  ))}
-                </select>
-                <input type="number" step="0.01" placeholder="Cantidad" value={linea.cantidad}
-                  onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                  required className="border rounded px-3 py-2" />
-                <input type="number" step="0.01" placeholder="Precio" value={linea.precio}
-                  onChange={(e) => handleLineaChange(index, 'precio', e.target.value)}
-                  className="border rounded px-3 py-2" />
-                <input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
-                  onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
-                  className="border rounded px-3 py-2 text-sm" title="Fecha de caducidad (opcional)" />
-                <button type="button" onClick={() => removeLinea(index)}
-                  className="text-red-600 hover:underline text-sm">
-                  Quitar
-                </button>
+              <div key={index} className="border rounded-lg p-3 flex flex-col gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
+                  <select value={linea.articulo_id}
+                    onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
+                    required className="border rounded px-3 py-2">
+                    <option value="">Selecciona artículo</option>
+                    {articulos.map((a) => (
+                      <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                    ))}
+                  </select>
+                  <input type="number" step="0.01" placeholder="Cantidad" value={linea.cantidad}
+                    onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
+                    required className="border rounded px-3 py-2" />
+                  <input type="number" step="0.01" placeholder="Precio" value={linea.precio}
+                    onChange={(e) => handleLineaChange(index, 'precio', e.target.value)}
+                    className="border rounded px-3 py-2" />
+                  <input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
+                    onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
+                    className="border rounded px-3 py-2 text-sm" title="Fecha de caducidad (opcional)" />
+                  <button type="button" onClick={() => removeLinea(index)}
+                    className="text-red-600 hover:underline text-sm">
+                    Quitar
+                  </button>
+                </div>
+                <input type="text" placeholder="Notas (temperatura de recepción, incidencias...)"
+                  value={linea.notas}
+                  onChange={(e) => handleLineaChange(index, 'notas', e.target.value)}
+                  className="border rounded px-3 py-2 text-sm" />
               </div>
             ))}
           </div>
@@ -213,6 +220,7 @@ function AlbaranesCompra() {
                       <th className="py-1">Cantidad</th>
                       <th className="py-1">Precio</th>
                       <th className="py-1">Caducidad</th>
+                      <th className="py-1">Notas</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -222,6 +230,7 @@ function AlbaranesCompra() {
                         <td className="py-1">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
                         <td className="py-1">{linea.precio ?? '-'}</td>
                         <td className="py-1">{linea.fecha_caducidad ?? '-'}</td>
+                        <td className="py-1 text-slate-500">{linea.notas ?? '-'}</td>
                       </tr>
                     ))}
                   </tbody>
