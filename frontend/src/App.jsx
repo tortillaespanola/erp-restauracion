@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Articulos from './pages/Articulos'
 import Materiales from './pages/Materiales'
 import Semielaborados from './pages/Semielaborados'
+import Producciones from './pages/Producciones'
 import ProductosFinales from './pages/ProductosFinales'
 import Proveedores from './pages/Proveedores'
 import AlbaranesCompra from './pages/AlbaranesCompra'
@@ -26,6 +27,7 @@ function App() {
 
           <span className="text-slate-400 ml-4">Producción:</span>
           <Link to="/semielaborados" className="hover:underline">Semielaborados</Link>
+          <Link to="/producciones" className="hover:underline">Producciones</Link>
           <Link to="/productos" className="hover:underline">Productos finales</Link>
 
           <span className="text-slate-400 ml-4">Ventas:</span>
@@ -39,6 +41,7 @@ function App() {
           <Route path="/articulos" element={<Articulos />} />
           <Route path="/materiales" element={<Materiales />} />
           <Route path="/semielaborados" element={<Semielaborados />} />
+          <Route path="/producciones" element={<Producciones />} />
           <Route path="/productos" element={<ProductosFinales />} />
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
