@@ -23,7 +23,7 @@ function AlbaranesCompra() {
         .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
-      supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
+      supabase.from('articulos_compra').select('id, nombre, unidad, proveedor_id').order('nombre'),
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
@@ -152,11 +152,16 @@ function AlbaranesCompra() {
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
                   <select value={linea.articulo_id}
                     onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                    required className="border rounded px-3 py-2">
-                    <option value="">Selecciona artículo</option>
-                    {articulos.map((a) => (
-                      <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                    ))}
+                    required disabled={!proveedorId}
+                    className="border rounded px-3 py-2 disabled:bg-slate-100">
+                    <option value="">
+                      {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
+                    </option>
+                    {articulos
+                      .filter((a) => a.proveedor_id === parseInt(proveedorId))
+                      .map((a) => (
+                        <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                      ))}
                   </select>
                   <input type="number" step="0.01" placeholder="Cantidad" value={linea.cantidad}
                     onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
