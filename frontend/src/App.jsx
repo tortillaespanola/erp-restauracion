@@ -5,6 +5,7 @@ import Semielaborados from './pages/Semielaborados'
 import Producciones from './pages/Producciones'
 import AjustesStock from './pages/AjustesStock'
 import ProductosFinales from './pages/ProductosFinales'
+import ProduccionProductosFinales from './pages/ProduccionProductosFinales'
 import Proveedores from './pages/Proveedores'
 import AlbaranesCompra from './pages/AlbaranesCompra'
 import FacturasCompra from './pages/FacturasCompra'
@@ -31,6 +32,7 @@ function App() {
           <Link to="/producciones" className="hover:underline">Producciones</Link>
           <Link to="/ajustes-stock" className="hover:underline">Ajustes de stock</Link>
           <Link to="/productos" className="hover:underline">Productos finales</Link>
+          <Link to="/produccion-productos" className="hover:underline">Producción prod. finales</Link>
 
           <span className="text-slate-400 ml-4">Ventas:</span>
           <Link to="/clientes" className="hover:underline">Clientes</Link>
@@ -46,6 +48,7 @@ function App() {
           <Route path="/producciones" element={<Producciones />} />
           <Route path="/ajustes-stock" element={<AjustesStock />} />
           <Route path="/productos" element={<ProductosFinales />} />
+          <Route path="/produccion-productos" element={<ProduccionProductosFinales />} />
           <Route path="/proveedores" element={<Proveedores />} />
           <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
           <Route path="/facturas-compra" element={<FacturasCompra />} />
