@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 
 function AlbaranesVenta() {
   const [albaranes, setAlbaranes] = useState([])
@@ -20,7 +21,7 @@ function AlbaranesVenta() {
     const [resAlbaranes, resClientes, resProductos] = await Promise.all([
       supabase
         .from('albaranes_venta')
-        .select('*, clientes(nombre), lineas_albaran_venta(id, cantidad, precio_unitario, productos_finales(nombre))')
+        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, productos_finales(nombre))')
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
@@ -51,7 +52,6 @@ function AlbaranesVenta() {
     setLineas([])
   }
 
-  // Cuánto de un lote concreto ya está "reservado" en el borrador actual (sin guardar todavía)
   function cantidadYaEnLineas(produccionId) {
     return lineas
       .filter((l) => l.produccion_pf_id === produccionId)
@@ -148,6 +148,26 @@ function AlbaranesVenta() {
     cargarDatos()
   }
 
+  function prepararDocumento(alb) {
+    return {
+      numero: alb.numero_albaran || `#${alb.id}`,
+      fecha: alb.fecha,
+      tercero: {
+        nombre: alb.clientes?.nombre,
+        direccion: alb.clientes?.direccion,
+        cif: alb.clientes?.cif,
+      },
+      lineas: alb.lineas_albaran_venta.map((l) => ({
+        concepto: l.productos_finales?.nombre,
+        cantidad: l.cantidad,
+        precioUnitario: l.precio_unitario,
+      })),
+      total: alb.lineas_albaran_venta.reduce(
+        (sum, l) => sum + (l.precio_unitario ? l.cantidad * l.precio_unitario : 0), 0
+      ),
+    }
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">Albaranes de venta</h1>
@@ -235,9 +255,19 @@ function AlbaranesVenta() {
                     </p>
                     {alb.notas && <p className="text-sm text-slate-400 italic">{alb.notas}</p>}
                   </div>
-                  <button onClick={() => handleBorrar(alb.id)} className="text-red-600 hover:underline text-sm">
-                    Borrar
-                  </button>
+                  <div className="flex gap-3 items-start">
+                    <button onClick={() => imprimirPdf('Albarán', prepararDocumento(alb))}
+                      className="text-slate-600 hover:underline text-sm">
+                      Imprimir
+                    </button>
+                    <button onClick={() => descargarPdf('Albarán', prepararDocumento(alb))}
+                      className="text-blue-600 hover:underline text-sm">
+                      Descargar PDF
+                    </button>
+                    <button onClick={() => handleBorrar(alb.id)} className="text-red-600 hover:underline text-sm">
+                      Borrar
+                    </button>
+                  </div>
                 </div>
 
                 <table className="w-full mt-3 text-sm">
@@ -267,8 +297,6 @@ function AlbaranesVenta() {
   )
 }
 
-// Una fila por producto, con desplegable de lotes. El stock mostrado en cada lote
-// ya descuenta lo que el propio borrador (sin guardar) haya ido añadiendo de ese lote.
 function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -299,7 +327,6 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
 
   if (cargando) return null
 
-  // Lotes con stock real disponible teniendo en cuenta lo ya reservado en el borrador
   const lotesConDisponibleReal = lotes
     .map((l) => ({ ...l, disponibleReal: l.stock_disponible - cantidadYaEnLineas(l.produccion_id) }))
     .filter((l) => l.disponibleReal > 0)

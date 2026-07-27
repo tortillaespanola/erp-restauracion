@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 
 function FacturasVenta() {
   const [facturas, setFacturas] = useState([])
@@ -19,9 +20,9 @@ function FacturasVenta() {
     const [resFacturas, resClientes] = await Promise.all([
       supabase
         .from('facturas_venta')
-        .select('*, clientes(nombre), factura_venta_albaran(albaranes_venta(id, numero_albaran, fecha))')
+        .select('*, clientes(nombre, direccion, cif), factura_venta_albaran(albaranes_venta(id, numero_albaran, fecha))')
         .order('fecha', { ascending: false }),
-      supabase.from('clientes').select('id, nombre').order('nombre'),
+      supabase.from('clientes').select('id, nombre, direccion, cif').order('nombre'),
     ])
 
     if (resFacturas.error) console.error(resFacturas.error)
@@ -136,6 +137,41 @@ function FacturasVenta() {
     cargarDatos()
   }
 
+  async function prepararDocumento(f) {
+    const albaranIds = f.factura_venta_albaran.map((rel) => rel.albaranes_venta?.id).filter(Boolean)
+
+    const { data: lineasAlbaranes, error } = await supabase
+      .from('lineas_albaran_venta')
+      .select('cantidad, precio_unitario, productos_finales(nombre), albaran_venta_id')
+      .in('albaran_venta_id', albaranIds)
+
+    if (error) {
+      console.error(error)
+    }
+
+    const lineas = (lineasAlbaranes || []).map((l) => ({
+      concepto: l.productos_finales?.nombre,
+      cantidad: l.cantidad,
+      precioUnitario: l.precio_unitario,
+    }))
+
+    const totalCalculado = lineas.reduce(
+      (sum, l) => sum + (l.precioUnitario ? l.cantidad * l.precioUnitario : 0), 0
+    )
+
+    return {
+      numero: f.numero_factura || `#${f.id}`,
+      fecha: f.fecha,
+      tercero: {
+        nombre: f.clientes?.nombre,
+        direccion: f.clientes?.direccion,
+        cif: f.clientes?.cif,
+      },
+      lineas,
+      total: f.total ?? totalCalculado,
+    }
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">Facturas de venta</h1>
@@ -158,7 +194,7 @@ function FacturasVenta() {
             required className="border rounded px-3 py-2" />
         </div>
 
-        <input type="number" step="0.01" placeholder="Total factura (con IVA)" value={total}
+        <input type="number" step="0.01" placeholder="Total factura (con IVA) — opcional, se calcula solo si lo dejas vacío" value={total}
           onChange={(e) => setTotal(e.target.value)}
           className="border rounded px-3 py-2 md:w-1/3" />
 
@@ -209,9 +245,19 @@ function FacturasVenta() {
                       {f.total != null && ` · ${f.total} €`}
                     </p>
                   </div>
-                  <button onClick={() => handleBorrar(f.id)} className="text-red-600 hover:underline text-sm">
-                    Borrar
-                  </button>
+                  <div className="flex gap-3 items-start">
+                    <button onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))}
+                      className="text-slate-600 hover:underline text-sm">
+                      Imprimir
+                    </button>
+                    <button onClick={async () => descargarPdf('Factura', await prepararDocumento(f))}
+                      className="text-blue-600 hover:underline text-sm">
+                      Descargar PDF
+                    </button>
+                    <button onClick={() => handleBorrar(f.id)} className="text-red-600 hover:underline text-sm">
+                      Borrar
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-2 text-sm text-slate-600">

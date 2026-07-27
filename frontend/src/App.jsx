@@ -12,6 +12,7 @@ import FacturasCompra from './pages/FacturasCompra'
 import Clientes from './pages/Clientes'
 import AlbaranesVenta from './pages/AlbaranesVenta'
 import FacturasVenta from './pages/FacturasVenta'
+import Configuracion from './pages/Configuracion'
 
 function App() {
   return (
@@ -38,6 +39,8 @@ function App() {
           <Link to="/clientes" className="hover:underline">Clientes</Link>
           <Link to="/albaranes-venta" className="hover:underline">Albaranes venta</Link>
           <Link to="/facturas-venta" className="hover:underline">Facturas venta</Link>
+
+          <Link to="/configuracion" className="hover:underline">Configuración</Link>
         </nav>
 
         <Routes>
@@ -55,6 +58,7 @@ function App() {
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/albaranes-venta" element={<AlbaranesVenta />} />
           <Route path="/facturas-venta" element={<FacturasVenta />} />
+          <Route path="/configuracion" element={<Configuracion />} />
         </Routes>
       </div>
     </BrowserRouter>
