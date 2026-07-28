@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Articulos from './pages/Articulos'
-import Materiales from './pages/Materiales'
 import Semielaborados from './pages/Semielaborados'
 import Producciones from './pages/Producciones'
 import AjustesStock from './pages/AjustesStock'
@@ -26,8 +25,7 @@ function App() {
           <Link to="/articulos" className="hover:underline">Artículos</Link>
           <Link to="/albaranes-compra" className="hover:underline">Albaranes compra</Link>
           <Link to="/facturas-compra" className="hover:underline">Facturas compra</Link>
-          <Link to="/materiales" className="hover:underline">Materiales</Link>
-
+          
           <span className="text-slate-400 ml-4">Producción:</span>
           <Link to="/semielaborados" className="hover:underline">Semielaborados</Link>
           <Link to="/producciones" className="hover:underline">Producciones</Link>
@@ -46,7 +44,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Articulos />} />
           <Route path="/articulos" element={<Articulos />} />
-          <Route path="/materiales" element={<Materiales />} />
+          
           <Route path="/semielaborados" element={<Semielaborados />} />
           <Route path="/producciones" element={<Producciones />} />
           <Route path="/ajustes-stock" element={<AjustesStock />} />
