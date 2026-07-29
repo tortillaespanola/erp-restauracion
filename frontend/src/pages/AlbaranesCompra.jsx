@@ -20,7 +20,7 @@ function AlbaranesCompra() {
     const [resAlbaranes, resProveedores, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_compra')
-        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, articulos_compra(nombre, unidad))')
+        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase.from('articulos_compra').select('id, nombre, unidad, proveedor_id').order('nombre'),
@@ -211,6 +211,7 @@ function AlbaranesCompra() {
                     <p className="font-semibold">{alb.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
                     <p className="text-sm text-slate-500">
                       Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                      {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-slate-400">{alb.codigo_interno}</span>}
                     </p>
                   </div>
                   <button onClick={() => handleBorrar(alb.id)} className="text-red-600 hover:underline text-sm">
@@ -226,6 +227,7 @@ function AlbaranesCompra() {
                       <th className="py-1">Precio</th>
                       <th className="py-1">Caducidad</th>
                       <th className="py-1">Notas</th>
+                      <th className="py-1">Lote</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -236,6 +238,7 @@ function AlbaranesCompra() {
                         <td className="py-1">{linea.precio ?? '-'}</td>
                         <td className="py-1">{linea.fecha_caducidad ?? '-'}</td>
                         <td className="py-1 text-slate-500">{linea.notas ?? '-'}</td>
+                        <td className="py-1 text-slate-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
                       </tr>
                     ))}
                   </tbody>

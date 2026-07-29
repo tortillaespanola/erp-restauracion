@@ -164,6 +164,7 @@ function Producciones() {
                   <div>
                     <p className="font-semibold">
                       {p.cantidad_producida} {p.semielaborados?.unidad} de {p.semielaborados?.nombre}
+                      {p.codigo_lote && <span className="ml-2 text-xs font-mono text-slate-400">{p.codigo_lote}</span>}
                     </p>
                     <p className="text-sm text-slate-500">{p.fecha}</p>
                     {p.notas && <p className="text-sm text-slate-400 italic">{p.notas}</p>}
@@ -194,7 +195,6 @@ function Producciones() {
   )
 }
 
-// Tarjeta de una producción abierta: permite ir añadiendo consumos y cerrarla
 function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)

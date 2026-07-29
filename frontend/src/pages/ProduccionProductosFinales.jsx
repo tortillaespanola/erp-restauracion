@@ -164,6 +164,7 @@ function ProduccionProductosFinales() {
                   <div>
                     <p className="font-semibold">
                       {p.cantidad_producida} uds. de {p.productos_finales?.nombre}
+                      {p.codigo_lote && <span className="ml-2 text-xs font-mono text-slate-400">{p.codigo_lote}</span>}
                     </p>
                     <p className="text-sm text-slate-500">{p.fecha}</p>
                     {p.notas && <p className="text-sm text-slate-400 italic">{p.notas}</p>}

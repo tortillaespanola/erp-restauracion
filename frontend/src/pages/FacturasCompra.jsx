@@ -37,7 +37,6 @@ function FacturasCompra() {
     cargarDatos()
   }, [])
 
-  // Cada vez que cambia el proveedor elegido, buscamos sus albaranes pendientes de facturar
   useEffect(() => {
     async function cargarAlbaranesDelProveedor() {
       if (!proveedorId) {
@@ -121,6 +120,7 @@ function FacturasCompra() {
       .insert(relaciones)
 
     if (errorRelaciones) {
+      await supabase.from('facturas_compra').delete().eq('id', facturaCreada.id)
       alert('Error al asociar los albaranes: ' + errorRelaciones.message)
       return
     }
@@ -213,6 +213,7 @@ function FacturasCompra() {
                     <p className="text-sm text-slate-500">
                       Factura {f.numero_factura || '(sin número)'} · {f.fecha}
                       {f.total != null && ` · ${f.total} €`}
+                      {f.codigo_interno && <span className="ml-2 text-xs font-mono text-slate-400">{f.codigo_interno}</span>}
                     </p>
                   </div>
                   <button onClick={() => handleBorrar(f.id)} className="text-red-600 hover:underline text-sm">
