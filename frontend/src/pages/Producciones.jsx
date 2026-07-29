@@ -82,7 +82,23 @@ function Producciones() {
   }
 
   async function handleBorrarCerrada(id) {
-    if (!confirm('¿Seguro que quieres borrar esta producción? Se revertirán sus consumos y su stock producido.')) return
+    const [c1, c2, c3] = await Promise.all([
+      supabase.from('consumo_produccion').select('*', { count: 'exact', head: true }).eq('produccion_origen_id', id),
+      supabase.from('consumo_produccion_pf').select('*', { count: 'exact', head: true }).eq('produccion_origen_id', id),
+      supabase.from('ajustes_semielaborado').select('*', { count: 'exact', head: true }).eq('produccion_id', id),
+    ])
+
+    let avisos = []
+    if (c1.count > 0) avisos.push(`${c1.count} consumo(s) en otras producciones de semielaborados`)
+    if (c2.count > 0) avisos.push(`${c2.count} consumo(s) en producciones de productos finales`)
+    if (c3.count > 0) avisos.push(`${c3.count} ajuste(s) de stock`)
+
+    const mensaje = avisos.length > 0
+      ? `⚠️ Este lote se usó en:\n\n${avisos.map((a) => '• ' + a).join('\n')}\n\nAl borrarlo, esos consumos/ajustes también se eliminarán. ¿Seguro que quieres continuar?`
+      : '¿Seguro que quieres borrar esta producción?'
+
+    if (!confirm(mensaje)) return
+
     const { error } = await supabase.from('producciones_semielaborado').delete().eq('id', id)
     if (error) {
       alert('Error al borrar: ' + error.message)

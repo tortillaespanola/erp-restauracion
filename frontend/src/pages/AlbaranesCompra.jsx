@@ -38,7 +38,6 @@ function AlbaranesCompra() {
     cargarDatos()
   }, [])
 
-  // Cada vez que cambia el proveedor, cargamos solo los artículos que le tienes asignados a él
   useEffect(() => {
     async function cargarArticulosDelProveedor() {
       if (!proveedorId) {
@@ -74,7 +73,6 @@ function AlbaranesCompra() {
       const copia = [...prev]
       copia[index] = { ...copia[index], [campo]: valor }
 
-      // Al elegir artículo, autorrellenamos el precio pactado con este proveedor si existe y aún no hay precio puesto
       if (campo === 'articulo_id') {
         const art = articulosDelProveedor.find((a) => a.id === parseInt(valor))
         if (art?.precioPactado != null && !copia[index].precio) {
@@ -147,10 +145,28 @@ function AlbaranesCompra() {
     cargarDatos()
   }
 
-  async function handleBorrar(id) {
-    if (!confirm('¿Seguro que quieres borrar este albarán? Se borrarán también sus líneas.')) return
+  async function handleBorrar(alb) {
+    const entradaIds = alb.entrada_material.map((l) => l.id)
 
-    const { error } = await supabase.from('albaranes_compra').delete().eq('id', id)
+    let avisos = []
+    if (entradaIds.length > 0) {
+      const [c1, c2, c3] = await Promise.all([
+        supabase.from('consumo_produccion').select('*', { count: 'exact', head: true }).in('entrada_material_id', entradaIds),
+        supabase.from('consumo_produccion_pf').select('*', { count: 'exact', head: true }).in('entrada_material_id', entradaIds),
+        supabase.from('ajustes_articulo').select('*', { count: 'exact', head: true }).in('entrada_material_id', entradaIds),
+      ])
+      if (c1.count > 0) avisos.push(`${c1.count} consumo(s) en producciones de semielaborados`)
+      if (c2.count > 0) avisos.push(`${c2.count} consumo(s) en producciones de productos finales`)
+      if (c3.count > 0) avisos.push(`${c3.count} ajuste(s) de stock`)
+    }
+
+    const mensaje = avisos.length > 0
+      ? `⚠️ Este albarán tiene datos relacionados que se BORRARÁN también:\n\n${avisos.map((a) => '• ' + a).join('\n')}\n\n¿Seguro que quieres continuar?`
+      : '¿Seguro que quieres borrar este albarán?'
+
+    if (!confirm(mensaje)) return
+
+    const { error } = await supabase.from('albaranes_compra').delete().eq('id', alb.id)
     if (error) {
       alert('Error al borrar: ' + error.message)
       return
@@ -254,7 +270,7 @@ function AlbaranesCompra() {
                       {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-slate-400">{alb.codigo_interno}</span>}
                     </p>
                   </div>
-                  <button onClick={() => handleBorrar(alb.id)} className="text-red-600 hover:underline text-sm">
+                  <button onClick={() => handleBorrar(alb)} className="text-red-600 hover:underline text-sm">
                     Borrar
                   </button>
                 </div>

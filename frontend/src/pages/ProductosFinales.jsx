@@ -176,6 +176,16 @@ function ProductosFinales() {
   }
 
   async function handleBorrar(id) {
+    const { count } = await supabase
+      .from('producciones_producto_final')
+      .select('*', { count: 'exact', head: true })
+      .eq('producto_final_id', id)
+
+    if (count > 0) {
+      alert(`No puedes borrar este producto: tiene ${count} producción(es) registrada(s). Bórralas primero desde "Producción de productos finales" si de verdad quieres eliminar el producto.`)
+      return
+    }
+
     if (!confirm('¿Seguro que quieres borrar este producto final? Se borrará también su receta.')) return
 
     const { error } = await supabase.from('productos_finales').delete().eq('id', id)

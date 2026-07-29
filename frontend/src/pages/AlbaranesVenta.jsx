@@ -138,7 +138,16 @@ function AlbaranesVenta() {
   }
 
   async function handleBorrar(id) {
-    if (!confirm('¿Seguro que quieres borrar este albarán? Se revertirá el stock vendido.')) return
+    const { count } = await supabase
+      .from('factura_venta_albaran')
+      .select('*', { count: 'exact', head: true })
+      .eq('albaran_venta_id', id)
+
+    const mensaje = count > 0
+      ? `⚠️ Este albarán está incluido en ${count} factura(s). Al borrarlo, se quitará de esa factura, pero la factura en sí NO se borrará (podría quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?`
+      : '¿Seguro que quieres borrar este albarán? Se revertirá el stock vendido.'
+
+    if (!confirm(mensaje)) return
 
     const { error } = await supabase.from('albaranes_venta').delete().eq('id', id)
     if (error) {
