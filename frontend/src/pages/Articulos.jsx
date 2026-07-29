@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const vacio = { nombre: '', unidad: '', precio_referencia: '', proveedor_id: '', categoria: '', iva: '' }
+const vacio = { nombre: '', unidad: '', precio_referencia: '', proveedor_id: '', categoria: '', iva: '', codigo: '', tipo_material: 'RM' }
 
 function Articulos() {
   const [articulos, setArticulos] = useState([])
@@ -44,13 +44,15 @@ function Articulos() {
   async function handleSubmit(e) {
     e.preventDefault()
 
-   const payload = {
+    const payload = {
       nombre: form.nombre,
       unidad: form.unidad,
       precio_referencia: form.precio_referencia ? parseFloat(form.precio_referencia) : null,
       proveedor_id: form.proveedor_id ? parseInt(form.proveedor_id) : null,
       categoria: form.categoria || null,
       iva: form.iva ? parseFloat(form.iva) : null,
+      codigo: form.codigo || null,
+      tipo_material: form.tipo_material,
     }
 
     if (editandoId) {
@@ -79,7 +81,7 @@ function Articulos() {
     cargarDatos()
   }
 
- function handleEditar(a) {
+  function handleEditar(a) {
     setForm({
       nombre: a.nombre ?? '',
       unidad: a.unidad ?? '',
@@ -87,6 +89,8 @@ function Articulos() {
       proveedor_id: a.proveedor_id ?? '',
       categoria: a.categoria ?? '',
       iva: a.iva ?? '',
+      codigo: a.codigo ?? '',
+      tipo_material: a.tipo_material ?? 'RM',
     })
     setEditandoId(a.id)
   }
@@ -123,13 +127,28 @@ function Articulos() {
         <input type="text" placeholder="Nombre" value={form.nombre}
           onChange={(e) => handleChange('nombre', e.target.value)}
           required className="border rounded px-3 py-2" />
+
+        <div className="grid grid-cols-2 gap-3">
+          <input type="text" placeholder="Código corto (ej. KRT)" value={form.codigo}
+            onChange={(e) => handleChange('codigo', e.target.value)}
+            className="border rounded px-3 py-2" />
+          <select value={form.tipo_material}
+            onChange={(e) => handleChange('tipo_material', e.target.value)}
+            className="border rounded px-3 py-2">
+            <option value="RM">Materia prima (RM)</option>
+            <option value="AUX">Material auxiliar (AUX)</option>
+            <option value="TRD">Mercadería (TRD)</option>
+          </select>
+        </div>
+
         <input type="text" placeholder="Unidad (kg, l, ud...)" value={form.unidad}
           onChange={(e) => handleChange('unidad', e.target.value)}
           required className="border rounded px-3 py-2" />
         <input type="number" step="0.01" placeholder="Precio de referencia" value={form.precio_referencia}
           onChange={(e) => handleChange('precio_referencia', e.target.value)}
           className="border rounded px-3 py-2" />
-          <input type="text" placeholder="Categoría (ej. Carnes, Bebidas...)" value={form.categoria}
+
+        <input type="text" placeholder="Categoría (ej. Carnes, Bebidas...)" value={form.categoria}
           onChange={(e) => handleChange('categoria', e.target.value)}
           className="border rounded px-3 py-2" />
         <input type="number" step="0.01" placeholder="IVA (%)" value={form.iva}
@@ -169,24 +188,26 @@ function Articulos() {
           <table className="w-full bg-white rounded-lg shadow overflow-hidden text-sm">
             <thead className="bg-slate-100 text-left text-slate-600">
               <tr>
+                <th className="p-3">Código</th>
                 <th className="p-3">Nombre</th>
                 <th className="p-3">Unidad</th>
                 <th className="p-3">Precio ref.</th>
-                <th className="p-3">Proveedor</th>
-                <th className="p-3"></th>
                 <th className="p-3">Categoría</th>
                 <th className="p-3">IVA</th>
+                <th className="p-3">Proveedor</th>
+                <th className="p-3"></th>
               </tr>
             </thead>
             <tbody>
               {articulos.map((a) => (
                 <tr key={a.id} className="border-t">
+                  <td className="p-3 text-slate-400 font-mono text-xs">{a.codigo ?? '-'}</td>
                   <td className="p-3">{a.nombre}</td>
                   <td className="p-3">{a.unidad}</td>
                   <td className="p-3">{a.precio_referencia ?? '-'}</td>
-                  <td className="p-3">{a.proveedores?.nombre_comercial ?? '-'}</td>
                   <td className="p-3">{a.categoria ?? '-'}</td>
                   <td className="p-3">{a.iva != null ? `${a.iva}%` : '-'}</td>
+                  <td className="p-3">{a.proveedores?.nombre_comercial ?? '-'}</td>
                   <td className="p-3 flex gap-3">
                     <button onClick={() => handleEditar(a)} className="text-blue-600 hover:underline">
                       Editar

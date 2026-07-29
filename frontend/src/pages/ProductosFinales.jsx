@@ -10,6 +10,7 @@ function ProductosFinales() {
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
+  const [codigo, setCodigo] = useState('')
   const [precioVenta, setPrecioVenta] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
@@ -72,6 +73,7 @@ function ProductosFinales() {
 
   function resetForm() {
     setNombre('')
+    setCodigo('')
     setPrecioVenta('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
@@ -80,6 +82,7 @@ function ProductosFinales() {
 
   function handleEditar(p) {
     setNombre(p.nombre ?? '')
+    setCodigo(p.codigo ?? '')
     setPrecioVenta(p.precio_venta ?? '')
     setNotas(p.notas ?? '')
 
@@ -113,6 +116,7 @@ function ProductosFinales() {
         .from('productos_finales')
         .update({
           nombre,
+          codigo: codigo || null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
           notas: notas || null,
         })
@@ -137,6 +141,7 @@ function ProductosFinales() {
         .from('productos_finales')
         .insert({
           nombre,
+          codigo: codigo || null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
           notas: notas || null,
         })
@@ -191,10 +196,13 @@ function ProductosFinales() {
           {editandoId ? 'Editar producto final' : 'Nuevo producto final'}
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input type="text" placeholder="Nombre (ej. Paella valenciana)" value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required className="border rounded px-3 py-2" />
+          <input type="text" placeholder="Código corto (ej. PAE)" value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            className="border rounded px-3 py-2" />
           <input type="number" step="0.01" placeholder="Precio de venta" value={precioVenta}
             onChange={(e) => setPrecioVenta(e.target.value)}
             className="border rounded px-3 py-2" />
@@ -284,7 +292,9 @@ function ProductosFinales() {
               <div key={p.id} className="bg-white rounded-lg shadow p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-semibold">{p.nombre}</p>
+                    <p className="font-semibold">
+                      {p.nombre} {p.codigo && <span className="text-slate-400 font-mono text-xs">({p.codigo})</span>}
+                    </p>
                     {p.precio_venta != null && <p className="text-sm text-slate-500">Precio: {p.precio_venta} €</p>}
                     {p.notas && <p className="text-sm text-slate-400 italic">{p.notas}</p>}
                   </div>

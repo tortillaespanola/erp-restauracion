@@ -9,6 +9,7 @@ function Semielaborados() {
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
+  const [codigo, setCodigo] = useState('')
   const [unidad, setUnidad] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
@@ -70,6 +71,7 @@ function Semielaborados() {
 
   function resetForm() {
     setNombre('')
+    setCodigo('')
     setUnidad('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
@@ -78,6 +80,7 @@ function Semielaborados() {
 
   function handleEditar(s) {
     setNombre(s.nombre ?? '')
+    setCodigo(s.codigo ?? '')
     setUnidad(s.unidad ?? '')
     setNotas(s.notas ?? '')
 
@@ -107,10 +110,9 @@ function Semielaborados() {
     let semielaboradoId = editandoId
 
     if (editandoId) {
-      // Actualizamos la cabecera
       const { error: errorUpdate } = await supabase
         .from('semielaborados')
-        .update({ nombre, unidad, notas: notas || null })
+        .update({ nombre, codigo: codigo || null, unidad, notas: notas || null })
         .eq('id', editandoId)
 
       if (errorUpdate) {
@@ -118,7 +120,6 @@ function Semielaborados() {
         return
       }
 
-      // Borramos todas las líneas anteriores y las reemplazamos por las nuevas
       const { error: errorDelete } = await supabase
         .from('receta_semielaborado')
         .delete()
@@ -131,7 +132,7 @@ function Semielaborados() {
     } else {
       const { data: semiCreado, error: errorSemi } = await supabase
         .from('semielaborados')
-        .insert({ nombre, unidad, notas: notas || null })
+        .insert({ nombre, codigo: codigo || null, unidad, notas: notas || null })
         .select()
         .single()
 
@@ -183,10 +184,13 @@ function Semielaborados() {
           {editandoId ? 'Editar semielaborado' : 'Nuevo semielaborado'}
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input type="text" placeholder="Nombre (ej. Sofrito base)" value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             required className="border rounded px-3 py-2" />
+          <input type="text" placeholder="Código corto (ej. SOF)" value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            className="border rounded px-3 py-2" />
           <input type="text" placeholder="Unidad de producción (kg, l, ud...)" value={unidad}
             onChange={(e) => setUnidad(e.target.value)}
             required className="border rounded px-3 py-2" />
@@ -278,7 +282,9 @@ function Semielaborados() {
               <div key={s.id} className="bg-white rounded-lg shadow p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-semibold">{s.nombre}</p>
+                    <p className="font-semibold">
+                      {s.nombre} {s.codigo && <span className="text-slate-400 font-mono text-xs">({s.codigo})</span>}
+                    </p>
                     <p className="text-sm text-slate-500">Unidad: {s.unidad}</p>
                     {s.notas && <p className="text-sm text-slate-400 italic">{s.notas}</p>}
                   </div>
