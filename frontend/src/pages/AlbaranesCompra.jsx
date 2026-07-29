@@ -6,7 +6,7 @@ const lineaVacia = { articulo_id: '', cantidad: '', precio: '', fecha_caducidad:
 function AlbaranesCompra() {
   const [albaranes, setAlbaranes] = useState([])
   const [proveedores, setProveedores] = useState([])
-  const [articulos, setArticulos] = useState([])
+  const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const [proveedorId, setProveedorId] = useState('')
@@ -17,13 +17,12 @@ function AlbaranesCompra() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resAlbaranes, resProveedores, resArticulos] = await Promise.all([
+    const [resAlbaranes, resProveedores] = await Promise.all([
       supabase
         .from('albaranes_compra')
         .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
-      supabase.from('articulos_compra').select('id, nombre, unidad, proveedor_id').order('nombre'),
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
@@ -32,9 +31,6 @@ function AlbaranesCompra() {
     if (resProveedores.error) console.error(resProveedores.error)
     else setProveedores(resProveedores.data)
 
-    if (resArticulos.error) console.error(resArticulos.error)
-    else setArticulos(resArticulos.data)
-
     setCargando(false)
   }
 
@@ -42,10 +38,50 @@ function AlbaranesCompra() {
     cargarDatos()
   }, [])
 
+  // Cada vez que cambia el proveedor, cargamos solo los artículos que le tienes asignados a él
+  useEffect(() => {
+    async function cargarArticulosDelProveedor() {
+      if (!proveedorId) {
+        setArticulosDelProveedor([])
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('articulo_proveedor')
+        .select('precio, articulos_compra(id, nombre, unidad)')
+        .eq('proveedor_id', proveedorId)
+
+      if (error) {
+        console.error(error)
+        setArticulosDelProveedor([])
+      } else {
+        setArticulosDelProveedor(
+          (data || []).map((ap) => ({
+            id: ap.articulos_compra.id,
+            nombre: ap.articulos_compra.nombre,
+            unidad: ap.articulos_compra.unidad,
+            precioPactado: ap.precio,
+          }))
+        )
+      }
+    }
+
+    cargarArticulosDelProveedor()
+  }, [proveedorId])
+
   function handleLineaChange(index, campo, valor) {
     setLineas((prev) => {
       const copia = [...prev]
       copia[index] = { ...copia[index], [campo]: valor }
+
+      // Al elegir artículo, autorrellenamos el precio pactado con este proveedor si existe y aún no hay precio puesto
+      if (campo === 'articulo_id') {
+        const art = articulosDelProveedor.find((a) => a.id === parseInt(valor))
+        if (art?.precioPactado != null && !copia[index].precio) {
+          copia[index].precio = String(art.precioPactado)
+        }
+      }
+
       return copia
     })
   }
@@ -144,6 +180,12 @@ function AlbaranesCompra() {
             required className="border rounded px-3 py-2" />
         </div>
 
+        {proveedorId && articulosDelProveedor.length === 0 && (
+          <p className="text-sm text-amber-600">
+            Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.
+          </p>
+        )}
+
         <div>
           <h3 className="text-sm font-semibold text-slate-600 mb-2">Líneas</h3>
           <div className="flex flex-col gap-3">
@@ -157,11 +199,9 @@ function AlbaranesCompra() {
                     <option value="">
                       {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
                     </option>
-                    {articulos
-                      .filter((a) => a.proveedor_id === parseInt(proveedorId))
-                      .map((a) => (
-                        <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                      ))}
+                    {articulosDelProveedor.map((a) => (
+                      <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                    ))}
                   </select>
                   <input type="number" step="0.01" placeholder="Cantidad" value={linea.cantidad}
                     onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
