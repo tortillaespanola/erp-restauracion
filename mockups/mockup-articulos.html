@@ -7,7 +7,10 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <style>
   body { font-family: 'Inter', system-ui, sans-serif; }
-  .sidebar-link.active { background: #0A3D62; border-left: 3px solid #4FA3E3; }
+  .sidebar-link.active { background: #0A3D62; border-left: 3px solid #4FA3E3; font-weight: 500; color: white; }
+  .sidebar-link { border-left: 3px solid transparent; }
+  .page { display: none; }
+  .page.active { display: block; }
 </style>
 </head>
 <body class="bg-[#F5F6F8] text-[#1C2938]">
@@ -18,26 +21,27 @@
   <aside class="w-60 bg-[#0854A0] text-white flex flex-col shrink-0">
     <div class="h-14 flex items-center gap-2 px-4 border-b border-white/10">
       <div class="w-7 h-7 rounded bg-white/15 flex items-center justify-center">
-        <i class="ti ti-toolsKitchen2 text-white text-lg"></i>
+        <i class="ti ti-tools-kitchen-2 text-white text-lg"></i>
       </div>
       <span class="font-semibold text-sm tracking-wide">ERP RESTAURACIÓN</span>
     </div>
 
     <nav class="flex-1 overflow-y-auto py-3 text-sm">
       <p class="px-4 pt-2 pb-1 text-[11px] uppercase tracking-wider text-blue-200/70">Compras</p>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-truck-delivery text-base"></i>Proveedores</a>
-      <a class="sidebar-link active flex items-center gap-3 px-4 py-2 text-white font-medium" href="#"><i class="ti ti-package text-base"></i>Artículos</a>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-file-invoice text-base"></i>Albaranes compra</a>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-receipt text-base"></i>Facturas compra</a>
+      <a data-page="proveedores" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-truck-delivery text-base"></i>Proveedores</a>
+      <a data-page="articulos" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-package text-base"></i>Artículos</a>
+      <a data-page="albaranes-compra" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-file-invoice text-base"></i>Albaranes compra</a>
+      <a data-page="placeholder" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-receipt text-base"></i>Facturas compra</a>
 
       <p class="px-4 pt-4 pb-1 text-[11px] uppercase tracking-wider text-blue-200/70">Producción</p>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-chef-hat text-base"></i>Semielaborados</a>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-soup text-base"></i>Productos finales</a>
+      <a data-page="placeholder" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-chef-hat text-base"></i>Semielaborados</a>
+      <a data-page="producciones" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-soup text-base"></i>Producciones</a>
+      <a data-page="placeholder" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-tools text-base"></i>Ajustes de stock</a>
 
       <p class="px-4 pt-4 pb-1 text-[11px] uppercase tracking-wider text-blue-200/70">Ventas</p>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-users text-base"></i>Clientes</a>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-truck text-base"></i>Albaranes venta</a>
-      <a class="sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10" href="#"><i class="ti ti-file-dollar text-base"></i>Facturas venta</a>
+      <a data-page="clientes" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-users text-base"></i>Clientes</a>
+      <a data-page="albaranes-venta" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-truck text-base"></i>Albaranes venta</a>
+      <a data-page="placeholder" class="nav-link sidebar-link flex items-center gap-3 px-4 py-2 text-blue-50 hover:bg-white/10 cursor-pointer"><i class="ti ti-file-dollar text-base"></i>Facturas venta</a>
     </nav>
 
     <div class="p-3 border-t border-white/10 flex items-center gap-2">
@@ -55,13 +59,13 @@
     <!-- TOP BAR -->
     <header class="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
       <div>
-        <h1 class="text-[15px] font-semibold text-[#1C2938]">Artículos de compra</h1>
-        <p class="text-xs text-gray-400">Compras &gt; Artículos</p>
+        <h1 id="page-title" class="text-[15px] font-semibold text-[#1C2938]">Proveedores</h1>
+        <p id="page-breadcrumb" class="text-xs text-gray-400">Compras &gt; Proveedores</p>
       </div>
       <div class="flex items-center gap-4">
         <div class="relative">
           <i class="ti ti-search absolute left-2.5 top-2 text-gray-400 text-sm"></i>
-          <input placeholder="Buscar artículo..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md w-56 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+          <input placeholder="Buscar..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md w-56 focus:outline-none focus:ring-2 focus:ring-blue-200" />
         </div>
         <i class="ti ti-bell text-gray-400 text-lg"></i>
       </div>
@@ -70,131 +74,334 @@
     <!-- CONTENT -->
     <main class="flex-1 overflow-y-auto p-6">
 
-      <!-- KPI ROW -->
-      <div class="grid grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <p class="text-xs text-gray-400 mb-1">Artículos activos</p>
-          <p class="text-2xl font-semibold text-[#1C2938]">37</p>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <p class="text-xs text-gray-400 mb-1">Proveedores</p>
-          <p class="text-2xl font-semibold text-[#1C2938]">8</p>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <p class="text-xs text-gray-400 mb-1">Stock bajo mínimos</p>
-          <p class="text-2xl font-semibold text-[#D8402F]">3</p>
-        </div>
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-          <p class="text-xs text-gray-400 mb-1">Valor stock estimado</p>
-          <p class="text-2xl font-semibold text-[#1C2938]">4 210 CHF</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-6">
-
-        <!-- LISTADO -->
-        <div class="col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h2 class="text-sm font-semibold text-[#1C2938]">Listado</h2>
-            <button class="flex items-center gap-1.5 bg-[#0854A0] text-white text-xs font-medium px-3 py-1.5 rounded-md hover:bg-[#0A3D62]">
-              <i class="ti ti-plus text-sm"></i> Nuevo artículo
-            </button>
+      <!-- PÁGINA: PROVEEDORES -->
+      <section data-page="proveedores" class="page active">
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 class="text-sm font-semibold">Listado</h2>
+              <button class="flex items-center gap-1.5 bg-[#0854A0] text-white text-xs font-medium px-3 py-1.5 rounded-md hover:bg-[#0A3D62]"><i class="ti ti-plus text-sm"></i> Nuevo proveedor</button>
+            </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
+                  <th class="px-4 py-2 font-medium">Razón fiscal</th>
+                  <th class="px-4 py-2 font-medium">Nombre comercial</th>
+                  <th class="px-4 py-2 font-medium">Email</th>
+                  <th class="px-4 py-2 font-medium">Teléfono</th>
+                  <th class="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5 font-medium">Birsmattehoff AG</td>
+                  <td class="px-4 py-2.5 text-gray-500">Birsmattehoff</td>
+                  <td class="px-4 py-2.5 text-gray-500">info@birsmattehoff.ch</td>
+                  <td class="px-4 py-2.5 text-gray-500">061 555 22 33</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5 font-medium">Distribuciones López SL</td>
+                  <td class="px-4 py-2.5 text-gray-500">Dist. López</td>
+                  <td class="px-4 py-2.5 text-gray-500">pedidos@dlopez.es</td>
+                  <td class="px-4 py-2.5 text-gray-500">932 445 001</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5 font-medium">Carnicería Müller GmbH</td>
+                  <td class="px-4 py-2.5 text-gray-500">Carnicería Müller</td>
+                  <td class="px-4 py-2.5 text-gray-500">bestellung@muller.ch</td>
+                  <td class="px-4 py-2.5 text-gray-500">061 322 87 40</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="px-4 py-2.5 text-xs text-gray-400 border-t border-gray-100">3 proveedores</div>
           </div>
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
-                <th class="px-4 py-2 font-medium">Nombre</th>
-                <th class="px-4 py-2 font-medium">Categoría</th>
-                <th class="px-4 py-2 font-medium">Proveedor</th>
-                <th class="px-4 py-2 font-medium text-right">Precio ref.</th>
-                <th class="px-4 py-2 font-medium text-right">IVA</th>
-                <th class="px-4 py-2"></th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr class="hover:bg-blue-50/40 cursor-pointer">
-                <td class="px-4 py-2.5 font-medium text-[#1C2938]">Patata</td>
-                <td class="px-4 py-2.5"><span class="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">Verduras</span></td>
-                <td class="px-4 py-2.5 text-gray-500">Birsmattehoff</td>
-                <td class="px-4 py-2.5 text-right text-gray-700">2.00 CHF/kg</td>
-                <td class="px-4 py-2.5 text-right text-gray-500">4 %</td>
-                <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
-              </tr>
-              <tr class="hover:bg-blue-50/40 cursor-pointer">
-                <td class="px-4 py-2.5 font-medium text-[#1C2938]">Harina de trigo</td>
-                <td class="px-4 py-2.5"><span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full">Secos</span></td>
-                <td class="px-4 py-2.5 text-gray-500">Distribuciones López</td>
-                <td class="px-4 py-2.5 text-right text-gray-700">1.20 CHF/kg</td>
-                <td class="px-4 py-2.5 text-right text-gray-500">2.5 %</td>
-                <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
-              </tr>
-              <tr class="hover:bg-blue-50/40 cursor-pointer">
-                <td class="px-4 py-2.5 font-medium text-[#1C2938]">Aceite de oliva</td>
-                <td class="px-4 py-2.5"><span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full">Secos</span></td>
-                <td class="px-4 py-2.5 text-gray-500">Birsmattehoff</td>
-                <td class="px-4 py-2.5 text-right text-gray-700">6.80 CHF/l</td>
-                <td class="px-4 py-2.5 text-right text-gray-500">2.5 %</td>
-                <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
-              </tr>
-              <tr class="hover:bg-blue-50/40 cursor-pointer bg-red-50/30">
-                <td class="px-4 py-2.5 font-medium text-[#1C2938]">Pollo entero</td>
-                <td class="px-4 py-2.5"><span class="bg-red-50 text-red-700 text-xs px-2 py-0.5 rounded-full">Carnes</span></td>
-                <td class="px-4 py-2.5 text-gray-500">Carnicería Muller</td>
-                <td class="px-4 py-2.5 text-right text-gray-700">8.90 CHF/kg</td>
-                <td class="px-4 py-2.5 text-right text-gray-500">2.5 %</td>
-                <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
-              </tr>
+          <div class="bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-0">
+            <h2 class="text-sm font-semibold mb-3">Nuevo proveedor</h2>
+            <div class="flex flex-col gap-3">
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Razón fiscal</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Nombre comercial</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">CIF</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Email</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Teléfono</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <button class="mt-1 bg-[#0854A0] text-white text-sm font-medium py-2 rounded-md hover:bg-[#0A3D62]">Guardar proveedor</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PÁGINA: ARTÍCULOS -->
+      <section data-page="articulos" class="page">
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-4"><p class="text-xs text-gray-400 mb-1">Artículos activos</p><p class="text-2xl font-semibold">37</p></div>
+          <div class="bg-white rounded-lg border border-gray-200 p-4"><p class="text-xs text-gray-400 mb-1">Proveedores</p><p class="text-2xl font-semibold">8</p></div>
+          <div class="bg-white rounded-lg border border-gray-200 p-4"><p class="text-xs text-gray-400 mb-1">Stock bajo mínimos</p><p class="text-2xl font-semibold text-[#D8402F]">3</p></div>
+          <div class="bg-white rounded-lg border border-gray-200 p-4"><p class="text-xs text-gray-400 mb-1">Valor stock estimado</p><p class="text-2xl font-semibold">4 210 CHF</p></div>
+        </div>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 class="text-sm font-semibold">Listado</h2>
+              <button class="flex items-center gap-1.5 bg-[#0854A0] text-white text-xs font-medium px-3 py-1.5 rounded-md hover:bg-[#0A3D62]"><i class="ti ti-plus text-sm"></i> Nuevo artículo</button>
+            </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
+                  <th class="px-4 py-2 font-medium">Nombre</th>
+                  <th class="px-4 py-2 font-medium">Categoría</th>
+                  <th class="px-4 py-2 font-medium">Proveedor</th>
+                  <th class="px-4 py-2 font-medium text-right">Precio ref.</th>
+                  <th class="px-4 py-2 font-medium text-right">IVA</th>
+                  <th class="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5 font-medium">Patata</td>
+                  <td class="px-4 py-2.5"><span class="bg-green-50 text-green-700 text-xs px-2 py-0.5 rounded-full">Verduras</span></td>
+                  <td class="px-4 py-2.5 text-gray-500">Birsmattehoff</td>
+                  <td class="px-4 py-2.5 text-right text-gray-700">2.00 CHF/kg</td>
+                  <td class="px-4 py-2.5 text-right text-gray-500">4 %</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5 font-medium">Harina de trigo</td>
+                  <td class="px-4 py-2.5"><span class="bg-amber-50 text-amber-700 text-xs px-2 py-0.5 rounded-full">Secos</span></td>
+                  <td class="px-4 py-2.5 text-gray-500">Dist. López</td>
+                  <td class="px-4 py-2.5 text-right text-gray-700">1.20 CHF/kg</td>
+                  <td class="px-4 py-2.5 text-right text-gray-500">2.5 %</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 cursor-pointer bg-red-50/30">
+                  <td class="px-4 py-2.5 font-medium">Pollo entero</td>
+                  <td class="px-4 py-2.5"><span class="bg-red-50 text-red-700 text-xs px-2 py-0.5 rounded-full">Carnes</span></td>
+                  <td class="px-4 py-2.5 text-gray-500">Carnicería Müller</td>
+                  <td class="px-4 py-2.5 text-right text-gray-700">8.90 CHF/kg</td>
+                  <td class="px-4 py-2.5 text-right text-gray-500">2.5 %</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="px-4 py-2.5 text-xs text-gray-400 border-t border-gray-100">Mostrando 3 de 37 artículos</div>
+          </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-0">
+            <h2 class="text-sm font-semibold mb-3">Nuevo artículo</h2>
+            <div class="flex flex-col gap-3">
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Nombre</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="Ej. Tomate pera" /></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Unidad</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="kg" /></div>
+                <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Precio ref.</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="0.00" /></div>
+              </div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Proveedor</label><select class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white"><option>Birsmattehoff</option></select></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Categoría</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="Verduras" /></div>
+                <div><label class="text-[11px] font-medium text-gray-500 block mb-1">IVA</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="2.5" /></div>
+              </div>
+              <button class="mt-1 bg-[#0854A0] text-white text-sm font-medium py-2 rounded-md hover:bg-[#0A3D62]">Guardar artículo</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PÁGINA: ALBARANES DE COMPRA (cabecera + líneas) -->
+      <section data-page="albaranes-compra" class="page">
+        <div class="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+          <h2 class="text-sm font-semibold mb-4">Nuevo albarán</h2>
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Proveedor</label><select class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white"><option>Birsmattehoff</option></select></div>
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Nº albarán</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Fecha</label><input type="date" class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+          </div>
+          <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Líneas</p>
+          <div class="border border-gray-200 rounded-md divide-y divide-gray-100">
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 items-center bg-gray-50/50">
+              <span class="text-[11px] font-medium text-gray-400 uppercase">Artículo</span>
+              <span class="text-[11px] font-medium text-gray-400 uppercase">Cantidad</span>
+              <span class="text-[11px] font-medium text-gray-400 uppercase">Precio</span>
+              <span class="text-[11px] font-medium text-gray-400 uppercase">Caducidad</span>
+              <span></span>
+            </div>
+            <div class="grid grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 items-center">
+              <select class="border border-gray-200 rounded-md px-2 py-1.5 text-sm bg-white"><option>Patata (kg)</option></select>
+              <input class="border border-gray-200 rounded-md px-2 py-1.5 text-sm" value="20" />
+              <input class="border border-gray-200 rounded-md px-2 py-1.5 text-sm" value="1.10" />
+              <input type="date" class="border border-gray-200 rounded-md px-2 py-1.5 text-sm" />
+              <i class="ti ti-trash text-gray-400 text-sm cursor-pointer"></i>
+            </div>
+          </div>
+          <button class="mt-3 text-xs text-[#0854A0] font-medium flex items-center gap-1"><i class="ti ti-plus text-sm"></i> Añadir línea</button>
+          <div class="mt-5 flex justify-end">
+            <button class="bg-[#0854A0] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-[#0A3D62]">Guardar albarán</button>
+          </div>
+        </div>
+
+        <h2 class="text-sm font-semibold mb-3 text-gray-600">Albaranes recientes</h2>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 flex items-start justify-between mb-3">
+          <div>
+            <p class="font-medium text-sm">Birsmattehoff</p>
+            <p class="text-xs text-gray-400">Albarán 4521 · 26/07/2026 · 3 líneas</p>
+          </div>
+          <span class="bg-gray-100 text-gray-500 text-xs px-2 py-1 rounded-md">Recibido</span>
+        </div>
+      </section>
+
+      <!-- PÁGINA: PRODUCCIONES (tarjetas de flujo) -->
+      <section data-page="producciones" class="page">
+        <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex items-end gap-3">
+          <div class="flex-1">
+            <label class="text-[11px] font-medium text-gray-500 block mb-1">Iniciar nueva producción</label>
+            <select class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white"><option>Sofrito base (kg)</option></select>
+          </div>
+          <button class="bg-[#0854A0] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-[#0A3D62]">Iniciar</button>
+        </div>
+
+        <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">En curso</p>
+        <div class="bg-white rounded-lg border-l-4 border-[#EF9F27] border-t border-r border-b border-gray-200 p-4 mb-6">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <p class="font-medium text-sm">Sofrito base <span class="text-amber-600 text-xs font-normal">— en curso</span></p>
+              <p class="text-xs text-gray-400">Iniciada el 27/07/2026</p>
+            </div>
+            <span class="text-xs text-red-500 cursor-pointer">Cancelar</span>
+          </div>
+          <table class="w-full text-sm mb-3">
+            <tbody>
+              <tr class="border-t border-gray-100"><td class="py-1.5 text-gray-500">Cebolla</td><td class="py-1.5 text-right">2.0 kg</td></tr>
+              <tr class="border-t border-gray-100"><td class="py-1.5 text-gray-500">Tomate triturado</td><td class="py-1.5 text-right">3.5 kg</td></tr>
             </tbody>
           </table>
-          <div class="px-4 py-2.5 text-xs text-gray-400 border-t border-gray-100">Mostrando 4 de 37 artículos</div>
-        </div>
-
-        <!-- PANEL LATERAL: FICHA / ALTA -->
-        <div class="bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-0">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-[#1C2938]">Nuevo artículo</h2>
-            <i class="ti ti-x text-gray-400 text-sm"></i>
+          <div class="border border-gray-200 rounded-md p-3 mb-3">
+            <p class="text-xs font-medium mb-2">Aceite de oliva <span class="text-gray-400 font-normal">— orientativo: 0.3 l por unidad</span></p>
+            <div class="grid grid-cols-[2fr_1fr_auto] gap-2">
+              <select class="border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"><option>Albarán 4521 · 4.2 l disp.</option></select>
+              <input class="border border-gray-200 rounded-md px-2 py-1.5 text-xs" placeholder="Cantidad" />
+              <button class="text-xs text-[#0854A0] font-medium">+ Añadir</button>
+            </div>
           </div>
-          <div class="flex flex-col gap-3">
-            <div>
-              <label class="text-[11px] font-medium text-gray-500 block mb-1">Nombre</label>
-              <input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" placeholder="Ej. Tomate pera" />
+          <button class="bg-[#3B6D11] text-white text-xs font-medium px-4 py-2 rounded-md">Cerrar producción</button>
+        </div>
+      </section>
+
+      <!-- PÁGINA: CLIENTES -->
+      <section data-page="clientes" class="page">
+        <div class="grid grid-cols-3 gap-6">
+          <div class="col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h2 class="text-sm font-semibold">Listado</h2>
+              <button class="flex items-center gap-1.5 bg-[#0854A0] text-white text-xs font-medium px-3 py-1.5 rounded-md hover:bg-[#0A3D62]"><i class="ti ti-plus text-sm"></i> Nuevo cliente</button>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-[11px] font-medium text-gray-500 block mb-1">Unidad</label>
-                <input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="kg" />
-              </div>
-              <div>
-                <label class="text-[11px] font-medium text-gray-500 block mb-1">Precio ref.</label>
-                <input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="0.00" />
-              </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
+                  <th class="px-4 py-2 font-medium">Tipo</th>
+                  <th class="px-4 py-2 font-medium">Nombre</th>
+                  <th class="px-4 py-2 font-medium">Email</th>
+                  <th class="px-4 py-2 font-medium">Teléfono</th>
+                  <th class="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5"><span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full">Empresa</span></td>
+                  <td class="px-4 py-2.5 font-medium">Zum Kuss</td>
+                  <td class="px-4 py-2.5 text-gray-500">info@zumkuss.ch</td>
+                  <td class="px-4 py-2.5 text-gray-500">061 271 40 22</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 cursor-pointer">
+                  <td class="px-4 py-2.5"><span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">Particular</span></td>
+                  <td class="px-4 py-2.5 font-medium">Marta Suárez</td>
+                  <td class="px-4 py-2.5 text-gray-500">marta.s@gmail.com</td>
+                  <td class="px-4 py-2.5 text-gray-500">079 233 11 05</td>
+                  <td class="px-4 py-2.5 text-right"><i class="ti ti-dots text-gray-400"></i></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="px-4 py-2.5 text-xs text-gray-400 border-t border-gray-100">2 clientes</div>
+          </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-0">
+            <h2 class="text-sm font-semibold mb-3">Nuevo cliente</h2>
+            <div class="flex gap-4 text-xs mb-3">
+              <label class="flex items-center gap-1"><input type="radio" checked /> Particular</label>
+              <label class="flex items-center gap-1"><input type="radio" /> Empresa</label>
             </div>
-            <div>
-              <label class="text-[11px] font-medium text-gray-500 block mb-1">Proveedor</label>
-              <select class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white">
-                <option>Birsmattehoff</option>
-                <option>Distribuciones López</option>
-              </select>
+            <div class="flex flex-col gap-3">
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Nombre</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Email</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Teléfono</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+              <button class="mt-1 bg-[#0854A0] text-white text-sm font-medium py-2 rounded-md hover:bg-[#0A3D62]">Guardar cliente</button>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-[11px] font-medium text-gray-500 block mb-1">Categoría</label>
-                <input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="Verduras" />
-              </div>
-              <div>
-                <label class="text-[11px] font-medium text-gray-500 block mb-1">IVA</label>
-                <input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" placeholder="2.5" />
-              </div>
-            </div>
-            <button class="mt-1 bg-[#0854A0] text-white text-sm font-medium py-2 rounded-md hover:bg-[#0A3D62]">Guardar artículo</button>
           </div>
         </div>
+      </section>
 
-      </div>
+      <!-- PÁGINA: ALBARANES DE VENTA (selección de lotes) -->
+      <section data-page="albaranes-venta" class="page">
+        <div class="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+          <h2 class="text-sm font-semibold mb-4">Nuevo albarán</h2>
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Cliente</label><select class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white"><option>Zum Kuss</option></select></div>
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Nº albarán</label><input class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+            <div><label class="text-[11px] font-medium text-gray-500 block mb-1">Fecha</label><input type="date" class="w-full border border-gray-200 rounded-md px-3 py-2 text-sm" /></div>
+          </div>
+          <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Añadir productos</p>
+          <div class="border border-gray-200 rounded-md p-3">
+            <p class="text-sm font-medium mb-2">Paella valenciana</p>
+            <div class="grid grid-cols-[2fr_1fr_1fr_auto] gap-2">
+              <select class="border border-gray-200 rounded-md px-2 py-1.5 text-xs bg-white"><option>Producción 25/07 · 8 disp.</option></select>
+              <input class="border border-gray-200 rounded-md px-2 py-1.5 text-xs" placeholder="Cantidad" />
+              <input class="border border-gray-200 rounded-md px-2 py-1.5 text-xs" placeholder="Precio/ud" value="18.50" />
+              <button class="text-xs text-[#0854A0] font-medium">+ Añadir</button>
+            </div>
+          </div>
+          <div class="mt-5 flex justify-end">
+            <button class="bg-[#0854A0] text-white text-sm font-medium px-5 py-2 rounded-md hover:bg-[#0A3D62]">Guardar albarán</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PLACEHOLDER -->
+      <section data-page="placeholder" class="page">
+        <div class="bg-white rounded-lg border border-dashed border-gray-300 p-16 text-center">
+          <i class="ti ti-tool text-3xl text-gray-300"></i>
+          <p class="text-sm text-gray-400 mt-3">Esta pantalla todavía no tiene mockup — se aplicará el mismo lenguaje visual cuando esté lista.</p>
+        </div>
+      </section>
+
     </main>
   </div>
 </div>
+
+<script>
+  const titles = {
+    'proveedores': ['Proveedores', 'Compras &gt; Proveedores'],
+    'articulos': ['Artículos de compra', 'Compras &gt; Artículos'],
+    'albaranes-compra': ['Albaranes de compra', 'Compras &gt; Albaranes compra'],
+    'producciones': ['Producciones', 'Producción &gt; Producciones'],
+    'clientes': ['Clientes', 'Ventas &gt; Clientes'],
+    'albaranes-venta': ['Albaranes de venta', 'Ventas &gt; Albaranes venta'],
+    'placeholder': ['Próximamente', 'Pantalla sin diseñar todavía'],
+  };
+
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const page = link.dataset.page;
+
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll(`.page[data-page="${page}"]`).forEach(p => p.classList.add('active'));
+
+      document.getElementById('page-title').textContent = titles[page][0];
+      document.getElementById('page-breadcrumb').innerHTML = titles[page][1];
+    });
+  });
+
+  document.querySelector('.nav-link[data-page="proveedores"]').classList.add('active');
+</script>
 
 </body>
 </html>
