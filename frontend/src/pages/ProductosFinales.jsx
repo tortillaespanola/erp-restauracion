@@ -259,7 +259,7 @@ function ProductosFinales() {
                       ))}
                     </select>
                   )}
-                  <input type="number" step="0.01" placeholder="Cantidad" value={linea.cantidad}
+                  <input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
                     onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
                     required className="border rounded px-3 py-2" />
                   <button type="button" onClick={() => removeLinea(index)}

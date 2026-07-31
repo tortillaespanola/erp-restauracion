@@ -71,7 +71,7 @@ function AlbaranesVenta() {
     const restante = stockLoteOriginal - yaUsado
 
     if (cant > restante) {
-      alert(`Solo quedan ${restante.toFixed(2)} unidades disponibles en ese lote de producción`)
+      alert(`Solo quedan ${restante.toFixed(3)} unidades disponibles en ese lote de producción`)
       return
     }
 
@@ -350,11 +350,11 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
           <option value="">Selecciona lote de producción</option>
           {lotesConDisponibleReal.map((l) => (
             <option key={l.produccion_id} value={l.produccion_id}>
-              Producción {l.fecha} · {l.disponibleReal.toFixed(2)} disp.
+              Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.
             </option>
           ))}
         </select>
-        <input type="number" step="0.01" placeholder="Cantidad" value={cantidad}
+        <input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
           className="border rounded px-3 py-2 text-sm" />
         <input type="number" step="0.01" placeholder="Precio/ud" value={precio}

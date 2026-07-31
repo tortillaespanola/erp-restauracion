@@ -175,15 +175,15 @@ function AjustesStock() {
               const id = tipo === 'articulo' ? l.entrada_material_id : l.produccion_id
               const esMasAntiguo = index === 0
               const label = tipo === 'articulo'
-                ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion} · stock actual: ${Number(l.stock_disponible).toFixed(2)}`
-                : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(2)}`
+                ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
               return <option key={id} value={id}>{label}</option>
             })}
           </select>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input type="number" step="0.01" placeholder="Cantidad (+ suma, - resta)" value={cantidad}
+          <input type="number" step="0.001" placeholder="Cantidad (+ suma, - resta)" value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
             required className="border rounded px-3 py-2" />
           <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}

@@ -146,7 +146,7 @@ function ProduccionProductosFinales() {
               {stockTotal.map((s) => (
                 <tr key={s.producto_final_id} className="border-t">
                   <td className="p-3">{s.nombre}</td>
-                  <td className="p-3">{Number(s.stock).toFixed(2)}</td>
+                  <td className="p-3">{Number(s.stock).toFixed(3)}</td>
                 </tr>
               ))}
             </tbody>
@@ -265,7 +265,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       ingrediente.esArticulo ? l.entrada_material_id === parseInt(loteId) : l.produccion_id === parseInt(loteId)
     )
     if (cant > lote.stock_disponible) {
-      alert(`Solo quedan ${lote.stock_disponible.toFixed(2)} ${ingrediente.unidad} disponibles en ese lote`)
+      alert(`Solo quedan ${lote.stock_disponible.toFixed(3)} ${ingrediente.unidad} disponibles en ese lote`)
       return
     }
 
@@ -370,7 +370,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
           </button>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="number" step="0.01" placeholder="Cantidad producida (unidades)"
+            <input type="number" step="0.001" placeholder="Cantidad producida (unidades)"
               value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
               className="border rounded px-3 py-2" autoFocus />
             <input type="text" placeholder="Notas (mermas, incidencias...)"
@@ -413,12 +413,12 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
               const label = ingrediente.esArticulo
-                ? `Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(2)} ${ingrediente.unidad} disp.`
-                : `Producción ${l.fecha} · ${l.stock_disponible.toFixed(2)} ${ingrediente.unidad} disp.`
+                ? `${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
+                : `Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
               return <option key={id} value={id}>{label}</option>
             })}
           </select>
-          <input type="number" step="0.01" placeholder="Cantidad" value={cantidad}
+          <input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
             className="border rounded px-3 py-2 text-sm" />
           <button type="button" onClick={handleAdd} className="text-blue-600 hover:underline text-sm">

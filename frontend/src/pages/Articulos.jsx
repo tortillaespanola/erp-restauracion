@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const vacio = { nombre: '', unidad: '', categoria: '', iva: '', codigo: '', tipo_material: 'RM' }
+const vacio = {
+  nombre: '', unidad: '', categoria: '', iva: '', codigo: '', tipo_material: 'RM',
+  requiere_control_temperatura: false, temperatura_min: '', temperatura_max: '',
+}
 
 function Articulos() {
   const [articulos, setArticulos] = useState([])
@@ -41,6 +44,9 @@ function Articulos() {
       iva: form.iva ? parseFloat(form.iva) : null,
       codigo: form.codigo || null,
       tipo_material: form.tipo_material,
+      requiere_control_temperatura: form.requiere_control_temperatura,
+      temperatura_min: form.requiere_control_temperatura && form.temperatura_min ? parseFloat(form.temperatura_min) : null,
+      temperatura_max: form.requiere_control_temperatura && form.temperatura_max ? parseFloat(form.temperatura_max) : null,
     }
 
     if (editandoId) {
@@ -70,6 +76,9 @@ function Articulos() {
       iva: a.iva ?? '',
       codigo: a.codigo ?? '',
       tipo_material: a.tipo_material ?? 'RM',
+      requiere_control_temperatura: a.requiere_control_temperatura ?? false,
+      temperatura_min: a.temperatura_min ?? '',
+      temperatura_max: a.temperatura_max ?? '',
     })
     setEditandoId(a.id)
   }
@@ -128,6 +137,25 @@ function Articulos() {
             className="border rounded px-3 py-2" />
         </div>
 
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          <input type="checkbox" checked={form.requiere_control_temperatura}
+            onChange={(e) => handleChange('requiere_control_temperatura', e.target.checked)} />
+          Requiere control de temperatura en la recepción
+        </label>
+
+        {form.requiere_control_temperatura && (
+          <div className="grid grid-cols-2 gap-3 pl-6">
+            <input type="number" step="0.1" placeholder="Temperatura mín. aceptable (°C)"
+              value={form.temperatura_min}
+              onChange={(e) => handleChange('temperatura_min', e.target.value)}
+              className="border rounded px-3 py-2 text-sm" />
+            <input type="number" step="0.1" placeholder="Temperatura máx. aceptable (°C)"
+              value={form.temperatura_max}
+              onChange={(e) => handleChange('temperatura_max', e.target.value)}
+              className="border rounded px-3 py-2 text-sm" />
+          </div>
+        )}
+
         <div className="flex gap-2 mt-2">
           <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
             {editandoId ? 'Guardar cambios' : 'Guardar artículo'}
@@ -164,6 +192,12 @@ function Articulos() {
                     </p>
                     <p className="text-sm text-slate-500">
                       {a.unidad} · {a.categoria ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'} · {a.tipo_material}
+                      {a.requiere_control_temperatura && (
+                        <span className="ml-2 text-blue-600">
+                          🌡️ Control temperatura
+                          {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="flex gap-3">
@@ -186,12 +220,14 @@ function Articulos() {
   )
 }
 
-// Gestión de proveedores + precio para un artículo concreto, embebida en su tarjeta del listado
 function ProveedoresDelArticulo({ articulo, onCambio }) {
   const [proveedores, setProveedores] = useState([])
   const [proveedorId, setProveedorId] = useState('')
   const [precio, setPrecio] = useState('')
   const [referencia, setReferencia] = useState('')
+  const [editandoRelacionId, setEditandoRelacionId] = useState(null)
+  const [precioEdit, setPrecioEdit] = useState('')
+  const [referenciaEdit, setReferenciaEdit] = useState('')
 
   useEffect(() => {
     async function cargarProveedores() {
@@ -231,6 +267,36 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
     onCambio()
   }
 
+  function handleEmpezarEdicion(ap) {
+    setEditandoRelacionId(ap.id)
+    setPrecioEdit(ap.precio ?? '')
+    setReferenciaEdit(ap.referencia_proveedor ?? '')
+  }
+
+  function handleCancelarEdicion() {
+    setEditandoRelacionId(null)
+    setPrecioEdit('')
+    setReferenciaEdit('')
+  }
+
+  async function handleGuardarEdicion(id) {
+    const { error } = await supabase
+      .from('articulo_proveedor')
+      .update({
+        precio: precioEdit ? parseFloat(precioEdit) : null,
+        referencia_proveedor: referenciaEdit || null,
+      })
+      .eq('id', id)
+
+    if (error) {
+      alert('Error al actualizar: ' + error.message)
+      return
+    }
+
+    handleCancelarEdicion()
+    onCambio()
+  }
+
   async function handleMarcarPreferente(id) {
     const { error } = await supabase.from('articulo_proveedor').update({ preferente: true }).eq('id', id)
     if (error) {
@@ -259,26 +325,64 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       ) : (
         <table className="w-full text-sm mb-2">
           <tbody>
-            {articulo.articulo_proveedor.map((ap) => (
-              <tr key={ap.id} className="border-t">
-                <td className="py-1">
-                  {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
-                  {ap.proveedores?.nombre_comercial}
-                </td>
-                <td className="py-1">{ap.precio != null ? `${ap.precio} €` : '-'}</td>
-                <td className="py-1 text-slate-400">{ap.referencia_proveedor ?? '-'}</td>
-                <td className="py-1 text-right">
-                  {!ap.preferente && (
-                    <button onClick={() => handleMarcarPreferente(ap.id)} className="text-amber-600 hover:underline text-xs mr-3">
-                      Marcar preferente
+            {articulo.articulo_proveedor.map((ap) => {
+              const enEdicion = editandoRelacionId === ap.id
+
+              if (enEdicion) {
+                return (
+                  <tr key={ap.id} className="border-t bg-blue-50/50">
+                    <td className="py-1">
+                      {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
+                      {ap.proveedores?.nombre_comercial}
+                    </td>
+                    <td className="py-1">
+                      <input type="number" step="0.01" value={precioEdit}
+                        onChange={(e) => setPrecioEdit(e.target.value)}
+                        placeholder="Precio"
+                        className="border rounded px-2 py-1 text-sm w-24" />
+                    </td>
+                    <td className="py-1">
+                      <input type="text" value={referenciaEdit}
+                        onChange={(e) => setReferenciaEdit(e.target.value)}
+                        placeholder="Ref."
+                        className="border rounded px-2 py-1 text-sm w-full" />
+                    </td>
+                    <td className="py-1 text-right whitespace-nowrap">
+                      <button onClick={() => handleGuardarEdicion(ap.id)} className="text-green-700 hover:underline text-xs mr-3">
+                        Guardar
+                      </button>
+                      <button onClick={handleCancelarEdicion} className="text-slate-500 hover:underline text-xs">
+                        Cancelar
+                      </button>
+                    </td>
+                  </tr>
+                )
+              }
+
+              return (
+                <tr key={ap.id} className="border-t">
+                  <td className="py-1">
+                    {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
+                    {ap.proveedores?.nombre_comercial}
+                  </td>
+                  <td className="py-1">{ap.precio != null ? `${ap.precio} €` : '-'}</td>
+                  <td className="py-1 text-slate-400">{ap.referencia_proveedor ?? '-'}</td>
+                  <td className="py-1 text-right whitespace-nowrap">
+                    <button onClick={() => handleEmpezarEdicion(ap)} className="text-blue-600 hover:underline text-xs mr-3">
+                      Editar
                     </button>
-                  )}
-                  <button onClick={() => handleQuitar(ap.id)} className="text-red-600 hover:underline text-xs">
-                    Quitar
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    {!ap.preferente && (
+                      <button onClick={() => handleMarcarPreferente(ap.id)} className="text-amber-600 hover:underline text-xs mr-3">
+                        Marcar preferente
+                      </button>
+                    )}
+                    <button onClick={() => handleQuitar(ap.id)} className="text-red-600 hover:underline text-xs">
+                      Quitar
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       )}
@@ -306,5 +410,4 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
     </div>
   )
 }
-
 export default Articulos
