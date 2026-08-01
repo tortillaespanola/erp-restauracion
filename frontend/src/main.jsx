@@ -7,7 +7,7 @@ import AuthGate from './components/AuthGate.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthGate>
-      <App />
+      {(session, onLogout) => <App session={session} onLogout={onLogout} />}
     </AuthGate>
   </StrictMode>,
 )

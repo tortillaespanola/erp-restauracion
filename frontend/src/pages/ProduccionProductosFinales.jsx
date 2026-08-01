@@ -1,14 +1,67 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { IconTrash } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+
+async function cargarIngredientesConLotes(productoFinalId) {
+  const { data: receta } = await supabase
+    .from('receta_producto_final')
+    .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados(nombre, unidad)')
+    .eq('producto_final_id', productoFinalId)
+
+  return Promise.all(
+    (receta || []).map(async (linea) => {
+      const esArticulo = !!linea.articulo_id
+      let lotes = []
+
+      if (esArticulo) {
+        const { data } = await supabase
+          .from('stock_lotes_articulo')
+          .select('*')
+          .eq('articulo_id', linea.articulo_id)
+          .gt('stock_disponible', 0)
+          .order('fecha_caducidad', { ascending: true, nullsFirst: false })
+        lotes = data || []
+      } else {
+        const { data } = await supabase
+          .from('stock_lotes_semielaborado')
+          .select('*')
+          .eq('semielaborado_id', linea.ingrediente_semielaborado_id)
+          .gt('stock_disponible', 0)
+          .order('fecha', { ascending: true })
+        lotes = data || []
+      }
+
+      return {
+        esArticulo,
+        articulo_id: linea.articulo_id,
+        ingrediente_semielaborado_id: linea.ingrediente_semielaborado_id,
+        nombre: esArticulo ? linea.articulos_compra?.nombre : linea.semielaborados?.nombre,
+        unidad: esArticulo ? linea.articulos_compra?.unidad : linea.semielaborados?.unidad,
+        cantidadOrientativa: linea.cantidad,
+        lotes,
+      }
+    })
+  )
+}
+
+function nombreIngredienteDeLinea(c) {
+  const ing = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
+  return { nombre: ing?.nombre, unidad: ing?.unidad }
+}
 
 function ProduccionProductosFinales() {
+  const [searchParams] = useSearchParams()
   const [productos, setProductos] = useState([])
   const [abiertas, setAbiertas] = useState([])
   const [cerradas, setCerradas] = useState([])
   const [stockTotal, setStockTotal] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  const [productoId, setProductoId] = useState('')
+  const pedidoId = searchParams.get('pedido_id')
+  const [productoId, setProductoId] = useState(searchParams.get('producto_final_id') ?? '')
+  const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10))
 
   async function cargarDatos() {
     setCargando(true)
@@ -16,6 +69,7 @@ function ProduccionProductosFinales() {
     const selectCompleto = `
       *,
       productos_finales(nombre),
+      pedidos_venta(codigo_pedido),
       consumo_produccion_pf!consumo_produccion_pf_produccion_pf_id_fkey(
         id, cantidad,
         entrada_material_id, produccion_origen_id,
@@ -59,7 +113,8 @@ function ProduccionProductosFinales() {
       .insert({
         producto_final_id: parseInt(productoId),
         estado: 'abierta',
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: fechaInicio,
+        pedido_id: pedidoId ? parseInt(pedidoId) : null,
       })
 
     if (error) {
@@ -68,6 +123,7 @@ function ProduccionProductosFinales() {
     }
 
     setProductoId('')
+    setFechaInicio(new Date().toISOString().slice(0, 10))
     cargarDatos()
   }
 
@@ -92,31 +148,34 @@ function ProduccionProductosFinales() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Producción de productos finales</h1>
-      <p className="text-slate-500 text-sm mt-1">
-        Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida.
-      </p>
+    <div>
+      <PageHeader title="Producción de productos finales" subtitle="Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida." />
 
-      <form onSubmit={iniciarProduccion} className="mt-6 bg-white p-4 rounded-lg shadow flex gap-3 items-end">
-        <div className="flex-1">
-          <label className="text-sm font-semibold text-slate-600 block mb-1">Iniciar nueva producción</label>
-          <select value={productoId} onChange={(e) => setProductoId(e.target.value)}
-            required className="border rounded px-3 py-2 w-full">
-            <option value="">Selecciona qué vas a producir</option>
-            {productos.map((p) => (
-              <option key={p.id} value={p.id}>{p.nombre}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
-          Iniciar
-        </button>
-      </form>
+      <Card className="mb-6">
+        <CardBody>
+          {pedidoId && (
+            <p className="text-sm text-[#0854A0] mb-3">Esta producción quedará enlazada al pedido seleccionado.</p>
+          )}
+          <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-3 items-end">
+            <Field label="Iniciar nueva producción">
+              <Select value={productoId} onChange={(e) => setProductoId(e.target.value)} required>
+                <option value="">Selecciona qué vas a producir</option>
+                {productos.map((p) => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Fecha">
+              <Input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} required />
+            </Field>
+            <Button type="submit">Iniciar</Button>
+          </form>
+        </CardBody>
+      </Card>
 
       {abiertas.length > 0 && (
-        <div className="mt-8">
-          <h2 className="font-semibold text-slate-700 mb-3">Producciones en curso</h2>
+        <div className="mb-8">
+          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Producciones en curso</h2>
           <div className="flex flex-col gap-4">
             {abiertas.map((p) => (
               <ProduccionAbierta
@@ -130,67 +189,43 @@ function ProduccionProductosFinales() {
         </div>
       )}
 
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Stock actual de productos finales</h2>
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : (
-          <table className="w-full bg-white rounded-lg shadow overflow-hidden text-sm mb-8">
-            <thead className="bg-slate-100 text-left text-slate-600">
-              <tr>
-                <th className="p-3">Producto</th>
-                <th className="p-3">Stock</th>
-              </tr>
-            </thead>
-            <tbody>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Stock actual de productos finales</h2>
+      {cargando ? (
+        <LoadingState />
+      ) : (
+        <Card className="overflow-hidden mb-8">
+          <Table>
+            <Thead>
+              <Th>Producto</Th>
+              <Th>Stock</Th>
+            </Thead>
+            <tbody className="divide-y divide-gray-100">
               {stockTotal.map((s) => (
-                <tr key={s.producto_final_id} className="border-t">
-                  <td className="p-3">{s.nombre}</td>
-                  <td className="p-3">{Number(s.stock).toFixed(3)}</td>
+                <tr key={s.producto_final_id} className="hover:bg-blue-50/40">
+                  <Td className="font-medium">{s.nombre}</Td>
+                  <Td>{Number(s.stock).toFixed(3)}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
+          </Table>
+        </Card>
+      )}
 
-        <h2 className="font-semibold text-slate-700 mb-3">Historial de producciones cerradas</h2>
-        {cerradas.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay producciones cerradas.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {cerradas.map((p) => (
-              <div key={p.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">
-                      {p.cantidad_producida} uds. de {p.productos_finales?.nombre}
-                      {p.codigo_lote && <span className="ml-2 text-xs font-mono text-slate-400">{p.codigo_lote}</span>}
-                    </p>
-                    <p className="text-sm text-slate-500">{p.fecha}</p>
-                    {p.notas && <p className="text-sm text-slate-400 italic">{p.notas}</p>}
-                  </div>
-                  <button onClick={() => handleBorrarCerrada(p.id)} className="text-red-600 hover:underline text-sm">
-                    Borrar
-                  </button>
-                </div>
-                <table className="w-full mt-3 text-sm">
-                  <tbody>
-                    {p.consumo_produccion_pf.map((c) => {
-                      const ingrediente = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
-                      return (
-                        <tr key={c.id} className="border-t">
-                          <td className="py-1 text-slate-500">Consumido: {ingrediente?.nombre}</td>
-                          <td className="py-1">{c.cantidad} {ingrediente?.unidad}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Historial de producciones cerradas</h2>
+      {cerradas.length === 0 ? (
+        <Card><EmptyState>Todavía no hay producciones cerradas.</EmptyState></Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {cerradas.map((p) => (
+            <ProduccionCerrada
+              key={p.id}
+              produccion={p}
+              onCambio={cargarDatos}
+              onBorrar={() => handleBorrarCerrada(p.id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -205,48 +240,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
   async function cargarIngredientes() {
     setCargandoIngredientes(true)
-
-    const { data: receta } = await supabase
-      .from('receta_producto_final')
-      .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados(nombre, unidad)')
-      .eq('producto_final_id', produccion.producto_final_id)
-
-    const conLotes = await Promise.all(
-      (receta || []).map(async (linea) => {
-        const esArticulo = !!linea.articulo_id
-        let lotes = []
-
-        if (esArticulo) {
-          const { data } = await supabase
-            .from('stock_lotes_articulo')
-            .select('*')
-            .eq('articulo_id', linea.articulo_id)
-            .gt('stock_disponible', 0)
-            .order('fecha_caducidad', { ascending: true, nullsFirst: false })
-          lotes = data || []
-        } else {
-          const { data } = await supabase
-            .from('stock_lotes_semielaborado')
-            .select('*')
-            .eq('semielaborado_id', linea.ingrediente_semielaborado_id)
-            .gt('stock_disponible', 0)
-            .order('fecha', { ascending: true })
-          lotes = data || []
-        }
-
-        return {
-          esArticulo,
-          articulo_id: linea.articulo_id,
-          ingrediente_semielaborado_id: linea.ingrediente_semielaborado_id,
-          nombre: esArticulo ? linea.articulos_compra?.nombre : linea.semielaborados?.nombre,
-          unidad: esArticulo ? linea.articulos_compra?.unidad : linea.semielaborados?.unidad,
-          cantidadOrientativa: linea.cantidad,
-          lotes,
-        }
-      })
-    )
-
-    setIngredientes(conLotes)
+    setIngredientes(await cargarIngredientesConLotes(produccion.producto_final_id))
     setCargandoIngredientes(false)
   }
 
@@ -258,14 +252,6 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     const cant = parseFloat(cantidad)
     if (!loteId || !cant || cant <= 0) {
       alert('Selecciona un lote e introduce una cantidad válida')
-      return
-    }
-
-    const lote = ingrediente.lotes.find((l) =>
-      ingrediente.esArticulo ? l.entrada_material_id === parseInt(loteId) : l.produccion_id === parseInt(loteId)
-    )
-    if (cant > lote.stock_disponible) {
-      alert(`Solo quedan ${lote.stock_disponible.toFixed(3)} ${ingrediente.unidad} disponibles en ese lote`)
       return
     }
 
@@ -319,30 +305,29 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 border-l-4 border-amber-400">
+    <Card className="p-4 border-l-4 border-l-amber-400!">
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-semibold">{produccion.productos_finales?.nombre} <span className="text-amber-600 text-sm font-normal">— en curso</span></p>
-          <p className="text-sm text-slate-500">Iniciada el {produccion.fecha}</p>
+          <p className="font-semibold text-[#1C2938]">{produccion.productos_finales?.nombre} <span className="text-amber-600 text-sm font-normal">— en curso</span></p>
+          <p className="text-sm text-gray-500">
+            Iniciada el {produccion.fecha}
+            {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
+          </p>
         </div>
-        <button onClick={onCancelar} className="text-red-600 hover:underline text-sm">
-          Cancelar producción
-        </button>
+        <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
       </div>
 
       {produccion.consumo_produccion_pf.length > 0 && (
         <table className="w-full mt-3 text-sm">
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {produccion.consumo_produccion_pf.map((c) => {
-              const ingrediente = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
+              const { nombre, unidad } = nombreIngredienteDeLinea(c)
               return (
-                <tr key={c.id} className="border-t">
-                  <td className="py-1 text-slate-500">{ingrediente?.nombre}</td>
-                  <td className="py-1">{c.cantidad} {ingrediente?.unidad}</td>
-                  <td className="py-1">
-                    <button onClick={() => quitarConsumo(c.id)} className="text-red-600 hover:underline text-xs">
-                      Quitar
-                    </button>
+                <tr key={c.id}>
+                  <td className="py-1.5 text-gray-500">{nombre}</td>
+                  <td className="py-1.5">{c.cantidad} {unidad}</td>
+                  <td className="py-1.5 text-right">
+                    <LinkAction tone="red" onClick={() => quitarConsumo(c.id)} className="text-xs">Quitar</LinkAction>
                   </td>
                 </tr>
               )
@@ -353,7 +338,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-slate-600">Registrar consumo</h3>
+          <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
           {ingredientes.map((ing) => (
             <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
@@ -362,28 +347,23 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         </div>
       )}
 
-      <div className="border-t mt-4 pt-4">
+      <div className="border-t border-gray-100 mt-4 pt-4">
         {!cerrando ? (
-          <button onClick={() => setCerrando(true)}
-            className="bg-green-700 text-white rounded px-4 py-2 text-sm hover:bg-green-800">
+          <Button variant="success" size="sm" onClick={() => setCerrando(true)}>
             Cerrar producción (indicar cantidad neta)
-          </button>
+          </Button>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input type="number" step="0.001" placeholder="Cantidad producida (unidades)"
+            <Input type="number" step="0.001" placeholder="Cantidad producida (unidades)"
               value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
-              className="border rounded px-3 py-2" autoFocus />
-            <input type="text" placeholder="Notas (mermas, incidencias...)"
-              value={notas} onChange={(e) => setNotas(e.target.value)}
-              className="border rounded px-3 py-2" />
-            <button onClick={cerrarProduccion}
-              className="bg-green-700 text-white rounded px-4 py-2 hover:bg-green-800">
-              Confirmar cierre
-            </button>
+              autoFocus title="Se redondeará a 3 decimales" />
+            <Input type="text" placeholder="Notas (mermas, incidencias...)"
+              value={notas} onChange={(e) => setNotas(e.target.value)} />
+            <Button variant="success" onClick={cerrarProduccion}>Confirmar cierre</Button>
           </div>
         )}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -398,17 +378,17 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
   }
 
   return (
-    <div className="border rounded-lg p-3">
-      <p className="text-sm font-medium text-slate-700">
+    <div className="border border-gray-200 rounded-md p-3">
+      <p className="text-sm font-medium text-gray-700">
         {ingrediente.nombre}
-        <span className="text-slate-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
+        <span className="text-gray-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
       </p>
 
       {ingrediente.lotes.length === 0 ? (
         <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-2 mt-2 items-center">
-          <select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="border rounded px-3 py-2 text-sm">
+          <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
             <option value="">Selecciona lote</option>
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
@@ -417,16 +397,212 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
                 : `Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
               return <option key={id} value={id}>{label}</option>
             })}
-          </select>
-          <input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+          </Select>
+          <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
-            className="border rounded px-3 py-2 text-sm" />
-          <button type="button" onClick={handleAdd} className="text-blue-600 hover:underline text-sm">
-            + Registrar consumo
-          </button>
+            className="text-sm" title="Se redondeará a 3 decimales" />
+          <LinkAction tone="blue" onClick={handleAdd}>+ Registrar consumo</LinkAction>
         </div>
       )}
     </div>
+  )
+}
+
+function ProduccionCerrada({ produccion, onCambio, onBorrar }) {
+  const [editando, setEditando] = useState(false)
+
+  if (!editando) {
+    return (
+      <Card className="p-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="font-semibold text-[#1C2938]">
+              {produccion.cantidad_producida} uds. de {produccion.productos_finales?.nombre}
+              {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+            </p>
+            <p className="text-sm text-gray-500">
+              {produccion.fecha}
+              {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
+            </p>
+            {produccion.notas && <p className="text-sm text-gray-400 italic">{produccion.notas}</p>}
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <LinkAction tone="blue" onClick={() => setEditando(true)}>Editar</LinkAction>
+            <LinkAction tone="red" onClick={onBorrar}>Borrar</LinkAction>
+          </div>
+        </div>
+        <table className="w-full mt-3 text-sm">
+          <tbody className="divide-y divide-gray-100">
+            {produccion.consumo_produccion_pf.map((c) => {
+              const { nombre, unidad } = nombreIngredienteDeLinea(c)
+              return (
+                <tr key={c.id}>
+                  <td className="py-1.5 text-gray-500">Consumido: {nombre}</td>
+                  <td className="py-1.5">{c.cantidad} {unidad}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </Card>
+    )
+  }
+
+  return (
+    <ProduccionCerradaEdicion
+      produccion={produccion}
+      onCancelar={() => setEditando(false)}
+      onGuardado={() => { setEditando(false); onCambio() }}
+    />
+  )
+}
+
+function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
+  const [fecha, setFecha] = useState(produccion.fecha)
+  const [cantidadProducida, setCantidadProducida] = useState(String(produccion.cantidad_producida))
+  const [notas, setNotas] = useState(produccion.notas ?? '')
+  const [lineas, setLineas] = useState(() =>
+    produccion.consumo_produccion_pf.map((c) => {
+      const { nombre, unidad } = nombreIngredienteDeLinea(c)
+      return {
+        id: c.id,
+        entrada_material_id: c.entrada_material_id,
+        produccion_origen_id: c.produccion_origen_id,
+        cantidad: String(c.cantidad),
+        _deleted: false,
+        _nombre: nombre,
+        _unidad: unidad,
+      }
+    })
+  )
+  const [ingredientes, setIngredientes] = useState([])
+  const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+
+  useEffect(() => {
+    cargarIngredientesConLotes(produccion.producto_final_id).then((ings) => {
+      setIngredientes(ings)
+      setCargandoIngredientes(false)
+    })
+  }, [])
+
+  function cambiarCantidadLinea(index, valor) {
+    setLineas((prev) => prev.map((l, i) => (i === index ? { ...l, cantidad: valor } : l)))
+  }
+
+  function quitarLinea(index) {
+    setLineas((prev) => prev.map((l, i) => (i === index ? { ...l, _deleted: true } : l)))
+  }
+
+  function anadirLinea(ingrediente, loteId, cantidad) {
+    const cant = parseFloat(cantidad)
+    if (!loteId || !cant || cant <= 0) {
+      alert('Selecciona un lote e introduce una cantidad válida')
+      return
+    }
+    setLineas((prev) => [
+      ...prev,
+      {
+        id: null,
+        entrada_material_id: ingrediente.esArticulo ? parseInt(loteId) : null,
+        produccion_origen_id: ingrediente.esArticulo ? null : parseInt(loteId),
+        cantidad: String(cant),
+        _deleted: false,
+        _nombre: ingrediente.nombre,
+        _unidad: ingrediente.unidad,
+      },
+    ])
+  }
+
+  async function guardar() {
+    if (!cantidadProducida || parseFloat(cantidadProducida) <= 0) {
+      alert('Indica una cantidad producida válida')
+      return
+    }
+
+    setGuardando(true)
+
+    const p_lineas = lineas.map((l) => ({
+      id: l.id,
+      entrada_material_id: l.entrada_material_id,
+      produccion_origen_id: l.produccion_origen_id,
+      cantidad: parseFloat(l.cantidad),
+      _deleted: l._deleted,
+    }))
+
+    const { error } = await supabase.rpc('rpc_editar_produccion_producto_final', {
+      p_id: produccion.id,
+      p_fecha: fecha,
+      p_cantidad_producida: parseFloat(cantidadProducida),
+      p_notas: notas || null,
+      p_lineas,
+    })
+
+    setGuardando(false)
+
+    if (error) {
+      alert('Edición inválida: ' + error.message)
+      return
+    }
+
+    onGuardado()
+  }
+
+  return (
+    <Card className="p-4 border-l-4 border-l-[#0854A0]!">
+      <p className="font-semibold text-[#1C2938] mb-3">
+        Editando producción de {produccion.productos_finales?.nombre}
+        {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Field label="Fecha">
+          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+        </Field>
+        <Field label="Cantidad producida (unidades)">
+          <Input type="number" step="0.001" value={cantidadProducida}
+            onChange={(e) => setCantidadProducida(e.target.value)} title="Se redondeará a 3 decimales" />
+        </Field>
+        <Field label="Notas">
+          <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
+        </Field>
+      </div>
+
+      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">Líneas de consumo</p>
+      <div className="flex flex-col gap-2">
+        {lineas.filter((l) => !l._deleted).map((linea) => {
+          const index = lineas.indexOf(linea)
+          return (
+            <div key={index} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-center border border-gray-200 rounded-md p-2">
+              <span className="text-sm text-gray-600">{linea._nombre}</span>
+              <Input type="number" step="0.001" value={linea.cantidad}
+                onChange={(e) => cambiarCantidadLinea(index, e.target.value)}
+                className="text-sm" title="Se redondeará a 3 decimales" />
+              <button type="button" onClick={() => quitarLinea(index)} className="text-gray-400 hover:text-red-600 justify-self-center">
+                <IconTrash size={16} />
+              </button>
+            </div>
+          )
+        })}
+        {lineas.every((l) => l._deleted) && <p className="text-sm text-gray-400">Sin líneas de consumo.</p>}
+      </div>
+
+      {!cargandoIngredientes && (
+        <div className="mt-3 flex flex-col gap-2">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Añadir más consumo</p>
+          {ingredientes.map((ing) => (
+            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_semielaborado_id}`}
+              ingrediente={ing}
+              onAdd={(loteId, cantidad) => anadirLinea(ing, loteId, cantidad)} />
+          ))}
+        </div>
+      )}
+
+      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+        <Button onClick={guardar} disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</Button>
+        <Button variant="secondary" onClick={onCancelar} disabled={guardando}>Cancelar</Button>
+      </div>
+    </Card>
   )
 }
 

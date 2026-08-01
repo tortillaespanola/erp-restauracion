@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconThermometer, IconPlus } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, EmptyState, LoadingState } from '../components/ui'
 
 const vacio = {
   nombre: '', unidad: '', categoria: '', iva: '', codigo: '', tipo_material: 'RM',
@@ -99,123 +101,119 @@ function Articulos() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Artículos de compra</h1>
+    <div>
+      <PageHeader title="Artículos de compra" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-3">
-        <h2 className="font-semibold text-slate-700">
-          {editandoId ? 'Editar artículo' : 'Nuevo artículo'}
-        </h2>
+      <Card className="mb-6">
+        <CardHeader title={editandoId ? 'Editar artículo' : 'Nuevo artículo'} />
+        <CardBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <Field label="Nombre">
+              <Input type="text" placeholder="Ej. Tomate pera" value={form.nombre}
+                onChange={(e) => handleChange('nombre', e.target.value)} required />
+            </Field>
 
-        <input type="text" placeholder="Nombre" value={form.nombre}
-          onChange={(e) => handleChange('nombre', e.target.value)}
-          required className="border rounded px-3 py-2" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Código corto">
+                <Input type="text" placeholder="Ej. KRT" value={form.codigo}
+                  onChange={(e) => handleChange('codigo', e.target.value)} />
+              </Field>
+              <Field label="Tipo de material">
+                <Select value={form.tipo_material} onChange={(e) => handleChange('tipo_material', e.target.value)}>
+                  <option value="RM">Materia prima (RM)</option>
+                  <option value="AUX">Material auxiliar (AUX)</option>
+                  <option value="TRD">Mercadería (TRD)</option>
+                </Select>
+              </Field>
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <input type="text" placeholder="Código corto (ej. KRT)" value={form.codigo}
-            onChange={(e) => handleChange('codigo', e.target.value)}
-            className="border rounded px-3 py-2" />
-          <select value={form.tipo_material}
-            onChange={(e) => handleChange('tipo_material', e.target.value)}
-            className="border rounded px-3 py-2">
-            <option value="RM">Materia prima (RM)</option>
-            <option value="AUX">Material auxiliar (AUX)</option>
-            <option value="TRD">Mercadería (TRD)</option>
-          </select>
-        </div>
+            <Field label="Unidad">
+              <Input type="text" placeholder="kg, l, ud..." value={form.unidad}
+                onChange={(e) => handleChange('unidad', e.target.value)} required />
+            </Field>
 
-        <input type="text" placeholder="Unidad (kg, l, ud...)" value={form.unidad}
-          onChange={(e) => handleChange('unidad', e.target.value)}
-          required className="border rounded px-3 py-2" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Categoría">
+                <Input type="text" placeholder="Ej. Carnes, Bebidas..." value={form.categoria}
+                  onChange={(e) => handleChange('categoria', e.target.value)} />
+              </Field>
+              <Field label="IVA (%)">
+                <Input type="number" step="0.01" placeholder="0.00" value={form.iva}
+                  onChange={(e) => handleChange('iva', e.target.value)} />
+              </Field>
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <input type="text" placeholder="Categoría (ej. Carnes, Bebidas...)" value={form.categoria}
-            onChange={(e) => handleChange('categoria', e.target.value)}
-            className="border rounded px-3 py-2" />
-          <input type="number" step="0.01" placeholder="IVA (%)" value={form.iva}
-            onChange={(e) => handleChange('iva', e.target.value)}
-            className="border rounded px-3 py-2" />
-        </div>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={form.requiere_control_temperatura}
+                onChange={(e) => handleChange('requiere_control_temperatura', e.target.checked)} />
+              Requiere control de temperatura en la recepción
+            </label>
 
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={form.requiere_control_temperatura}
-            onChange={(e) => handleChange('requiere_control_temperatura', e.target.checked)} />
-          Requiere control de temperatura en la recepción
-        </label>
-
-        {form.requiere_control_temperatura && (
-          <div className="grid grid-cols-2 gap-3 pl-6">
-            <input type="number" step="0.1" placeholder="Temperatura mín. aceptable (°C)"
-              value={form.temperatura_min}
-              onChange={(e) => handleChange('temperatura_min', e.target.value)}
-              className="border rounded px-3 py-2 text-sm" />
-            <input type="number" step="0.1" placeholder="Temperatura máx. aceptable (°C)"
-              value={form.temperatura_max}
-              onChange={(e) => handleChange('temperatura_max', e.target.value)}
-              className="border rounded px-3 py-2 text-sm" />
-          </div>
-        )}
-
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
-            {editandoId ? 'Guardar cambios' : 'Guardar artículo'}
-          </button>
-          {editandoId && (
-            <button type="button" onClick={handleCancelar}
-              className="bg-slate-200 text-slate-700 rounded px-4 py-2 hover:bg-slate-300">
-              Cancelar
-            </button>
-          )}
-        </div>
-        {!editandoId && (
-          <p className="text-xs text-slate-400">
-            Podrás asignar proveedores y precios después de guardar el artículo.
-          </p>
-        )}
-      </form>
-
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
-
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : articulos.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay artículos dados de alta.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {articulos.map((a) => (
-              <div key={a.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">
-                      {a.nombre} {a.codigo && <span className="text-slate-400 font-mono text-xs">({a.codigo})</span>}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {a.unidad} · {a.categoria ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'} · {a.tipo_material}
-                      {a.requiere_control_temperatura && (
-                        <span className="ml-2 text-blue-600">
-                          🌡️ Control temperatura
-                          {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => handleEditar(a)} className="text-blue-600 hover:underline text-sm">
-                      Editar
-                    </button>
-                    <button onClick={() => handleBorrar(a.id)} className="text-red-600 hover:underline text-sm">
-                      Borrar
-                    </button>
-                  </div>
-                </div>
-
-                <ProveedoresDelArticulo articulo={a} onCambio={cargarDatos} />
+            {form.requiere_control_temperatura && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+                <Field label="Temperatura mín. aceptable (°C)">
+                  <Input type="number" step="0.1" value={form.temperatura_min}
+                    onChange={(e) => handleChange('temperatura_min', e.target.value)} />
+                </Field>
+                <Field label="Temperatura máx. aceptable (°C)">
+                  <Input type="number" step="0.1" value={form.temperatura_max}
+                    onChange={(e) => handleChange('temperatura_max', e.target.value)} />
+                </Field>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
+
+            <div className="flex gap-2 mt-1 items-center">
+              <Button type="submit">
+                {editandoId ? 'Guardar cambios' : <><IconPlus size={15} /> Guardar artículo</>}
+              </Button>
+              {editandoId && (
+                <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
+              )}
+              {!editandoId && (
+                <p className="text-xs text-gray-400">Podrás asignar proveedores y precios después de guardar el artículo.</p>
+              )}
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+
+      {cargando ? (
+        <LoadingState />
+      ) : articulos.length === 0 ? (
+        <Card><EmptyState>Todavía no hay artículos dados de alta.</EmptyState></Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {articulos.map((a) => (
+            <Card key={a.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-[#1C2938]">
+                    {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
+                  </p>
+                  <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
+                    <span>{a.unidad} · {a.categoria ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
+                    <Badge color="gray">{a.tipo_material}</Badge>
+                    {a.requiere_control_temperatura && (
+                      <span className="text-[#0854A0] flex items-center gap-1">
+                        <IconThermometer size={14} /> Control temperatura
+                        {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <div className="flex gap-3 shrink-0">
+                  <LinkAction tone="blue" onClick={() => handleEditar(a)}>Editar</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(a.id)}>Borrar</LinkAction>
+                </div>
+              </div>
+
+              <ProveedoresDelArticulo articulo={a} onCambio={cargarDatos} />
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -317,68 +315,56 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
   }
 
   return (
-    <div className="mt-3 border-t pt-3">
-      <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Proveedores</p>
+    <div className="mt-3 border-t border-gray-100 pt-3">
+      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Proveedores</p>
 
       {articulo.articulo_proveedor.length === 0 ? (
-        <p className="text-sm text-slate-400 mb-2">Sin proveedores asignados todavía.</p>
+        <p className="text-sm text-gray-400 mb-2">Sin proveedores asignados todavía.</p>
       ) : (
         <table className="w-full text-sm mb-2">
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {articulo.articulo_proveedor.map((ap) => {
               const enEdicion = editandoRelacionId === ap.id
 
               if (enEdicion) {
                 return (
-                  <tr key={ap.id} className="border-t bg-blue-50/50">
-                    <td className="py-1">
+                  <tr key={ap.id} className="bg-blue-50/50">
+                    <td className="py-1.5">
                       {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
                       {ap.proveedores?.nombre_comercial}
                     </td>
-                    <td className="py-1">
-                      <input type="number" step="0.01" value={precioEdit}
+                    <td className="py-1.5">
+                      <Input type="number" step="0.01" value={precioEdit}
                         onChange={(e) => setPrecioEdit(e.target.value)}
-                        placeholder="Precio"
-                        className="border rounded px-2 py-1 text-sm w-24" />
+                        placeholder="Precio" className="w-24" />
                     </td>
-                    <td className="py-1">
-                      <input type="text" value={referenciaEdit}
+                    <td className="py-1.5">
+                      <Input type="text" value={referenciaEdit}
                         onChange={(e) => setReferenciaEdit(e.target.value)}
-                        placeholder="Ref."
-                        className="border rounded px-2 py-1 text-sm w-full" />
+                        placeholder="Ref." />
                     </td>
-                    <td className="py-1 text-right whitespace-nowrap">
-                      <button onClick={() => handleGuardarEdicion(ap.id)} className="text-green-700 hover:underline text-xs mr-3">
-                        Guardar
-                      </button>
-                      <button onClick={handleCancelarEdicion} className="text-slate-500 hover:underline text-xs">
-                        Cancelar
-                      </button>
+                    <td className="py-1.5 text-right whitespace-nowrap">
+                      <LinkAction tone="green" onClick={() => handleGuardarEdicion(ap.id)} className="text-xs mr-3">Guardar</LinkAction>
+                      <LinkAction tone="gray" onClick={handleCancelarEdicion} className="text-xs">Cancelar</LinkAction>
                     </td>
                   </tr>
                 )
               }
 
               return (
-                <tr key={ap.id} className="border-t">
-                  <td className="py-1">
+                <tr key={ap.id} className="hover:bg-blue-50/40">
+                  <td className="py-1.5">
                     {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
                     {ap.proveedores?.nombre_comercial}
                   </td>
-                  <td className="py-1">{ap.precio != null ? `${ap.precio} €` : '-'}</td>
-                  <td className="py-1 text-slate-400">{ap.referencia_proveedor ?? '-'}</td>
-                  <td className="py-1 text-right whitespace-nowrap">
-                    <button onClick={() => handleEmpezarEdicion(ap)} className="text-blue-600 hover:underline text-xs mr-3">
-                      Editar
-                    </button>
+                  <td className="py-1.5">{ap.precio != null ? `${ap.precio} €` : '-'}</td>
+                  <td className="py-1.5 text-gray-400">{ap.referencia_proveedor ?? '-'}</td>
+                  <td className="py-1.5 text-right whitespace-nowrap">
+                    <LinkAction tone="blue" onClick={() => handleEmpezarEdicion(ap)} className="text-xs mr-3">Editar</LinkAction>
                     {!ap.preferente && (
-                      <button onClick={() => handleMarcarPreferente(ap.id)} className="text-amber-600 hover:underline text-xs mr-3">
-                        Marcar preferente
-                      </button>
+                      <LinkAction tone="amber" onClick={() => handleMarcarPreferente(ap.id)} className="text-xs mr-3">Marcar preferente</LinkAction>
                     )}
-                    <button onClick={() => handleQuitar(ap.id)} className="text-red-600 hover:underline text-xs">
-                      Quitar
-                    </button>
+                    <LinkAction tone="red" onClick={() => handleQuitar(ap.id)} className="text-xs">Quitar</LinkAction>
                   </td>
                 </tr>
               )
@@ -389,25 +375,21 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
 
       {disponibles.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2">
-          <select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
-            className="border rounded px-2 py-1.5 text-sm">
+          <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} className="text-sm">
             <option value="">Añadir proveedor...</option>
             {disponibles.map((p) => (
               <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
             ))}
-          </select>
-          <input type="number" step="0.01" placeholder="Precio" value={precio}
-            onChange={(e) => setPrecio(e.target.value)}
-            className="border rounded px-2 py-1.5 text-sm" />
-          <input type="text" placeholder="Ref. proveedor" value={referencia}
-            onChange={(e) => setReferencia(e.target.value)}
-            className="border rounded px-2 py-1.5 text-sm" />
-          <button type="button" onClick={handleAdd} className="text-blue-600 hover:underline text-sm">
-            + Añadir
-          </button>
+          </Select>
+          <Input type="number" step="0.01" placeholder="Precio" value={precio}
+            onChange={(e) => setPrecio(e.target.value)} className="text-sm" />
+          <Input type="text" placeholder="Ref. proveedor" value={referencia}
+            onChange={(e) => setReferencia(e.target.value)} className="text-sm" />
+          <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
         </div>
       )}
     </div>
   )
 }
+
 export default Articulos

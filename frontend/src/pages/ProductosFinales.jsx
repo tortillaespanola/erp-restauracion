@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconTrash, IconPlus } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 const lineaVacia = { tipo: 'articulo', articulo_id: '', ingrediente_semielaborado_id: '', cantidad: '' }
 
@@ -198,153 +200,143 @@ function ProductosFinales() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Productos finales</h1>
+    <div>
+      <PageHeader title="Productos finales" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-4">
-        <h2 className="font-semibold text-slate-700">
-          {editandoId ? 'Editar producto final' : 'Nuevo producto final'}
-        </h2>
+      <Card className="mb-6">
+        <CardHeader title={editandoId ? 'Editar producto final' : 'Nuevo producto final'} />
+        <CardBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Field label="Nombre">
+                <Input type="text" placeholder="Ej. Paella valenciana" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+              </Field>
+              <Field label="Código corto">
+                <Input type="text" placeholder="Ej. PAE" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              </Field>
+              <Field label="Precio de venta">
+                <Input type="number" step="0.01" value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} />
+              </Field>
+            </div>
+            <Field label="Notas (opcional)">
+              <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
+            </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input type="text" placeholder="Nombre (ej. Paella valenciana)" value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            required className="border rounded px-3 py-2" />
-          <input type="text" placeholder="Código corto (ej. PAE)" value={codigo}
-            onChange={(e) => setCodigo(e.target.value)}
-            className="border rounded px-3 py-2" />
-          <input type="number" step="0.01" placeholder="Precio de venta" value={precioVenta}
-            onChange={(e) => setPrecioVenta(e.target.value)}
-            className="border rounded px-3 py-2" />
-        </div>
-        <input type="text" placeholder="Notas (opcional)" value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          className="border rounded px-3 py-2" />
+            <div>
+              <SectionLabel>Receta (ingredientes)</SectionLabel>
+              <div className="flex flex-col gap-3">
+                {lineas.map((linea, index) => (
+                  <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
+                    <div className="flex gap-4 text-sm">
+                      <label className="flex items-center gap-1.5">
+                        <input type="radio" checked={linea.tipo === 'articulo'}
+                          onChange={() => handleLineaChange(index, 'tipo', 'articulo')} />
+                        Artículo de compra
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        <input type="radio" checked={linea.tipo === 'semielaborado'}
+                          onChange={() => handleLineaChange(index, 'tipo', 'semielaborado')} />
+                        Semielaborado
+                      </label>
+                    </div>
 
-        <div>
-          <h3 className="text-sm font-semibold text-slate-600 mb-2">Receta (ingredientes)</h3>
-          <div className="flex flex-col gap-3">
-            {lineas.map((linea, index) => (
-              <div key={index} className="border rounded-lg p-3 flex flex-col gap-2">
-                <div className="flex gap-4 text-sm">
-                  <label className="flex items-center gap-1">
-                    <input type="radio" checked={linea.tipo === 'articulo'}
-                      onChange={() => handleLineaChange(index, 'tipo', 'articulo')} />
-                    Artículo de compra
-                  </label>
-                  <label className="flex items-center gap-1">
-                    <input type="radio" checked={linea.tipo === 'semielaborado'}
-                      onChange={() => handleLineaChange(index, 'tipo', 'semielaborado')} />
-                    Semielaborado
-                  </label>
+                    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-2 items-center">
+                      {linea.tipo === 'articulo' ? (
+                        <Select value={linea.articulo_id}
+                          onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
+                          required>
+                          <option value="">Selecciona artículo</option>
+                          {articulos.map((a) => (
+                            <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Select value={linea.ingrediente_semielaborado_id}
+                          onChange={(e) => handleLineaChange(index, 'ingrediente_semielaborado_id', e.target.value)}
+                          required>
+                          <option value="">Selecciona semielaborado</option>
+                          {semielaborados.map((s) => (
+                            <option key={s.id} value={s.id}>{s.nombre} ({s.unidad})</option>
+                          ))}
+                        </Select>
+                      )}
+                      <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                        onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
+                        required title="Se redondeará a 3 decimales" />
+                      <button type="button" onClick={() => removeLinea(index)}
+                        className="text-gray-400 hover:text-red-600 justify-self-center">
+                        <IconTrash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addLinea}
+                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+                <IconPlus size={15} /> Añadir ingrediente
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar producto final'}</Button>
+              {editandoId && (
+                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar</Button>
+              )}
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+
+      {cargando ? (
+        <LoadingState />
+      ) : productos.length === 0 ? (
+        <Card><EmptyState>Todavía no hay productos finales dados de alta.</EmptyState></Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {productos.map((p) => (
+            <Card key={p.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-[#1C2938]">
+                    {p.nombre} {p.codigo && <span className="text-gray-400 font-mono text-xs">({p.codigo})</span>}
+                  </p>
+                  {p.precio_venta != null && <p className="text-sm text-gray-500">Precio: {p.precio_venta} €</p>}
+                  {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-2 items-center">
-                  {linea.tipo === 'articulo' ? (
-                    <select value={linea.articulo_id}
-                      onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                      required className="border rounded px-3 py-2">
-                      <option value="">Selecciona artículo</option>
-                      {articulos.map((a) => (
-                        <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select value={linea.ingrediente_semielaborado_id}
-                      onChange={(e) => handleLineaChange(index, 'ingrediente_semielaborado_id', e.target.value)}
-                      required className="border rounded px-3 py-2">
-                      <option value="">Selecciona semielaborado</option>
-                      {semielaborados.map((s) => (
-                        <option key={s.id} value={s.id}>{s.nombre} ({s.unidad})</option>
-                      ))}
-                    </select>
-                  )}
-                  <input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
-                    onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                    required className="border rounded px-3 py-2" />
-                  <button type="button" onClick={() => removeLinea(index)}
-                    className="text-red-600 hover:underline text-sm">
-                    Quitar
-                  </button>
+                <div className="flex gap-3 shrink-0">
+                  <LinkAction tone="blue" onClick={() => handleEditar(p)}>Editar</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(p.id)}>Borrar</LinkAction>
                 </div>
               </div>
-            ))}
-          </div>
-          <button type="button" onClick={addLinea}
-            className="mt-2 text-sm text-blue-600 hover:underline">
-            + Añadir ingrediente
-          </button>
+
+              <table className="w-full mt-3 text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                    <th className="py-1.5 font-medium">Ingrediente</th>
+                    <th className="py-1.5 font-medium">Tipo</th>
+                    <th className="py-1.5 font-medium">Cantidad</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {p.receta_producto_final.map((linea) => {
+                    const esArticulo = !!linea.articulos_compra
+                    const ingrediente = esArticulo ? linea.articulos_compra : linea.semielaborados
+                    return (
+                      <tr key={linea.id}>
+                        <td className="py-1.5">{ingrediente?.nombre ?? '—'}</td>
+                        <td className="py-1.5 text-gray-400">{esArticulo ? 'Artículo' : 'Semielaborado'}</td>
+                        <td className="py-1.5">{linea.cantidad} {ingrediente?.unidad}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          ))}
         </div>
-
-        <div className="flex gap-2">
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
-            {editandoId ? 'Guardar cambios' : 'Guardar producto final'}
-          </button>
-          {editandoId && (
-            <button type="button" onClick={resetForm}
-              className="bg-slate-200 text-slate-700 rounded px-4 py-2 hover:bg-slate-300">
-              Cancelar
-            </button>
-          )}
-        </div>
-      </form>
-
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
-
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : productos.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay productos finales dados de alta.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {productos.map((p) => (
-              <div key={p.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">
-                      {p.nombre} {p.codigo && <span className="text-slate-400 font-mono text-xs">({p.codigo})</span>}
-                    </p>
-                    {p.precio_venta != null && <p className="text-sm text-slate-500">Precio: {p.precio_venta} €</p>}
-                    {p.notas && <p className="text-sm text-slate-400 italic">{p.notas}</p>}
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => handleEditar(p)} className="text-blue-600 hover:underline text-sm">
-                      Editar
-                    </button>
-                    <button onClick={() => handleBorrar(p.id)} className="text-red-600 hover:underline text-sm">
-                      Borrar
-                    </button>
-                  </div>
-                </div>
-
-                <table className="w-full mt-3 text-sm">
-                  <thead className="text-left text-slate-500">
-                    <tr>
-                      <th className="py-1">Ingrediente</th>
-                      <th className="py-1">Tipo</th>
-                      <th className="py-1">Cantidad</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {p.receta_producto_final.map((linea) => {
-                      const esArticulo = !!linea.articulos_compra
-                      const ingrediente = esArticulo ? linea.articulos_compra : linea.semielaborados
-                      return (
-                        <tr key={linea.id} className="border-t">
-                          <td className="py-1">{ingrediente?.nombre ?? '—'}</td>
-                          <td className="py-1 text-slate-400">{esArticulo ? 'Artículo' : 'Semielaborado'}</td>
-                          <td className="py-1">{linea.cantidad} {ingrediente?.unidad}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

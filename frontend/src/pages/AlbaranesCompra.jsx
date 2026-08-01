@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false }
 
@@ -285,194 +287,187 @@ function AlbaranesCompra() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Albaranes de compra</h1>
+    <div>
+      <PageHeader title="Albaranes de compra" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-4">
-        <h2 className="font-semibold text-slate-700">
-          {editandoId ? 'Editar albarán' : 'Nuevo albarán'}
-        </h2>
+      <Card className="mb-6">
+        <CardHeader title={editandoId ? 'Editar albarán' : 'Nuevo albarán'} />
+        <CardBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Field label="Proveedor">
+                <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
+                  required disabled={!!editandoId}>
+                  <option value="">Selecciona proveedor</option>
+                  {proveedores.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Nº albarán del proveedor">
+                <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
+              </Field>
+              <Field label="Fecha">
+                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+              </Field>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
-            required disabled={!!editandoId}
-            className="border rounded px-3 py-2 disabled:bg-slate-100">
-            <option value="">Selecciona proveedor</option>
-            {proveedores.map((p) => (
-              <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
-            ))}
-          </select>
-          <input type="text" placeholder="Nº albarán del proveedor" value={numeroAlbaran}
-            onChange={(e) => setNumeroAlbaran(e.target.value)}
-            className="border rounded px-3 py-2" />
-          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
-            required className="border rounded px-3 py-2" />
-        </div>
+            {proveedorId && articulosDelProveedor.length === 0 && (
+              <p className="text-sm text-amber-600 flex items-center gap-1.5">
+                <IconAlertTriangle size={15} />
+                Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.
+              </p>
+            )}
 
-        {proveedorId && articulosDelProveedor.length === 0 && (
-          <p className="text-sm text-amber-600">
-            Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.
-          </p>
-        )}
-
-        <div>
-          <h3 className="text-sm font-semibold text-slate-600 mb-2">Líneas</h3>
-          <div className="flex flex-col gap-3">
-            {lineas.map((linea, index) => {
-              if (linea.locked) {
-                const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
-                return (
-                  <div key={index} className="border rounded-lg p-3 bg-slate-50 text-sm text-slate-500">
-                    🔒 {art?.nombre ?? 'Artículo'} · {linea.cantidad} · {linea.precio || '-'}
-                    <span className="block text-xs mt-1">Esta línea ya está consumida/ajustada y no se puede modificar.</span>
-                  </div>
-                )
-              }
-
-              return (
-                <div key={index} className="border rounded-lg p-3 flex flex-col gap-2">
-                  <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
-                    <select value={linea.articulo_id}
-                      onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                      required disabled={!proveedorId}
-                      className="border rounded px-3 py-2 disabled:bg-slate-100">
-                      <option value="">
-                        {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
-                      </option>
-                      {articulosDelProveedor.map((a) => (
-                        <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                      ))}
-                    </select>
-                    <input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
-                      onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                      required className="border rounded px-3 py-2" />
-                    <input type="number" step="0.01" placeholder="Precio" value={linea.precio}
-                      onChange={(e) => handleLineaChange(index, 'precio', e.target.value)}
-                      className="border rounded px-3 py-2" />
-                    <input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
-                      onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
-                      className="border rounded px-3 py-2 text-sm" title="Fecha de caducidad (opcional)" />
-                    <button type="button" onClick={() => removeLinea(index)}
-                      className="text-red-600 hover:underline text-sm">
-                      Quitar
-                    </button>
-                  </div>
-
-                  {(() => {
+            <div>
+              <SectionLabel>Líneas</SectionLabel>
+              <div className="flex flex-col gap-3">
+                {lineas.map((linea, index) => {
+                  if (linea.locked) {
                     const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
-                    if (!art?.requiereTemperatura) return null
-
-                    const temp = parseFloat(linea.temperatura)
-                    const fueraDeRango = linea.temperatura !== '' &&
-                      ((art.temperaturaMin != null && temp < art.temperaturaMin) ||
-                       (art.temperaturaMax != null && temp > art.temperaturaMax))
-
                     return (
-                      <div>
-                        <input type="number" step="0.1"
-                          placeholder={`Temperatura de recepción (°C)${art.temperaturaMin != null && art.temperaturaMax != null ? ` — rango: ${art.temperaturaMin} a ${art.temperaturaMax}` : ''}`}
-                          value={linea.temperatura}
-                          onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
-                          className={`border-2 rounded px-3 py-2 text-sm w-full ${fueraDeRango ? 'border-red-400 bg-red-50' : 'border-blue-200'}`} />
-                        {fueraDeRango && (
-                          <p className="text-red-600 text-xs mt-1">
-                            ⚠️ Fuera del rango aceptable ({art.temperaturaMin}°C a {art.temperaturaMax}°C)
-                          </p>
-                        )}
+                      <div key={index} className="border border-gray-200 rounded-md p-3 bg-gray-50 text-sm text-gray-500 flex items-start gap-2">
+                        <IconLock size={15} className="mt-0.5 shrink-0" />
+                        <div>
+                          {art?.nombre ?? 'Artículo'} · {linea.cantidad} · {linea.precio || '-'}
+                          <span className="block text-xs mt-1">Esta línea ya está consumida/ajustada y no se puede modificar.</span>
+                        </div>
                       </div>
                     )
-                  })()}
+                  }
 
-                  <input type="text" placeholder="Notas (temperatura de recepción, incidencias...)"
-                    value={linea.notas}
-                    onChange={(e) => handleLineaChange(index, 'notas', e.target.value)}
-                    className="border rounded px-3 py-2 text-sm" />
-                </div>
-              )
-            })}
-          </div>
-          <button type="button" onClick={addLinea}
-            className="mt-2 text-sm text-blue-600 hover:underline">
-            + Añadir línea
-          </button>
-        </div>
+                  return (
+                    <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
+                        <Select value={linea.articulo_id}
+                          onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
+                          required disabled={!proveedorId}>
+                          <option value="">
+                            {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
+                          </option>
+                          {articulosDelProveedor.map((a) => (
+                            <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                          ))}
+                        </Select>
+                        <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                          onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
+                          required title="Se redondeará a 3 decimales" />
+                        <Input type="number" step="0.01" placeholder="Precio" value={linea.precio}
+                          onChange={(e) => handleLineaChange(index, 'precio', e.target.value)} />
+                        <Input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
+                          onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
+                          title="Fecha de caducidad (opcional)" />
+                        <button type="button" onClick={() => removeLinea(index)}
+                          className="text-gray-400 hover:text-red-600 justify-self-center">
+                          <IconTrash size={16} />
+                        </button>
+                      </div>
 
-        <div className="flex gap-2">
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700 self-start">
-            {editandoId ? 'Guardar cambios' : 'Guardar albarán'}
-          </button>
-          {editandoId && (
-            <button type="button" onClick={resetForm}
-              className="bg-slate-200 text-slate-700 rounded px-4 py-2 hover:bg-slate-300 self-start">
-              Cancelar edición
-            </button>
-          )}
-        </div>
-      </form>
+                      {(() => {
+                        const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
+                        if (!art?.requiereTemperatura) return null
 
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
+                        const temp = parseFloat(linea.temperatura)
+                        const fueraDeRango = linea.temperatura !== '' &&
+                          ((art.temperaturaMin != null && temp < art.temperaturaMin) ||
+                           (art.temperaturaMax != null && temp > art.temperaturaMax))
 
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : albaranes.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay albaranes registrados.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {albaranes.map((alb) => (
-              <div key={alb.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">{alb.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
-                    <p className="text-sm text-slate-500">
-                      Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
-                      {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-slate-400">{alb.codigo_interno}</span>}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => handleEditar(alb)} className="text-blue-600 hover:underline text-sm">
-                      Editar
-                    </button>
-                    <button onClick={() => handleBorrar(alb)} className="text-red-600 hover:underline text-sm">
-                      Borrar
-                    </button>
-                  </div>
-                </div>
+                        return (
+                          <div>
+                            <input type="number" step="0.1"
+                              placeholder={`Temperatura de recepción (°C)${art.temperaturaMin != null && art.temperaturaMax != null ? ` — rango: ${art.temperaturaMin} a ${art.temperaturaMax}` : ''}`}
+                              value={linea.temperatura}
+                              onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
+                              className={`border rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-red-300 bg-red-50 focus:ring-red-100' : 'border-blue-200 focus:ring-blue-100'}`} />
+                            {fueraDeRango && (
+                              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                                <IconAlertTriangle size={13} /> Fuera del rango aceptable ({art.temperaturaMin}°C a {art.temperaturaMax}°C)
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })()}
 
-                <table className="w-full mt-3 text-sm">
-                  <thead className="text-left text-slate-500">
-                    <tr>
-                      <th className="py-1">Artículo</th>
-                      <th className="py-1">Cantidad</th>
-                      <th className="py-1">Precio</th>
-                      <th className="py-1">Caducidad</th>
-                      <th className="py-1">Notas</th>
-                      <th className="py-1">Temp.</th>
-                      <th className="py-1">Lote</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {alb.entrada_material.map((linea) => (
-                      <tr key={linea.id} className="border-t">
-                        <td className="py-1">{linea.articulos_compra?.nombre}</td>
-                        <td className="py-1">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
-                        <td className="py-1">{linea.precio ?? '-'}</td>
-                        <td className="py-1">{linea.fecha_caducidad ?? '-'}</td>
-                        <td className="py-1 text-slate-500">{linea.notas ?? '-'}</td>
-                        <td className={`py-1 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
-                          {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}
-                          {linea.temperatura_fuera_rango && ' ⚠️'}
-                        </td>
-                        <td className="py-1 text-slate-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      <Input type="text" placeholder="Notas (temperatura de recepción, incidencias...)"
+                        value={linea.notas}
+                        onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
+                    </div>
+                  )
+                })}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <button type="button" onClick={addLinea}
+                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+                <IconPlus size={15} /> Añadir línea
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar albarán'}</Button>
+              {editandoId && (
+                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar edición</Button>
+              )}
+            </div>
+          </form>
+        </CardBody>
+      </Card>
+
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+
+      {cargando ? (
+        <LoadingState />
+      ) : albaranes.length === 0 ? (
+        <Card><EmptyState>Todavía no hay albaranes registrados.</EmptyState></Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {albaranes.map((alb) => (
+            <Card key={alb.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-[#1C2938]">{alb.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
+                  <p className="text-sm text-gray-500">
+                    Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                    {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{alb.codigo_interno}</span>}
+                  </p>
+                </div>
+                <div className="flex gap-3 shrink-0">
+                  <LinkAction tone="blue" onClick={() => handleEditar(alb)}>Editar</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(alb)}>Borrar</LinkAction>
+                </div>
+              </div>
+
+              <table className="w-full mt-3 text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                    <th className="py-1.5 font-medium">Artículo</th>
+                    <th className="py-1.5 font-medium">Cantidad</th>
+                    <th className="py-1.5 font-medium">Precio</th>
+                    <th className="py-1.5 font-medium">Caducidad</th>
+                    <th className="py-1.5 font-medium">Notas</th>
+                    <th className="py-1.5 font-medium">Temp.</th>
+                    <th className="py-1.5 font-medium">Lote</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {alb.entrada_material.map((linea) => (
+                    <tr key={linea.id}>
+                      <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
+                      <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
+                      <td className="py-1.5">{linea.precio ?? '-'}</td>
+                      <td className="py-1.5">{linea.fecha_caducidad ?? '-'}</td>
+                      <td className="py-1.5 text-gray-500">{linea.notas ?? '-'}</td>
+                      <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
+                        {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}
+                        {linea.temperatura_fuera_rango && ' ⚠️'}
+                      </td>
+                      <td className="py-1.5 text-gray-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconPlus } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, CardFooter, Button, LinkAction, Field, Input, Badge, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 const vacio = { tipo: 'particular', nombre: '', razon_fiscal: '', cif: '', direccion: '', email: '', telefono: '' }
 
@@ -95,106 +97,105 @@ function Clientes() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Clientes</h1>
+    <div>
+      <PageHeader title="Clientes" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-3">
-        <h2 className="font-semibold text-slate-700">
-          {editandoId ? 'Editar cliente' : 'Nuevo cliente'}
-        </h2>
-
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-1">
-            <input type="radio" name="tipo" checked={form.tipo === 'particular'}
-              onChange={() => handleChange('tipo', 'particular')} />
-            Particular
-          </label>
-          <label className="flex items-center gap-1">
-            <input type="radio" name="tipo" checked={form.tipo === 'empresa'}
-              onChange={() => handleChange('tipo', 'empresa')} />
-            Empresa
-          </label>
-        </div>
-
-        <input type="text" placeholder={form.tipo === 'empresa' ? 'Nombre comercial' : 'Nombre y apellidos'}
-          value={form.nombre}
-          onChange={(e) => handleChange('nombre', e.target.value)}
-          required className="border rounded px-3 py-2" />
-
-        {form.tipo === 'empresa' && (
-          <>
-            <input type="text" placeholder="Razón fiscal" value={form.razon_fiscal}
-              onChange={(e) => handleChange('razon_fiscal', e.target.value)}
-              className="border rounded px-3 py-2" />
-            <input type="text" placeholder="CIF" value={form.cif}
-              onChange={(e) => handleChange('cif', e.target.value)}
-              className="border rounded px-3 py-2" />
-          </>
-        )}
-
-        <input type="text" placeholder="Dirección" value={form.direccion}
-          onChange={(e) => handleChange('direccion', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="email" placeholder="Email" value={form.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Teléfono" value={form.telefono}
-          onChange={(e) => handleChange('telefono', e.target.value)}
-          className="border rounded px-3 py-2" />
-
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
-            {editandoId ? 'Guardar cambios' : 'Guardar cliente'}
-          </button>
-          {editandoId && (
-            <button type="button" onClick={handleCancelar}
-              className="bg-slate-200 text-slate-700 rounded px-4 py-2 hover:bg-slate-300">
-              Cancelar
-            </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 overflow-hidden">
+          <CardHeader title="Listado" />
+          {cargando ? (
+            <LoadingState />
+          ) : clientes.length === 0 ? (
+            <EmptyState>Todavía no hay clientes dados de alta.</EmptyState>
+          ) : (
+            <>
+              <Table>
+                <Thead>
+                  <Th>Tipo</Th>
+                  <Th>Nombre</Th>
+                  <Th>CIF</Th>
+                  <Th>Email</Th>
+                  <Th>Teléfono</Th>
+                  <Th></Th>
+                </Thead>
+                <tbody className="divide-y divide-gray-100">
+                  {clientes.map((c) => (
+                    <tr key={c.id} className="hover:bg-blue-50/40">
+                      <Td>
+                        <Badge color={c.tipo === 'empresa' ? 'blue' : 'gray'}>
+                          {c.tipo === 'empresa' ? 'Empresa' : 'Particular'}
+                        </Badge>
+                      </Td>
+                      <Td className="font-medium">{c.nombre}</Td>
+                      <Td className="text-gray-500">{c.cif ?? '-'}</Td>
+                      <Td className="text-gray-500">{c.email ?? '-'}</Td>
+                      <Td className="text-gray-500">{c.telefono ?? '-'}</Td>
+                      <Td className="text-right whitespace-nowrap">
+                        <LinkAction tone="blue" onClick={() => handleEditar(c)} className="mr-3">Editar</LinkAction>
+                        <LinkAction tone="red" onClick={() => handleBorrar(c.id)}>Borrar</LinkAction>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              <CardFooter>{clientes.length} cliente{clientes.length === 1 ? '' : 's'}</CardFooter>
+            </>
           )}
-        </div>
-      </form>
+        </Card>
 
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
+        <Card className="h-fit sticky top-0">
+          <CardHeader title={editandoId ? 'Editar cliente' : 'Nuevo cliente'} />
+          <CardBody>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="tipo" checked={form.tipo === 'particular'}
+                    onChange={() => handleChange('tipo', 'particular')} />
+                  Particular
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" name="tipo" checked={form.tipo === 'empresa'}
+                    onChange={() => handleChange('tipo', 'empresa')} />
+                  Empresa
+                </label>
+              </div>
 
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : clientes.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay clientes dados de alta.</p>
-        ) : (
-          <table className="w-full bg-white rounded-lg shadow overflow-hidden text-sm">
-            <thead className="bg-slate-100 text-left text-slate-600">
-              <tr>
-                <th className="p-3">Tipo</th>
-                <th className="p-3">Nombre</th>
-                <th className="p-3">CIF</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Teléfono</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr key={c.id} className="border-t">
-                  <td className="p-3 capitalize">{c.tipo}</td>
-                  <td className="p-3">{c.nombre}</td>
-                  <td className="p-3">{c.cif ?? '-'}</td>
-                  <td className="p-3">{c.email ?? '-'}</td>
-                  <td className="p-3">{c.telefono ?? '-'}</td>
-                  <td className="p-3 flex gap-3">
-                    <button onClick={() => handleEditar(c)} className="text-blue-600 hover:underline">
-                      Editar
-                    </button>
-                    <button onClick={() => handleBorrar(c.id)} className="text-red-600 hover:underline">
-                      Borrar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              <Field label={form.tipo === 'empresa' ? 'Nombre comercial' : 'Nombre y apellidos'}>
+                <Input type="text" value={form.nombre} onChange={(e) => handleChange('nombre', e.target.value)} required />
+              </Field>
+
+              {form.tipo === 'empresa' && (
+                <>
+                  <Field label="Razón fiscal">
+                    <Input type="text" value={form.razon_fiscal} onChange={(e) => handleChange('razon_fiscal', e.target.value)} />
+                  </Field>
+                  <Field label="CIF">
+                    <Input type="text" value={form.cif} onChange={(e) => handleChange('cif', e.target.value)} />
+                  </Field>
+                </>
+              )}
+
+              <Field label="Dirección">
+                <Input type="text" value={form.direccion} onChange={(e) => handleChange('direccion', e.target.value)} />
+              </Field>
+              <Field label="Email">
+                <Input type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
+              </Field>
+              <Field label="Teléfono">
+                <Input type="text" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} />
+              </Field>
+
+              <div className="flex gap-2 mt-1">
+                <Button type="submit" className="flex-1">
+                  {editandoId ? <>Guardar cambios</> : <><IconPlus size={15} /> Guardar cliente</>}
+                </Button>
+                {editandoId && (
+                  <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
+                )}
+              </div>
+            </form>
+          </CardBody>
+        </Card>
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconToolsKitchen2 } from '@tabler/icons-react'
 
 function AuthGate({ children }) {
   const [session, setSession] = useState(null)
@@ -33,23 +34,36 @@ function AuthGate({ children }) {
   }
 
   if (cargando) {
-    return <div className="min-h-screen flex items-center justify-center text-slate-400">Cargando...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F6F8] text-gray-400 text-sm">
+        Cargando...
+      </div>
+    )
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg shadow max-w-sm w-full flex flex-col gap-4">
-          <h1 className="text-xl font-bold text-slate-800 text-center">ERP Restauración</h1>
-          <p className="text-sm text-slate-500 text-center">Inicia sesión para continuar</p>
-          <input type="email" placeholder="Email" value={email}
-            onChange={(e) => setEmail(e.target.value)} required
-            className="border rounded px-3 py-2" />
-          <input type="password" placeholder="Contraseña" value={password}
-            onChange={(e) => setPassword(e.target.value)} required
-            className="border rounded px-3 py-2" />
+      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center p-6">
+        <form onSubmit={handleLogin} className="bg-white p-8 rounded-lg border border-gray-200 max-w-sm w-full flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <div className="w-11 h-11 rounded-lg bg-[#0854A0] flex items-center justify-center">
+              <IconToolsKitchen2 size={24} stroke={1.75} className="text-white" />
+            </div>
+            <h1 className="text-lg font-semibold text-[#1C2938]">ERP Restauración</h1>
+            <p className="text-sm text-gray-400">Inicia sesión para continuar</p>
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-500 block mb-1">Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300" />
+          </div>
+          <div>
+            <label className="text-[11px] font-medium text-gray-500 block mb-1">Contraseña</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
+              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300" />
+          </div>
           {error && <p className="text-red-600 text-sm">{error}</p>}
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
+          <button type="submit" className="bg-[#0854A0] text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-[#0A3D62]">
             Entrar
           </button>
         </form>
@@ -57,16 +71,7 @@ function AuthGate({ children }) {
     )
   }
 
-  return (
-    <div>
-      <div className="bg-slate-100 px-4 py-1 flex justify-end">
-        <button onClick={handleLogout} className="text-xs text-slate-500 hover:underline">
-          Cerrar sesión ({session.user.email})
-        </button>
-      </div>
-      {children}
-    </div>
-  )
+  return children(session, handleLogout)
 }
 
 export default AuthGate

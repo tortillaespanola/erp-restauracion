@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { IconPlus } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, CardFooter, Button, LinkAction, Field, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 const vacio = { razon_fiscal: '', nombre_comercial: '', cif: '', direccion: '', email: '', telefono: '' }
 
@@ -91,86 +93,82 @@ function Proveedores() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Proveedores</h1>
+    <div>
+      <PageHeader title="Proveedores" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-3">
-        <h2 className="font-semibold text-slate-700">
-          {editandoId ? 'Editar proveedor' : 'Nuevo proveedor'}
-        </h2>
-
-        <input type="text" placeholder="Razón fiscal" value={form.razon_fiscal}
-          onChange={(e) => handleChange('razon_fiscal', e.target.value)}
-          required className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Nombre comercial" value={form.nombre_comercial}
-          onChange={(e) => handleChange('nombre_comercial', e.target.value)}
-          required className="border rounded px-3 py-2" />
-        <input type="text" placeholder="CIF" value={form.cif}
-          onChange={(e) => handleChange('cif', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Dirección" value={form.direccion}
-          onChange={(e) => handleChange('direccion', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="email" placeholder="Email" value={form.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Teléfono" value={form.telefono}
-          onChange={(e) => handleChange('telefono', e.target.value)}
-          className="border rounded px-3 py-2" />
-
-        <div className="flex gap-2 mt-2">
-          <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700">
-            {editandoId ? 'Guardar cambios' : 'Guardar proveedor'}
-          </button>
-          {editandoId && (
-            <button type="button" onClick={handleCancelar}
-              className="bg-slate-200 text-slate-700 rounded px-4 py-2 hover:bg-slate-300">
-              Cancelar
-            </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 overflow-hidden">
+          <CardHeader title="Listado" />
+          {cargando ? (
+            <LoadingState />
+          ) : proveedores.length === 0 ? (
+            <EmptyState>Todavía no hay proveedores dados de alta.</EmptyState>
+          ) : (
+            <>
+              <Table>
+                <Thead>
+                  <Th>Razón fiscal</Th>
+                  <Th>Nombre comercial</Th>
+                  <Th>CIF</Th>
+                  <Th>Email</Th>
+                  <Th>Teléfono</Th>
+                  <Th></Th>
+                </Thead>
+                <tbody className="divide-y divide-gray-100">
+                  {proveedores.map((p) => (
+                    <tr key={p.id} className="hover:bg-blue-50/40">
+                      <Td className="font-medium">{p.razon_fiscal}</Td>
+                      <Td className="text-gray-500">{p.nombre_comercial}</Td>
+                      <Td className="text-gray-500">{p.cif ?? '-'}</Td>
+                      <Td className="text-gray-500">{p.email ?? '-'}</Td>
+                      <Td className="text-gray-500">{p.telefono ?? '-'}</Td>
+                      <Td className="text-right whitespace-nowrap">
+                        <LinkAction tone="blue" onClick={() => handleEditar(p)} className="mr-3">Editar</LinkAction>
+                        <LinkAction tone="red" onClick={() => handleBorrar(p.id)}>Borrar</LinkAction>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              <CardFooter>{proveedores.length} proveedor{proveedores.length === 1 ? '' : 'es'}</CardFooter>
+            </>
           )}
-        </div>
-      </form>
+        </Card>
 
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
+        <Card className="h-fit sticky top-0">
+          <CardHeader title={editandoId ? 'Editar proveedor' : 'Nuevo proveedor'} />
+          <CardBody>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <Field label="Razón fiscal">
+                <Input type="text" value={form.razon_fiscal} onChange={(e) => handleChange('razon_fiscal', e.target.value)} required />
+              </Field>
+              <Field label="Nombre comercial">
+                <Input type="text" value={form.nombre_comercial} onChange={(e) => handleChange('nombre_comercial', e.target.value)} required />
+              </Field>
+              <Field label="CIF">
+                <Input type="text" value={form.cif} onChange={(e) => handleChange('cif', e.target.value)} />
+              </Field>
+              <Field label="Dirección">
+                <Input type="text" value={form.direccion} onChange={(e) => handleChange('direccion', e.target.value)} />
+              </Field>
+              <Field label="Email">
+                <Input type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
+              </Field>
+              <Field label="Teléfono">
+                <Input type="text" value={form.telefono} onChange={(e) => handleChange('telefono', e.target.value)} />
+              </Field>
 
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : proveedores.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay proveedores dados de alta.</p>
-        ) : (
-          <table className="w-full bg-white rounded-lg shadow overflow-hidden text-sm">
-            <thead className="bg-slate-100 text-left text-slate-600">
-              <tr>
-                <th className="p-3">Razón fiscal</th>
-                <th className="p-3">Nombre comercial</th>
-                <th className="p-3">CIF</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Teléfono</th>
-                <th className="p-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {proveedores.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="p-3">{p.razon_fiscal}</td>
-                  <td className="p-3">{p.nombre_comercial}</td>
-                  <td className="p-3">{p.cif ?? '-'}</td>
-                  <td className="p-3">{p.email ?? '-'}</td>
-                  <td className="p-3">{p.telefono ?? '-'}</td>
-                  <td className="p-3 flex gap-3">
-                    <button onClick={() => handleEditar(p)} className="text-blue-600 hover:underline">
-                      Editar
-                    </button>
-                    <button onClick={() => handleBorrar(p.id)} className="text-red-600 hover:underline">
-                      Borrar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              <div className="flex gap-2 mt-1">
+                <Button type="submit" className="flex-1">
+                  {editandoId ? <>Guardar cambios</> : <><IconPlus size={15} /> Guardar proveedor</>}
+                </Button>
+                {editandoId && (
+                  <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
+                )}
+              </div>
+            </form>
+          </CardBody>
+        </Card>
       </div>
     </div>
   )

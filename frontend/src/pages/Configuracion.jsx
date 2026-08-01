@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { PageHeader, Card, CardBody, Button, Field, Input } from '../components/ui'
 
 function Configuracion() {
   const [form, setForm] = useState({
@@ -56,48 +57,46 @@ function Configuracion() {
     setSubiendoLogo(false)
   }
 
-  if (cargando) return <div className="p-6">Cargando...</div>
+  if (cargando) return <div className="text-sm text-gray-400">Cargando...</div>
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold">Configuración de empresa</h1>
-      <p className="text-slate-500 text-sm mt-1">
-        Estos datos aparecerán en el membrete de albaranes y facturas.
-      </p>
+    <div className="max-w-2xl">
+      <PageHeader title="Configuración de empresa" subtitle="Estos datos aparecerán en el membrete de albaranes y facturas." />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-3">
-        <div>
-          <label className="text-sm font-semibold text-slate-600 block mb-1">Logo</label>
-          {form.logo_url && (
-            <img src={form.logo_url} alt="Logo" className="h-16 object-contain mb-2 border rounded p-1" />
-          )}
-          <input type="file" accept="image/*" onChange={handleLogoChange} className="text-sm" />
-          {subiendoLogo && <p className="text-sm text-slate-400">Subiendo...</p>}
-        </div>
+      <Card>
+        <CardBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <Field label="Logo">
+              {form.logo_url && (
+                <img src={form.logo_url} alt="Logo" className="h-16 object-contain mb-2 border border-gray-200 rounded p-1" />
+              )}
+              <input type="file" accept="image/*" onChange={handleLogoChange} className="text-sm" />
+              {subiendoLogo && <p className="text-sm text-gray-400 mt-1">Subiendo...</p>}
+            </Field>
 
-        <input type="text" placeholder="Nombre comercial" value={form.nombre ?? ''}
-          onChange={(e) => handleChange('nombre', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Razón fiscal" value={form.razon_fiscal ?? ''}
-          onChange={(e) => handleChange('razon_fiscal', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="CIF" value={form.cif ?? ''}
-          onChange={(e) => handleChange('cif', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Dirección" value={form.direccion ?? ''}
-          onChange={(e) => handleChange('direccion', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="text" placeholder="Teléfono" value={form.telefono ?? ''}
-          onChange={(e) => handleChange('telefono', e.target.value)}
-          className="border rounded px-3 py-2" />
-        <input type="email" placeholder="Email" value={form.email ?? ''}
-          onChange={(e) => handleChange('email', e.target.value)}
-          className="border rounded px-3 py-2" />
+            <Field label="Nombre comercial">
+              <Input type="text" value={form.nombre ?? ''} onChange={(e) => handleChange('nombre', e.target.value)} />
+            </Field>
+            <Field label="Razón fiscal">
+              <Input type="text" value={form.razon_fiscal ?? ''} onChange={(e) => handleChange('razon_fiscal', e.target.value)} />
+            </Field>
+            <Field label="CIF">
+              <Input type="text" value={form.cif ?? ''} onChange={(e) => handleChange('cif', e.target.value)} />
+            </Field>
+            <Field label="Dirección">
+              <Input type="text" value={form.direccion ?? ''} onChange={(e) => handleChange('direccion', e.target.value)} />
+            </Field>
+            <Field label="Teléfono">
+              <Input type="text" value={form.telefono ?? ''} onChange={(e) => handleChange('telefono', e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <Input type="email" value={form.email ?? ''} onChange={(e) => handleChange('email', e.target.value)} />
+            </Field>
 
-        <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700 self-start">
-          Guardar
-        </button>
-      </form>
+            <Button type="submit" className="self-start mt-1">Guardar</Button>
+          </form>
+        </CardBody>
+      </Card>
     </div>
   )
 }

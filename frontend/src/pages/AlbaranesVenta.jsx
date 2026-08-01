@@ -1,13 +1,25 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
+import { IconTrash } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+
+function nombreLineaVenta(linea) {
+  return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre
+}
 
 function AlbaranesVenta() {
+  const [searchParams] = useSearchParams()
+  const pedidoIdParam = searchParams.get('pedido_id')
+
   const [albaranes, setAlbaranes] = useState([])
   const [clientes, setClientes] = useState([])
   const [productos, setProductos] = useState([])
+  const [articulosMercaderia, setArticulosMercaderia] = useState([])
   const [cargando, setCargando] = useState(true)
   const [refrescoStock, setRefrescoStock] = useState(0)
+  const [pedidoLineas, setPedidoLineas] = useState([])
 
   const [clienteId, setClienteId] = useState('')
   const [numeroAlbaran, setNumeroAlbaran] = useState('')
@@ -18,13 +30,14 @@ function AlbaranesVenta() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resAlbaranes, resClientes, resProductos] = await Promise.all([
+    const [resAlbaranes, resClientes, resProductos, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_venta')
-        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, productos_finales(nombre))')
+        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, productos_finales(nombre), articulos_compra(nombre))')
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
+      supabase.from('articulos_compra').select('id, nombre, unidad').eq('tipo_material', 'TRD').order('nombre'),
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
@@ -36,6 +49,9 @@ function AlbaranesVenta() {
     if (resProductos.error) console.error(resProductos.error)
     else setProductos(resProductos.data)
 
+    if (resArticulos.error) console.error(resArticulos.error)
+    else setArticulosMercaderia(resArticulos.data)
+
     setCargando(false)
     setRefrescoStock((n) => n + 1)
   }
@@ -43,6 +59,32 @@ function AlbaranesVenta() {
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  useEffect(() => {
+    if (!pedidoIdParam) return
+
+    async function cargarPedido() {
+      const { data } = await supabase
+        .from('pedidos_venta')
+        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id)')
+        .eq('id', pedidoIdParam)
+        .single()
+
+      if (data) {
+        setClienteId(String(data.cliente_id))
+        setPedidoLineas(data.lineas_pedido_venta || [])
+      }
+    }
+
+    cargarPedido()
+  }, [pedidoIdParam])
+
+  function lineaPedidoPara(tipo, id) {
+    const match = pedidoLineas.find((l) =>
+      tipo === 'producto' ? l.producto_final_id === id : l.articulo_id === id
+    )
+    return match?.id ?? null
+  }
 
   function resetForm() {
     setClienteId('')
@@ -58,7 +100,13 @@ function AlbaranesVenta() {
       .reduce((sum, l) => sum + l.cantidad, 0)
   }
 
-  function addLinea(producto, produccionId, cantidad, precio, stockLoteOriginal) {
+  function cantidadYaEnLineasArticulo(entradaMaterialId) {
+    return lineas
+      .filter((l) => l.entrada_material_id === entradaMaterialId)
+      .reduce((sum, l) => sum + l.cantidad, 0)
+  }
+
+  function addLineaProducto(producto, produccionId, cantidad, precio, stockLoteOriginal) {
     const cant = parseFloat(cantidad)
     const idProduccion = parseInt(produccionId)
 
@@ -78,11 +126,44 @@ function AlbaranesVenta() {
     setLineas((prev) => [
       ...prev,
       {
+        tipo: 'producto',
+        display: producto.nombre,
         producto_final_id: producto.id,
-        producto_final_id_display: producto.nombre,
         produccion_pf_id: idProduccion,
         cantidad: cant,
         precio_unitario: precio ? parseFloat(precio) : null,
+        linea_pedido_id: lineaPedidoPara('producto', producto.id),
+      },
+    ])
+  }
+
+  function addLineaMercaderia(articulo, entradaMaterialId, cantidad, precio, stockLoteOriginal) {
+    const cant = parseFloat(cantidad)
+    const idEntrada = parseInt(entradaMaterialId)
+
+    if (!entradaMaterialId || !cant || cant <= 0) {
+      alert('Selecciona un lote e introduce una cantidad válida')
+      return
+    }
+
+    const yaUsado = cantidadYaEnLineasArticulo(idEntrada)
+    const restante = stockLoteOriginal - yaUsado
+
+    if (cant > restante) {
+      alert(`Solo quedan ${restante.toFixed(3)} unidades disponibles en ese lote`)
+      return
+    }
+
+    setLineas((prev) => [
+      ...prev,
+      {
+        tipo: 'mercaderia',
+        display: articulo.nombre,
+        articulo_id: articulo.id,
+        entrada_material_id: idEntrada,
+        cantidad: cant,
+        precio_unitario: precio ? parseFloat(precio) : null,
+        linea_pedido_id: lineaPedidoPara('mercaderia', articulo.id),
       },
     ])
   }
@@ -117,10 +198,13 @@ function AlbaranesVenta() {
 
     const lineasParaInsertar = lineas.map((l) => ({
       albaran_venta_id: albaranCreado.id,
-      producto_final_id: l.producto_final_id,
-      produccion_pf_id: l.produccion_pf_id,
+      producto_final_id: l.tipo === 'producto' ? l.producto_final_id : null,
+      produccion_pf_id: l.tipo === 'producto' ? l.produccion_pf_id : null,
+      articulo_id: l.tipo === 'mercaderia' ? l.articulo_id : null,
+      entrada_material_id: l.tipo === 'mercaderia' ? l.entrada_material_id : null,
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
+      linea_pedido_id: l.linea_pedido_id,
     }))
 
     const { error: errorLineas } = await supabase
@@ -167,7 +251,7 @@ function AlbaranesVenta() {
         cif: alb.clientes?.cif,
       },
       lineas: alb.lineas_albaran_venta.map((l) => ({
-        concepto: l.productos_finales?.nombre,
+        concepto: nombreLineaVenta(l),
         cantidad: l.cantidad,
         precioUnitario: l.precio_unitario,
       })),
@@ -178,130 +262,145 @@ function AlbaranesVenta() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">Albaranes de venta</h1>
+    <div>
+      <PageHeader title="Albaranes de venta" />
 
-      <form onSubmit={handleSubmit} className="mt-6 bg-white p-4 rounded-lg shadow flex flex-col gap-4">
-        <h2 className="font-semibold text-slate-700">Nuevo albarán</h2>
+      <Card className="mb-6">
+        <CardHeader title="Nuevo albarán" />
+        <CardBody>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {pedidoIdParam && (
+              <p className="text-sm text-[#0854A0]">Este albarán se enlazará a las líneas pendientes del pedido seleccionado.</p>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Field label="Cliente">
+                <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
+                  <option value="">Selecciona cliente</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Nº albarán">
+                <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
+              </Field>
+              <Field label="Fecha">
+                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+              </Field>
+            </div>
+            <Field label="Notas (opcional)">
+              <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
+            </Field>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <select value={clienteId} onChange={(e) => setClienteId(e.target.value)}
-            required className="border rounded px-3 py-2">
-            <option value="">Selecciona cliente</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-          <input type="text" placeholder="Nº albarán" value={numeroAlbaran}
-            onChange={(e) => setNumeroAlbaran(e.target.value)}
-            className="border rounded px-3 py-2" />
-          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
-            required className="border rounded px-3 py-2" />
-        </div>
-        <input type="text" placeholder="Notas (opcional)" value={notas}
-          onChange={(e) => setNotas(e.target.value)}
-          className="border rounded px-3 py-2" />
-
-        <div>
-          <h3 className="text-sm font-semibold text-slate-600 mb-2">Añadir productos</h3>
-          <div className="flex flex-col gap-3">
-            {productos.map((prod) => (
-              <ProductoParaVender
-                key={prod.id}
-                producto={prod}
-                onAdd={addLinea}
-                refrescoStock={refrescoStock}
-                cantidadYaEnLineas={cantidadYaEnLineas}
-              />
-            ))}
-          </div>
-        </div>
-
-        {lineas.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-2">Líneas del albarán</h3>
-            <table className="w-full text-sm">
-              <tbody>
-                {lineas.map((l, index) => (
-                  <tr key={index} className="border-t">
-                    <td className="py-1">{l.producto_final_id_display}</td>
-                    <td className="py-1">{l.cantidad} uds.</td>
-                    <td className="py-1">{l.precio_unitario != null ? `${l.precio_unitario} €/ud` : '-'}</td>
-                    <td className="py-1">
-                      <button type="button" onClick={() => removeLinea(index)}
-                        className="text-red-600 hover:underline text-xs">
-                        Quitar
-                      </button>
-                    </td>
-                  </tr>
+            <div>
+              <SectionLabel>Añadir productos finales</SectionLabel>
+              <div className="flex flex-col gap-3">
+                {productos.map((prod) => (
+                  <ProductoParaVender
+                    key={prod.id}
+                    producto={prod}
+                    onAdd={addLineaProducto}
+                    refrescoStock={refrescoStock}
+                    cantidadYaEnLineas={cantidadYaEnLineas}
+                  />
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              </div>
+            </div>
 
-        <button type="submit" className="bg-slate-900 text-white rounded px-4 py-2 hover:bg-slate-700 self-start">
-          Guardar albarán
-        </button>
-      </form>
-
-      <div className="mt-8">
-        <h2 className="font-semibold text-slate-700 mb-3">Listado</h2>
-
-        {cargando ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : albaranes.length === 0 ? (
-          <p className="text-slate-500">Todavía no hay albaranes de venta registrados.</p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {albaranes.map((alb) => (
-              <div key={alb.id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">{alb.clientes?.nombre ?? 'Sin cliente'}</p>
-                    <p className="text-sm text-slate-500">
-                      Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
-                    </p>
-                    {alb.notas && <p className="text-sm text-slate-400 italic">{alb.notas}</p>}
-                  </div>
-                  <div className="flex gap-3 items-start">
-                    <button onClick={() => imprimirPdf('Albarán', prepararDocumento(alb))}
-                      className="text-slate-600 hover:underline text-sm">
-                      Imprimir
-                    </button>
-                    <button onClick={() => descargarPdf('Albarán', prepararDocumento(alb))}
-                      className="text-blue-600 hover:underline text-sm">
-                      Descargar PDF
-                    </button>
-                    <button onClick={() => handleBorrar(alb.id)} className="text-red-600 hover:underline text-sm">
-                      Borrar
-                    </button>
-                  </div>
+            {articulosMercaderia.length > 0 && (
+              <div>
+                <SectionLabel>Añadir mercadería</SectionLabel>
+                <div className="flex flex-col gap-3">
+                  {articulosMercaderia.map((art) => (
+                    <ArticuloParaVender
+                      key={art.id}
+                      articulo={art}
+                      onAdd={addLineaMercaderia}
+                      refrescoStock={refrescoStock}
+                      cantidadYaEnLineas={cantidadYaEnLineasArticulo}
+                    />
+                  ))}
                 </div>
+              </div>
+            )}
 
-                <table className="w-full mt-3 text-sm">
-                  <thead className="text-left text-slate-500">
-                    <tr>
-                      <th className="py-1">Producto</th>
-                      <th className="py-1">Cantidad</th>
-                      <th className="py-1">Precio</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {alb.lineas_albaran_venta.map((linea) => (
-                      <tr key={linea.id} className="border-t">
-                        <td className="py-1">{linea.productos_finales?.nombre}</td>
-                        <td className="py-1">{linea.cantidad}</td>
-                        <td className="py-1">{linea.precio_unitario ?? '-'}</td>
+            {lineas.length > 0 && (
+              <div>
+                <SectionLabel>Líneas del albarán</SectionLabel>
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-gray-100">
+                    {lineas.map((l, index) => (
+                      <tr key={index}>
+                        <td className="py-1.5">
+                          {l.display} {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs">(mercadería)</span>}
+                        </td>
+                        <td className="py-1.5">{l.cantidad} uds.</td>
+                        <td className="py-1.5">{l.precio_unitario != null ? `${l.precio_unitario} €/ud` : '-'}</td>
+                        <td className="py-1.5 text-right">
+                          <button type="button" onClick={() => removeLinea(index)}
+                            className="text-gray-400 hover:text-red-600">
+                            <IconTrash size={15} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            )}
+
+            <Button type="submit" className="self-start">Guardar albarán</Button>
+          </form>
+        </CardBody>
+      </Card>
+
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+
+      {cargando ? (
+        <LoadingState />
+      ) : albaranes.length === 0 ? (
+        <Card><EmptyState>Todavía no hay albaranes de venta registrados.</EmptyState></Card>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {albaranes.map((alb) => (
+            <Card key={alb.id} className="p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-[#1C2938]">{alb.clientes?.nombre ?? 'Sin cliente'}</p>
+                  <p className="text-sm text-gray-500">
+                    Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                  </p>
+                  {alb.notas && <p className="text-sm text-gray-400 italic">{alb.notas}</p>}
+                </div>
+                <div className="flex gap-3 items-start shrink-0">
+                  <LinkAction tone="gray" onClick={() => imprimirPdf('Albarán', prepararDocumento(alb))}>Imprimir</LinkAction>
+                  <LinkAction tone="blue" onClick={() => descargarPdf('Albarán', prepararDocumento(alb))}>Descargar PDF</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(alb.id)}>Borrar</LinkAction>
+                </div>
+              </div>
+
+              <table className="w-full mt-3 text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                    <th className="py-1.5 font-medium">Producto</th>
+                    <th className="py-1.5 font-medium">Cantidad</th>
+                    <th className="py-1.5 font-medium">Precio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {alb.lineas_albaran_venta.map((linea) => (
+                    <tr key={linea.id}>
+                      <td className="py-1.5">{nombreLineaVenta(linea)}</td>
+                      <td className="py-1.5">{linea.cantidad}</td>
+                      <td className="py-1.5">{linea.precio_unitario ?? '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -343,26 +442,84 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   if (lotesConDisponibleReal.length === 0) return null
 
   return (
-    <div className="border rounded-lg p-3">
-      <p className="text-sm font-medium text-slate-700">{producto.nombre}</p>
+    <div className="border border-gray-200 rounded-md p-3">
+      <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
-        <select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="border rounded px-3 py-2 text-sm">
+        <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
           <option value="">Selecciona lote de producción</option>
           {lotesConDisponibleReal.map((l) => (
             <option key={l.produccion_id} value={l.produccion_id}>
               Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.
             </option>
           ))}
-        </select>
-        <input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+        </Select>
+        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          className="border rounded px-3 py-2 text-sm" />
-        <input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          className="text-sm" title="Se redondeará a 3 decimales" />
+        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
           onChange={(e) => setPrecio(e.target.value)}
-          className="border rounded px-3 py-2 text-sm" />
-        <button type="button" onClick={handleAdd} className="text-blue-600 hover:underline text-sm">
-          + Añadir
-        </button>
+          className="text-sm" />
+        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+      </div>
+    </div>
+  )
+}
+
+function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas }) {
+  const [lotes, setLotes] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [loteId, setLoteId] = useState('')
+  const [cantidad, setCantidad] = useState('')
+  const [precio, setPrecio] = useState('')
+
+  useEffect(() => {
+    async function cargarLotes() {
+      const { data } = await supabase
+        .from('stock_lotes_articulo')
+        .select('*')
+        .eq('articulo_id', articulo.id)
+        .gt('stock_disponible', 0)
+        .order('fecha_recepcion', { ascending: true })
+      setLotes(data || [])
+      setCargando(false)
+    }
+    cargarLotes()
+  }, [articulo.id, refrescoStock])
+
+  function handleAdd() {
+    const lote = lotes.find((l) => l.entrada_material_id === parseInt(loteId))
+    onAdd(articulo, loteId, cantidad, precio, lote?.stock_disponible ?? 0)
+    setLoteId('')
+    setCantidad('')
+  }
+
+  if (cargando) return null
+
+  const lotesConDisponibleReal = lotes
+    .map((l) => ({ ...l, disponibleReal: l.stock_disponible - cantidadYaEnLineas(l.entrada_material_id) }))
+    .filter((l) => l.disponibleReal > 0)
+
+  if (lotesConDisponibleReal.length === 0) return null
+
+  return (
+    <div className="border border-gray-200 rounded-md p-3">
+      <p className="text-sm font-medium text-gray-700">{articulo.nombre}</p>
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
+        <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
+          <option value="">Selecciona lote</option>
+          {lotesConDisponibleReal.map((l) => (
+            <option key={l.entrada_material_id} value={l.entrada_material_id}>
+              {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.
+            </option>
+          ))}
+        </Select>
+        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+          className="text-sm" title="Se redondeará a 3 decimales" />
+        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          onChange={(e) => setPrecio(e.target.value)}
+          className="text-sm" />
+        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
       </div>
     </div>
   )
