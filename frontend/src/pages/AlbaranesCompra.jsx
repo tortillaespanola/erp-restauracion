@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
-const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false }
+const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
 
 function AlbaranesCompra() {
+  const [searchParams] = useSearchParams()
   const [albaranes, setAlbaranes] = useState([])
   const [proveedores, setProveedores] = useState([])
   const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
+  const [pedidosCompraPendientes, setPedidosCompraPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
 
+  const [tipoOrigen, setTipoOrigen] = useState(searchParams.get('pedido_compra_id') ? 'pedido' : 'compra_directa')
+  const [pedidoCompraId, setPedidoCompraId] = useState(searchParams.get('pedido_compra_id') ?? '')
   const [proveedorId, setProveedorId] = useState('')
   const [numeroAlbaran, setNumeroAlbaran] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
@@ -22,12 +27,17 @@ function AlbaranesCompra() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resAlbaranes, resProveedores] = await Promise.all([
+    const [resAlbaranes, resProveedores, resPedidosCompra] = await Promise.all([
       supabase
         .from('albaranes_compra')
-        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, temperatura_recepcion, temperatura_fuera_rango, articulo_id, articulos_compra(nombre, unidad))')
+        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, temperatura_recepcion, temperatura_fuera_rango, articulo_id, linea_pedido_compra_id, articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
+      supabase
+        .from('pedidos_compra')
+        .select('id, codigo_pedido, proveedor_id, proveedores(nombre_comercial), lineas_pedido_compra(id, articulo_id, cantidad, precio_unitario, articulos_compra(nombre, unidad))')
+        .eq('estado', 'pendiente')
+        .order('fecha', { ascending: false }),
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
@@ -36,12 +46,33 @@ function AlbaranesCompra() {
     if (resProveedores.error) console.error(resProveedores.error)
     else setProveedores(resProveedores.data)
 
+    if (resPedidosCompra.error) console.error(resPedidosCompra.error)
+    else setPedidosCompraPendientes(resPedidosCompra.data)
+
     setCargando(false)
   }
 
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  useEffect(() => {
+    if (tipoOrigen !== 'pedido' || !pedidoCompraId || pedidosCompraPendientes.length === 0) return
+
+    const pedido = pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))
+    if (!pedido) return
+
+    setProveedorId(String(pedido.proveedor_id))
+    setLineas(
+      pedido.lineas_pedido_compra.map((l) => ({
+        ...lineaVacia,
+        articulo_id: String(l.articulo_id),
+        cantidad: String(l.cantidad),
+        precio: l.precio_unitario != null ? String(l.precio_unitario) : '',
+        linea_pedido_compra_id: l.id,
+      }))
+    )
+  }, [tipoOrigen, pedidoCompraId, pedidosCompraPendientes])
 
   useEffect(() => {
     async function cargarArticulosDelProveedor() {
@@ -105,6 +136,8 @@ function AlbaranesCompra() {
   }
 
   function resetForm() {
+    setTipoOrigen('compra_directa')
+    setPedidoCompraId('')
     setProveedorId('')
     setNumeroAlbaran('')
     setFecha(new Date().toISOString().slice(0, 10))
@@ -141,6 +174,7 @@ function AlbaranesCompra() {
         notas: l.notas ?? '',
         temperatura: l.temperatura_recepcion != null ? String(l.temperatura_recepcion) : '',
         locked: idsBloqueados.has(l.id),
+        linea_pedido_compra_id: l.linea_pedido_compra_id ?? null,
       }))
     )
     setLineasABorrar([])
@@ -171,6 +205,7 @@ function AlbaranesCompra() {
         notas: l.notas || null,
         temperatura_recepcion: temp,
         temperatura_fuera_rango: fueraDeRango || false,
+        linea_pedido_compra_id: l.linea_pedido_compra_id || null,
       }
     }
 
@@ -229,6 +264,8 @@ function AlbaranesCompra() {
         proveedor_id: parseInt(proveedorId),
         numero_albaran: numeroAlbaran || null,
         fecha,
+        tipo_origen: tipoOrigen,
+        pedido_compra_id: tipoOrigen === 'pedido' ? parseInt(pedidoCompraId) : null,
       })
       .select()
       .single()
@@ -294,16 +331,47 @@ function AlbaranesCompra() {
         <CardHeader title={editandoId ? 'Editar albarán' : 'Nuevo albarán'} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {!editandoId && (
+              <div className="flex gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={tipoOrigen === 'compra_directa'}
+                    onChange={() => { setTipoOrigen('compra_directa'); setPedidoCompraId(''); setProveedorId(''); setLineas([{ ...lineaVacia }]) }} />
+                  Compra directa
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={tipoOrigen === 'pedido'}
+                    onChange={() => setTipoOrigen('pedido')} />
+                  Desde pedido existente
+                </label>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Proveedor">
-                <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
-                  required disabled={!!editandoId}>
-                  <option value="">Selecciona proveedor</option>
-                  {proveedores.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
-                  ))}
-                </Select>
-              </Field>
+              {tipoOrigen === 'pedido' && !editandoId ? (
+                <Field label="Pedido de compra">
+                  <Select value={pedidoCompraId} onChange={(e) => setPedidoCompraId(e.target.value)} required>
+                    <option value="">Selecciona pedido</option>
+                    {pedidosCompraPendientes.map((p) => (
+                      <option key={p.id} value={p.id}>{p.codigo_pedido} · {p.proveedores?.nombre_comercial}</option>
+                    ))}
+                  </Select>
+                  {proveedorId && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Proveedor: {proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
+                    </p>
+                  )}
+                </Field>
+              ) : (
+                <Field label="Proveedor">
+                  <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
+                    required disabled={!!editandoId}>
+                    <option value="">Selecciona proveedor</option>
+                    {proveedores.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
               <Field label="Nº albarán del proveedor">
                 <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
               </Field>

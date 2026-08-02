@@ -7,6 +7,7 @@ import AjustesStock from './pages/AjustesStock'
 import ProductosFinales from './pages/ProductosFinales'
 import ProduccionProductosFinales from './pages/ProduccionProductosFinales'
 import Proveedores from './pages/Proveedores'
+import PedidosCompra from './pages/PedidosCompra'
 import AlbaranesCompra from './pages/AlbaranesCompra'
 import FacturasCompra from './pages/FacturasCompra'
 import Pedidos from './pages/Pedidos'
@@ -29,6 +30,7 @@ function App({ session, onLogout }) {
           <Route path="/productos" element={<ProductosFinales />} />
           <Route path="/produccion-productos" element={<ProduccionProductosFinales />} />
           <Route path="/proveedores" element={<Proveedores />} />
+          <Route path="/pedidos-compra" element={<PedidosCompra />} />
           <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
           <Route path="/facturas-compra" element={<FacturasCompra />} />
           <Route path="/pedidos" element={<Pedidos />} />

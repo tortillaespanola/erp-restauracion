@@ -2,13 +2,14 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   IconToolsKitchen2, IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
-  IconClipboardList, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
+  IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
 } from '@tabler/icons-react'
 
 const NAV_SECTIONS = [
   {
     titulo: 'Compras',
     items: [
+      { to: '/pedidos-compra', label: 'Pedidos de compra', icon: IconClipboardCheck },
       { to: '/proveedores', label: 'Proveedores', icon: IconTruckDelivery },
       { to: '/articulos', label: 'Artículos', icon: IconPackage },
       { to: '/albaranes-compra', label: 'Albaranes compra', icon: IconFileInvoice },
@@ -37,6 +38,7 @@ const NAV_SECTIONS = [
 ]
 
 const TITULOS = {
+  '/pedidos-compra': ['Pedidos de compra', 'Compras · Pedidos de compra'],
   '/proveedores': ['Proveedores', 'Compras · Proveedores'],
   '/articulos': ['Artículos de compra', 'Compras · Artículos'],
   '/albaranes-compra': ['Albaranes de compra', 'Compras · Albaranes compra'],
