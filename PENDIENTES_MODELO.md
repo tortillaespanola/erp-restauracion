@@ -15,3 +15,20 @@ En el día a día normal esto es correcto y deseable (trazabilidad exacta). Pero
 **Por qué no se resolvió ahora**: a diferencia de la asimetría de bloqueo de stock (que impedía completar la acción por completo), aquí *sí* existe un camino — elegir el lote más plausible — así que el impacto es menor. Además, la forma correcta de resolverlo probablemente dependa de cómo se diseñe el futuro flujo de regularización de incidencias (¿una merma sin lote se reparte proporcionalmente entre los lotes negativos existentes? ¿se dispara desde la propia pantalla de incidencias en vez de desde el formulario de ajuste?) — resolverlo antes de tener ese diseño podría significar rehacerlo.
 
 **Cuándo retomarlo**: junto con el diseño del flujo de regularización de `incidencias_stock_producto_final`, `incidencias_stock_articulo` e `incidencias_stock_semielaborado` (las tres tablas ya tienen `estado` ampliable a `'pendiente' | 'regularizado' | 'ignorado'`, preparadas para ese momento).
+
+## 2. Vistas de stock agregado (`stock_articulos`, `stock_productos_finales`, `stock_semielaborados`) no agrupan por ubicación — y dos consumidores del frontend colisionarían si empezaran a hacerlo
+
+Detectado durante el diseño de la Capa 2 de `ubicaciones` (vincular stock a ubicación, ver `UBICACIONES_DIAGNOSTICO.md`). Esa capa añade `ubicacion_id` solo a las tablas de lote y a sus vistas por-lote (`stock_lotes_articulo`, `stock_lotes_semielaborado`, `stock_lotes_producto_final`) — decisión deliberada, no un descuido. Las tres vistas agregadas siguen sumando el stock de un ítem a través de todos sus lotes sin distinguir ubicación.
+
+Cuando una capa futura sí necesite mostrar stock por ubicación y agrupe también estas tres vistas por `ubicacion_id` (pasando de una fila por ítem a una fila por ítem+ubicación), dos consumidores del frontend colisionarán de forma silenciosa, sin ningún error visible:
+
+- `Producciones.jsx:211-215` — `stockTotal.map(s => <tr key={s.semielaborado_id}>...)`: la key es solo `semielaborado_id`. Con dos filas del mismo semielaborado en dos ubicaciones, React colisiona claves y probablemente solo pinta una fila, ocultando stock real sin ningún error visible.
+- `ProduccionProductosFinales.jsx:203-207` — mismo patrón exacto, `key={s.producto_final_id}`.
+
+Ambas keys tendrán que pasar a compuestas (`item_id` + `ubicacion_id`) en esa misma tarea futura, no antes.
+
+**Nota adicional, código muerto detectado de paso**: `stock_articulos` no tiene ningún consumidor en el frontend hoy (grep exhaustivo en `frontend/src`, cero coincidencias) — ya está muerta antes de tocar nada de ubicaciones. Vale la pena saberlo antes de invertir esfuerzo manteniéndola o agrupándola por ubicación en capas futuras si nadie la lee.
+
+**Por qué no se resolvió ahora**: la Capa 2 de `ubicaciones` es deliberadamente solo "vincular" — añadir la columna a las tablas de lote y a sus vistas correspondientes, sin cambiar las vistas agregadas ni ningún trigger. Arreglar las keys de React ahora adelantaría trabajo de una capa que todavía no existe (agrupación de stock por ubicación) y que no se ha diseñado.
+
+**Cuándo retomarlo**: junto con la capa que agrupe `stock_articulos`/`stock_productos_finales`/`stock_semielaborados` por `ubicacion_id` (probablemente Capa 3 o posterior, cuando exista un caso real de stock multi-ubicación visible en pantalla).
