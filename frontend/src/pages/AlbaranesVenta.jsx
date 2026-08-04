@@ -66,13 +66,17 @@ function AlbaranesVenta() {
     async function cargarPedido() {
       const { data } = await supabase
         .from('pedidos_venta')
-        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id)')
+        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id, cantidad, lineas_albaran_venta(cantidad))')
         .eq('id', pedidoIdParam)
         .single()
 
       if (data) {
         setClienteId(String(data.cliente_id))
-        setPedidoLineas(data.lineas_pedido_venta || [])
+        const lineasConEntregado = (data.lineas_pedido_venta || []).map((l) => ({
+          ...l,
+          entregado_previo: (l.lineas_albaran_venta || []).reduce((sum, e) => sum + e.cantidad, 0),
+        }))
+        setPedidoLineas(lineasConEntregado)
       }
     }
 
@@ -80,10 +84,24 @@ function AlbaranesVenta() {
   }, [pedidoIdParam])
 
   function lineaPedidoPara(tipo, id) {
-    const match = pedidoLineas.find((l) =>
+    const candidatas = pedidoLineas.filter((l) =>
       tipo === 'producto' ? l.producto_final_id === id : l.articulo_id === id
     )
-    return match?.id ?? null
+    if (candidatas.length === 0) return null
+
+    // Reparte a la primera línea de pedido que todavía no esté cubierta
+    // (lo ya entregado en albaranes previos + lo que se está añadiendo en
+    // esta misma sesión antes de guardar) — no siempre a la primera que
+    // coincida por producto, que atribuía mal cuando un pedido tenía más
+    // de una línea del mismo producto.
+    const noCubierta = candidatas.find((l) => {
+      const enSesion = lineas
+        .filter((x) => x.linea_pedido_id === l.id)
+        .reduce((sum, x) => sum + x.cantidad, 0)
+      return l.entregado_previo + enSesion < l.cantidad
+    })
+
+    return (noCubierta ?? candidatas[0]).id
   }
 
   function resetForm() {
