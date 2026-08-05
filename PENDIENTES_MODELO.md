@@ -32,3 +32,19 @@ Ambas keys tendrán que pasar a compuestas (`item_id` + `ubicacion_id`) en esa m
 **Por qué no se resolvió ahora**: la Capa 2 de `ubicaciones` es deliberadamente solo "vincular" — añadir la columna a las tablas de lote y a sus vistas correspondientes, sin cambiar las vistas agregadas ni ningún trigger. Arreglar las keys de React ahora adelantaría trabajo de una capa que todavía no existe (agrupación de stock por ubicación) y que no se ha diseñado.
 
 **Cuándo retomarlo**: junto con la capa que agrupe `stock_articulos`/`stock_productos_finales`/`stock_semielaborados` por `ubicacion_id` (probablemente Capa 3 o posterior, cuando exista un caso real de stock multi-ubicación visible en pantalla).
+
+## 3. Carga de histórico masivo (futuro cliente con volumen alto de pedidos/ventas previas en Excel u otro sistema)
+
+Hoy la carga de histórico se hace a mano vía interfaz porque el volumen propio es bajo.
+
+**Por qué no se resolvió ahora**: no hay ningún caso real que lo exija — un importador genérico diseñado sin un formato concreto delante casi seguro no encajaría con el formato real del primer cliente que sí necesite carga masiva, y habría que rehacerlo de todos modos.
+
+**Cuándo retomarlo**: cuando exista un caso real con volumen alto, diseñar un importador específico para el formato real de ese cliente en ese momento — no antes, no genérico.
+
+## 4. Onboarding de un negocio/cliente nuevo desde cero: orden correcto para no repetir la conflación de artículos
+
+El orden correcto es crear primero los ingredientes (`Ingredientes.jsx`), luego los artículos granulares por proveedor+calidad vinculados a su ingrediente, y construir las recetas apuntando siempre a `ingrediente_id`, nunca a `articulo_id` directo — evita desde el origen la conflación que tuvo que corregirse a posteriori en el negocio actual (Española), donde los 5 artículos base ya están atados a `receta_*` con `articulo_id` directo y no se pueden migrar sin rediseñar la receta primero.
+
+**Por qué no se resolvió ahora**: no hay todavía ningún caso real de onboarding de un segundo negocio — documentarlo como checklist formal ahora sería escribir un procedimiento sin nadie que lo siga ni lo valide.
+
+**Cuándo retomarlo**: cuando se aborde el onboarding real de un negocio/cliente nuevo, documentar esto como guía/checklist de alta inicial.
