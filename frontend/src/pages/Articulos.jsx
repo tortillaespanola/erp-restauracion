@@ -3,13 +3,32 @@ import { supabase } from '../lib/supabase'
 import { IconThermometer, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, EmptyState, LoadingState } from '../components/ui'
 
+const NUEVO_INGREDIENTE = '__nuevo__'
+
 const vacio = {
-  nombre: '', unidad: '', categoria: '', iva: '', codigo: '', tipo_material: 'RM',
+  nombre: '', unidad: '', categoriaId: '', iva: '', tipo_material: 'RM',
   requiere_control_temperatura: false, temperatura_min: '', temperatura_max: '',
+  ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '',
+}
+
+async function generarCodigoArticulo(categoriaId, categorias, ingredienteId) {
+  const categoria = categorias.find((c) => c.id === parseInt(categoriaId))
+  let contadorProveedor = 1
+  if (ingredienteId) {
+    const { count } = await supabase
+      .from('articulo_ingrediente')
+      .select('*', { count: 'exact', head: true })
+      .eq('ingrediente_id', ingredienteId)
+    contadorProveedor = (count ?? 0) + 1
+  }
+  const contadorCalidad = 1
+  return `${categoria.acronimo}-${String(contadorProveedor).padStart(2, '0')}-${String(contadorCalidad).padStart(2, '0')}`
 }
 
 function Articulos() {
   const [articulos, setArticulos] = useState([])
+  const [categorias, setCategorias] = useState([])
+  const [ingredientesDeCategoria, setIngredientesDeCategoria] = useState([])
   const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(vacio)
   const [editandoId, setEditandoId] = useState(null)
@@ -17,13 +36,19 @@ function Articulos() {
   async function cargarDatos() {
     setCargando(true)
 
-    const { data, error } = await supabase
-      .from('articulos_compra')
-      .select('*, articulo_proveedor(id, precio, preferente, referencia_proveedor, proveedores(id, nombre_comercial))')
-      .order('created_at', { ascending: false })
+    const [resArticulos, resCategorias] = await Promise.all([
+      supabase
+        .from('articulos_compra')
+        .select('*, articulo_proveedor(id, precio, preferente, referencia_proveedor, proveedores(id, nombre_comercial)), categorias_articulo(nombre, acronimo)')
+        .order('created_at', { ascending: false }),
+      supabase.from('categorias_articulo').select('id, nombre, acronimo').order('nombre'),
+    ])
 
-    if (error) console.error('Error cargando artículos:', error)
-    else setArticulos(data)
+    if (resArticulos.error) console.error('Error cargando artículos:', resArticulos.error)
+    else setArticulos(resArticulos.data)
+
+    if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
+    else setCategorias(resCategorias.data)
 
     setCargando(false)
   }
@@ -32,8 +57,28 @@ function Articulos() {
     cargarDatos()
   }, [])
 
+  useEffect(() => {
+    async function cargarIngredientes() {
+      if (!form.categoriaId) {
+        setIngredientesDeCategoria([])
+        return
+      }
+      const { data } = await supabase
+        .from('ingredientes')
+        .select('id, nombre, unidad')
+        .eq('categoria_id', form.categoriaId)
+        .order('nombre')
+      setIngredientesDeCategoria(data || [])
+    }
+    cargarIngredientes()
+  }, [form.categoriaId])
+
   function handleChange(campo, valor) {
     setForm((prev) => ({ ...prev, [campo]: valor }))
+  }
+
+  function handleChangeCategoria(valor) {
+    setForm((prev) => ({ ...prev, categoriaId: valor, ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '' }))
   }
 
   async function handleSubmit(e) {
@@ -42,9 +87,8 @@ function Articulos() {
     const payload = {
       nombre: form.nombre,
       unidad: form.unidad,
-      categoria: form.categoria || null,
+      categoria_id: parseInt(form.categoriaId),
       iva: form.iva ? parseFloat(form.iva) : null,
-      codigo: form.codigo || null,
       tipo_material: form.tipo_material,
       requiere_control_temperatura: form.requiere_control_temperatura,
       temperatura_min: form.requiere_control_temperatura && form.temperatura_min ? parseFloat(form.temperatura_min) : null,
@@ -58,10 +102,44 @@ function Articulos() {
         return
       }
     } else {
-      const { error } = await supabase.from('articulos_compra').insert(payload)
+      let ingredienteId = form.ingredienteId && form.ingredienteId !== NUEVO_INGREDIENTE ? parseInt(form.ingredienteId) : null
+
+      if (form.ingredienteId === NUEVO_INGREDIENTE) {
+        if (!form.ingredienteNuevoNombre || !form.ingredienteNuevoUnidad) {
+          alert('Indica nombre y unidad del ingrediente nuevo')
+          return
+        }
+        const { data: nuevoIngrediente, error: errorIngrediente } = await supabase
+          .from('ingredientes')
+          .insert({ nombre: form.ingredienteNuevoNombre, unidad: form.ingredienteNuevoUnidad, categoria_id: parseInt(form.categoriaId) })
+          .select()
+          .single()
+        if (errorIngrediente) {
+          alert('Error al crear el ingrediente: ' + errorIngrediente.message)
+          return
+        }
+        ingredienteId = nuevoIngrediente.id
+      }
+
+      const codigo = await generarCodigoArticulo(form.categoriaId, categorias, ingredienteId)
+
+      const { data: nuevoArticulo, error } = await supabase
+        .from('articulos_compra')
+        .insert({ ...payload, codigo })
+        .select()
+        .single()
       if (error) {
         alert('Error al guardar: ' + error.message)
         return
+      }
+
+      if (ingredienteId) {
+        const { error: errorVinculo } = await supabase
+          .from('articulo_ingrediente')
+          .insert({ articulo_id: nuevoArticulo.id, ingrediente_id: ingredienteId })
+        if (errorVinculo) {
+          alert('El artículo se guardó, pero no se pudo vincular al ingrediente: ' + errorVinculo.message)
+        }
       }
     }
 
@@ -74,13 +152,13 @@ function Articulos() {
     setForm({
       nombre: a.nombre ?? '',
       unidad: a.unidad ?? '',
-      categoria: a.categoria ?? '',
+      categoriaId: a.categoria_id ? String(a.categoria_id) : '',
       iva: a.iva ?? '',
-      codigo: a.codigo ?? '',
       tipo_material: a.tipo_material ?? 'RM',
       requiere_control_temperatura: a.requiere_control_temperatura ?? false,
       temperatura_min: a.temperatura_min ?? '',
       temperatura_max: a.temperatura_max ?? '',
+      ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '',
     })
     setEditandoId(a.id)
   }
@@ -114,9 +192,13 @@ function Articulos() {
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Código corto">
-                <Input type="text" placeholder="Ej. KRT" value={form.codigo}
-                  onChange={(e) => handleChange('codigo', e.target.value)} />
+              <Field label="Categoría">
+                <Select value={form.categoriaId} onChange={(e) => handleChangeCategoria(e.target.value)} required>
+                  <option value="">Selecciona categoría</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </Select>
               </Field>
               <Field label="Tipo de material">
                 <Select value={form.tipo_material} onChange={(e) => handleChange('tipo_material', e.target.value)}>
@@ -132,16 +214,30 @@ function Articulos() {
                 onChange={(e) => handleChange('unidad', e.target.value)} required />
             </Field>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Categoría">
-                <Input type="text" placeholder="Ej. Carnes, Bebidas..." value={form.categoria}
-                  onChange={(e) => handleChange('categoria', e.target.value)} />
+            {!editandoId && (
+              <Field label="Ingrediente (opcional — agrupa variantes intercambiables de proveedor/calidad)">
+                <Select value={form.ingredienteId} onChange={(e) => handleChange('ingredienteId', e.target.value)} disabled={!form.categoriaId}>
+                  <option value="">{form.categoriaId ? 'Sin ingrediente' : 'Elige categoría primero'}</option>
+                  {form.categoriaId && <option value={NUEVO_INGREDIENTE}>+ Crear ingrediente nuevo</option>}
+                  {ingredientesDeCategoria.map((i) => (
+                    <option key={i.id} value={i.id}>{i.nombre}</option>
+                  ))}
+                </Select>
+                {form.ingredienteId === NUEVO_INGREDIENTE && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Input type="text" placeholder="Nombre del ingrediente" value={form.ingredienteNuevoNombre}
+                      onChange={(e) => handleChange('ingredienteNuevoNombre', e.target.value)} />
+                    <Input type="text" placeholder="Unidad" value={form.ingredienteNuevoUnidad || form.unidad}
+                      onChange={(e) => handleChange('ingredienteNuevoUnidad', e.target.value)} />
+                  </div>
+                )}
               </Field>
-              <Field label="IVA (%)">
-                <Input type="number" step="0.01" placeholder="0.00" value={form.iva}
-                  onChange={(e) => handleChange('iva', e.target.value)} />
-              </Field>
-            </div>
+            )}
+
+            <Field label="IVA (%)">
+              <Input type="number" step="0.01" placeholder="0.00" value={form.iva}
+                onChange={(e) => handleChange('iva', e.target.value)} />
+            </Field>
 
             <label className="flex items-center gap-2 text-sm text-gray-600">
               <input type="checkbox" checked={form.requiere_control_temperatura}
@@ -170,7 +266,7 @@ function Articulos() {
                 <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
               )}
               {!editandoId && (
-                <p className="text-xs text-gray-400">Podrás asignar proveedores y precios después de guardar el artículo.</p>
+                <p className="text-xs text-gray-400">El código se genera automáticamente. Podrás asignar proveedores y precios después de guardar el artículo.</p>
               )}
             </div>
           </form>
@@ -193,7 +289,7 @@ function Articulos() {
                     {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
                   </p>
                   <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
-                    <span>{a.unidad} · {a.categoria ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
+                    <span>{a.unidad} · {a.categorias_articulo?.nombre ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
                     <Badge color="gray">{a.tipo_material}</Badge>
                     {a.requiere_control_temperatura && (
                       <span className="text-[#0854A0] flex items-center gap-1">

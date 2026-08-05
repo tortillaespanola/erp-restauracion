@@ -3,23 +3,30 @@ import { supabase } from '../lib/supabase'
 import { IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, EmptyState, LoadingState } from '../components/ui'
 
-const vacio = { nombre: '', unidad: '' }
+const vacio = { nombre: '', unidad: '', categoriaId: '' }
 
 function Ingredientes() {
   const [ingredientes, setIngredientes] = useState([])
+  const [categorias, setCategorias] = useState([])
   const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(vacio)
 
   async function cargarDatos() {
     setCargando(true)
 
-    const { data, error } = await supabase
-      .from('ingredientes')
-      .select('*, articulo_ingrediente(articulo_id, articulos_compra(id, nombre, unidad))')
-      .order('nombre')
+    const [resIngredientes, resCategorias] = await Promise.all([
+      supabase
+        .from('ingredientes')
+        .select('*, categorias_articulo(nombre), articulo_ingrediente(articulo_id, articulos_compra(id, nombre, unidad))')
+        .order('nombre'),
+      supabase.from('categorias_articulo').select('id, nombre').order('nombre'),
+    ])
 
-    if (error) console.error('Error cargando ingredientes:', error)
-    else setIngredientes(data)
+    if (resIngredientes.error) console.error('Error cargando ingredientes:', resIngredientes.error)
+    else setIngredientes(resIngredientes.data)
+
+    if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
+    else setCategorias(resCategorias.data)
 
     setCargando(false)
   }
@@ -38,6 +45,7 @@ function Ingredientes() {
     const { error } = await supabase.from('ingredientes').insert({
       nombre: form.nombre,
       unidad: form.unidad,
+      categoria_id: parseInt(form.categoriaId),
     })
 
     if (error) {
@@ -59,10 +67,18 @@ function Ingredientes() {
       <Card className="mb-6">
         <CardHeader title="Nuevo ingrediente" />
         <CardBody>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-3 items-end">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
             <Field label="Nombre">
               <Input type="text" placeholder="Ej. Huevina" value={form.nombre}
                 onChange={(e) => handleChange('nombre', e.target.value)} required />
+            </Field>
+            <Field label="Categoría">
+              <Select value={form.categoriaId} onChange={(e) => handleChange('categoriaId', e.target.value)} required>
+                <option value="">Selecciona categoría</option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </Select>
             </Field>
             <Field label="Unidad">
               <Input type="text" placeholder="kg, l, ud..." value={form.unidad}
@@ -84,7 +100,7 @@ function Ingredientes() {
           {ingredientes.map((i) => (
             <Card key={i.id} className="p-4">
               <p className="font-semibold text-[#1C2938]">{i.nombre}</p>
-              <p className="text-sm text-gray-500">{i.unidad}</p>
+              <p className="text-sm text-gray-500">{i.unidad} · {i.categorias_articulo?.nombre ?? 'Sin categoría'}</p>
 
               <ArticulosDelIngrediente ingrediente={i} onCambio={cargarDatos} />
             </Card>
@@ -101,11 +117,15 @@ function ArticulosDelIngrediente({ ingrediente, onCambio }) {
 
   useEffect(() => {
     async function cargarArticulos() {
-      const { data } = await supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre')
+      const { data } = await supabase
+        .from('articulos_compra')
+        .select('id, nombre, unidad, categoria_id')
+        .eq('categoria_id', ingrediente.categoria_id)
+        .order('nombre')
       setArticulos(data || [])
     }
     cargarArticulos()
-  }, [])
+  }, [ingrediente.categoria_id])
 
   const yaVinculados = new Set(ingrediente.articulo_ingrediente.map((ai) => ai.articulo_id))
   const disponibles = articulos.filter((a) => !yaVinculados.has(a.id))
@@ -172,7 +192,7 @@ function ArticulosDelIngrediente({ ingrediente, onCambio }) {
       {disponibles.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_auto] gap-2">
           <Select value={articuloId} onChange={(e) => setArticuloId(e.target.value)} className="text-sm">
-            <option value="">Vincular artículo...</option>
+            <option value="">Vincular artículo (misma categoría)...</option>
             {disponibles.map((a) => (
               <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
             ))}
