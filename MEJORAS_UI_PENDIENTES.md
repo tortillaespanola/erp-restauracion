@@ -37,3 +37,16 @@ No implementado — solo la idea recogida, para cuando se aborde.
 Mismo patrón ya aplicado a `pedidos_compra.fecha_entrega_prevista`: capturada, no usada en ningún sitio (ver `FLUJO_TORTILLA.md`, "Relación FK no aprovechada" del Paso 1). Probablemente conviene resolver ambos casos juntos cuando se aborde, en vez de por separado — son la misma idea (fecha prevista vs. fecha real, aviso de desviación) aplicada a dos flujos distintos.
 
 No implementado — solo la idea recogida, para cuando se aborde.
+
+## 4. Referencia del proveedor a nivel de pedido — no existe ningún campo hoy
+
+Referencia del proveedor a nivel de PEDIDO (número/confirmación que el proveedor da al aceptar nuestro `pedido_compra`) — verificado con certeza contra el esquema real: no existe ningún campo hoy. `pedidos_compra` solo tiene `codigo_pedido` (nuestro, autogenerado por `trg_codigo_oc`) y `notas` (texto libre genérico).
+
+Distinto de dos campos que ya existen y que podrían confundirse con este:
+
+- `albaranes_compra.numero_albaran` — ya existe, ya es del proveedor (label real en el formulario: "Nº albarán del proveedor"), pero cubre la referencia a nivel de **albarán/entrega**, no de pedido.
+- `articulo_proveedor.referencia_proveedor` — es el SKU del proveedor para un artículo concreto en su catálogo, no la referencia de un pedido.
+
+Cambio pequeño: columna de texto libre nullable en `pedidos_compra`, mismo patrón que `numero_albaran`.
+
+No implementado — solo la idea recogida, para cuando se aborde.
