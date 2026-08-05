@@ -2,6 +2,8 @@
 
 Documento separado de `PENDIENTES_MODELO.md` a propósito: aquí no hay ninguna decisión de esquema pendiente — los datos ya existen (o están a una columna aditiva de existir), es una cuestión de qué se muestra en pantalla, no de cómo se modela. Mezclar deuda de interfaz con decisiones de modelo dificultaría el seguimiento de ambas.
 
+La mayoría de estas entradas son mejoras de comodidad, sin prisa. La entrada marcada **PRIORITARIO** es una excepción — bloquea operativa real hoy, no post-histórico.
+
 ## 1. Desplegables de selección de lote: campos disponibles no mostrados
 
 Verificado en las tres pantallas que ofrecen selector de lote — **no es el mismo componente reutilizado, como se suponía**: hay dos implementaciones independientes del label, con distinto nivel de detalle.
@@ -50,3 +52,15 @@ Distinto de dos campos que ya existen y que podrían confundirse con este:
 Cambio pequeño: columna de texto libre nullable en `pedidos_compra`, mismo patrón que `numero_albaran`.
 
 No implementado — solo la idea recogida, para cuando se aborde.
+
+## 5. PRIORITARIO — El desplegable de consumo filtra por `articulo_id` de forma estricta, sin respaldo en el modelo
+
+`Producciones.jsx` y `ProduccionProductosFinales.jsx` filtran el desplegable de consumo de cada línea estrictamente por el `articulo_id` que fija la receta (`cargarIngredientesConLotes()`, `.eq('articulo_id', linea.articulo_id)`) — no hay forma de consumir un artículo distinto (ej. una variante de calidad/proveedor distinta comprada puntualmente) aunque el modelo de datos ya lo permite sin problema: `check_consumo_produccion()` no valida en absoluto contra `receta_semielaborado`, ninguna restricción de esquema lo impide (verificado contra el código real del trigger).
+
+Bloquea operativa real hoy, no es solo mejora de comodidad — de ahí la prioridad.
+
+**Arreglo mínimo**: quitar el filtro estricto de `articulo_id`, dejar elegir cualquier lote disponible en stock (con el artículo de receta destacado/preseleccionado por defecto).
+
+**No requiere `familia_ingrediente`** — esa sería la mejora futura de sugerencia automática de variantes intercambiables (ver exploración de diseño ya discutida). Esto es solo quitar un bloqueo de UI que hoy no tiene ningún respaldo en el modelo.
+
+No implementado — solo el diagnóstico y el arreglo mínimo propuesto, para cuando se aborde.

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Articulos from './pages/Articulos'
+import Ingredientes from './pages/Ingredientes'
 import Semielaborados from './pages/Semielaborados'
 import Producciones from './pages/Producciones'
 import AjustesStock from './pages/AjustesStock'
@@ -24,6 +25,7 @@ function App({ session, onLogout }) {
           <Route path="/" element={<Articulos />} />
           <Route path="/articulos" element={<Articulos />} />
 
+          <Route path="/ingredientes" element={<Ingredientes />} />
           <Route path="/semielaborados" element={<Semielaborados />} />
           <Route path="/producciones" element={<Producciones />} />
           <Route path="/ajustes-stock" element={<AjustesStock />} />
