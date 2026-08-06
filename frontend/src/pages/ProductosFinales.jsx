@@ -3,12 +3,13 @@ import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
-const lineaVacia = { tipo: 'articulo', articulo_id: '', ingrediente_semielaborado_id: '', cantidad: '' }
+const lineaVacia = { tipo: 'articulo', articulo_id: '', ingrediente_semielaborado_id: '', ingrediente_id: '', cantidad: '' }
 
 function ProductosFinales() {
   const [productos, setProductos] = useState([])
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
+  const [ingredientes, setIngredientes] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
@@ -21,20 +22,22 @@ function ProductosFinales() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resProd, resArt, resSemi] = await Promise.all([
+    const [resProd, resArt, resSemi, resIngredientes] = await Promise.all([
       supabase
         .from('productos_finales')
         .select(`
           *,
           receta_producto_final(
-            id, cantidad, articulo_id, ingrediente_semielaborado_id,
+            id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id,
             articulos_compra(nombre, unidad),
-            semielaborados(nombre, unidad)
+            semielaborados(nombre, unidad),
+            ingredientes(nombre, unidad)
           )
         `)
         .order('nombre', { ascending: true }),
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
       supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
+      supabase.from('ingredientes').select('id, nombre, unidad').order('nombre'),
     ])
 
     if (resProd.error) console.error(resProd.error)
@@ -45,6 +48,9 @@ function ProductosFinales() {
 
     if (resSemi.error) console.error(resSemi.error)
     else setSemielaborados(resSemi.data)
+
+    if (resIngredientes.error) console.error(resIngredientes.error)
+    else setIngredientes(resIngredientes.data)
 
     setCargando(false)
   }
@@ -60,6 +66,7 @@ function ProductosFinales() {
       if (campo === 'tipo') {
         copia[index].articulo_id = ''
         copia[index].ingrediente_semielaborado_id = ''
+        copia[index].ingrediente_id = ''
       }
       return copia
     })
@@ -89,9 +96,10 @@ function ProductosFinales() {
     setNotas(p.notas ?? '')
 
     const lineasCargadas = p.receta_producto_final.map((l) => ({
-      tipo: l.articulo_id ? 'articulo' : 'semielaborado',
+      tipo: l.articulo_id ? 'articulo' : l.ingrediente_id ? 'ingrediente' : 'semielaborado',
       articulo_id: l.articulo_id ?? '',
       ingrediente_semielaborado_id: l.ingrediente_semielaborado_id ?? '',
+      ingrediente_id: l.ingrediente_id ?? '',
       cantidad: l.cantidad ?? '',
     }))
 
@@ -104,7 +112,7 @@ function ProductosFinales() {
     e.preventDefault()
 
     const lineasValidas = lineas.filter(
-      (l) => l.cantidad && (l.articulo_id || l.ingrediente_semielaborado_id)
+      (l) => l.cantidad && (l.articulo_id || l.ingrediente_semielaborado_id || l.ingrediente_id)
     )
     if (lineasValidas.length === 0) {
       alert('Añade al menos un ingrediente a la receta')
@@ -161,6 +169,7 @@ function ProductosFinales() {
       producto_final_id: productoId,
       articulo_id: l.tipo === 'articulo' ? parseInt(l.articulo_id) : null,
       ingrediente_semielaborado_id: l.tipo === 'semielaborado' ? parseInt(l.ingrediente_semielaborado_id) : null,
+      ingrediente_id: l.tipo === 'ingrediente' ? parseInt(l.ingrediente_id) : null,
       cantidad: parseFloat(l.cantidad),
     }))
 
@@ -234,6 +243,11 @@ function ProductosFinales() {
                         Artículo de compra
                       </label>
                       <label className="flex items-center gap-1.5">
+                        <input type="radio" checked={linea.tipo === 'ingrediente'}
+                          onChange={() => handleLineaChange(index, 'tipo', 'ingrediente')} />
+                        Ingrediente (varias variantes)
+                      </label>
+                      <label className="flex items-center gap-1.5">
                         <input type="radio" checked={linea.tipo === 'semielaborado'}
                           onChange={() => handleLineaChange(index, 'tipo', 'semielaborado')} />
                         Semielaborado
@@ -241,7 +255,7 @@ function ProductosFinales() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-2 items-center">
-                      {linea.tipo === 'articulo' ? (
+                      {linea.tipo === 'articulo' && (
                         <Select value={linea.articulo_id}
                           onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                           required>
@@ -250,7 +264,18 @@ function ProductosFinales() {
                             <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
                           ))}
                         </Select>
-                      ) : (
+                      )}
+                      {linea.tipo === 'ingrediente' && (
+                        <Select value={linea.ingrediente_id}
+                          onChange={(e) => handleLineaChange(index, 'ingrediente_id', e.target.value)}
+                          required>
+                          <option value="">Selecciona ingrediente</option>
+                          {ingredientes.map((i) => (
+                            <option key={i.id} value={i.id}>{i.nombre} ({i.unidad})</option>
+                          ))}
+                        </Select>
+                      )}
+                      {linea.tipo === 'semielaborado' && (
                         <Select value={linea.ingrediente_semielaborado_id}
                           onChange={(e) => handleLineaChange(index, 'ingrediente_semielaborado_id', e.target.value)}
                           required>
@@ -321,13 +346,13 @@ function ProductosFinales() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {p.receta_producto_final.map((linea) => {
-                    const esArticulo = !!linea.articulos_compra
-                    const ingrediente = esArticulo ? linea.articulos_compra : linea.semielaborados
+                    const tipo = linea.articulos_compra ? 'Artículo' : linea.ingredientes ? 'Ingrediente' : 'Semielaborado'
+                    const fuente = linea.articulos_compra ?? linea.ingredientes ?? linea.semielaborados
                     return (
                       <tr key={linea.id}>
-                        <td className="py-1.5">{ingrediente?.nombre ?? '—'}</td>
-                        <td className="py-1.5 text-gray-400">{esArticulo ? 'Artículo' : 'Semielaborado'}</td>
-                        <td className="py-1.5">{linea.cantidad} {ingrediente?.unidad}</td>
+                        <td className="py-1.5">{fuente?.nombre ?? '—'}</td>
+                        <td className="py-1.5 text-gray-400">{tipo}</td>
+                        <td className="py-1.5">{linea.cantidad} {fuente?.unidad}</td>
                       </tr>
                     )
                   })}
