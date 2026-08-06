@@ -2,7 +2,7 @@
 
 Documento separado de `PENDIENTES_MODELO.md` a propósito: aquí no hay ninguna decisión de esquema pendiente — los datos ya existen (o están a una columna aditiva de existir), es una cuestión de qué se muestra en pantalla, no de cómo se modela. Mezclar deuda de interfaz con decisiones de modelo dificultaría el seguimiento de ambas.
 
-La mayoría de estas entradas son mejoras de comodidad, sin prisa. La entrada marcada **PRIORITARIO** es una excepción — bloquea operativa real hoy, no post-histórico.
+Todas las entradas son mejoras de comodidad o huecos sin uso real todavía, sin prisa.
 
 ## 1. Desplegables de selección de lote: campos disponibles no mostrados
 
@@ -53,14 +53,15 @@ Cambio pequeño: columna de texto libre nullable en `pedidos_compra`, mismo patr
 
 No implementado — solo la idea recogida, para cuando se aborde.
 
-## 5. PRIORITARIO — El desplegable de consumo filtra por `articulo_id` de forma estricta, sin respaldo en el modelo
+## 5. `ProduccionProductosFinales.jsx` no reconoce líneas de receta por `ingrediente_id`
 
-`Producciones.jsx` y `ProduccionProductosFinales.jsx` filtran el desplegable de consumo de cada línea estrictamente por el `articulo_id` que fija la receta (`cargarIngredientesConLotes()`, `.eq('articulo_id', linea.articulo_id)`) — no hay forma de consumir un artículo distinto (ej. una variante de calidad/proveedor distinta comprada puntualmente) aunque el modelo de datos ya lo permite sin problema: `check_consumo_produccion()` no valida en absoluto contra `receta_semielaborado`, ninguna restricción de esquema lo impide (verificado contra el código real del trigger).
+**Ya resuelto, no tocar de nuevo:**
+- `Producciones.jsx` — `cargarIngredientesConLotes()` ya reconoce líneas con `ingrediente_id` (resuelve lotes vía `articulo_ingrediente`, antepone el nombre del artículo al label del lote).
+- Gestión de ingredientes y artículos vinculados — pantalla `Ingredientes.jsx` ya existe (alta, vinculación/desvinculación con `confirm()`).
+- Definición de líneas de receta por ingrediente — `Semielaborados.jsx` y `ProductosFinales.jsx` ya tienen el tercer radio "Ingrediente" junto a "Artículo de compra"/"Otro semielaborado".
 
-Bloquea operativa real hoy, no es solo mejora de comodidad — de ahí la prioridad.
+**Sigue abierto:** `ProduccionProductosFinales.jsx` (consumo de `receta_producto_final`) **no** tiene el mismo reconocimiento de `ingrediente_id` que `Producciones.jsx` — su `cargarIngredientesConLotes()` sigue filtrando el desplegable de consumo estrictamente por `articulo_id` (`.eq('articulo_id', linea.articulo_id)`), sin la rama que resuelve lotes para líneas con `ingrediente_id`.
 
-**Arreglo mínimo**: quitar el filtro estricto de `articulo_id`, dejar elegir cualquier lote disponible en stock (con el artículo de receta destacado/preseleccionado por defecto).
+No es urgente hoy: la receta real de Tortilla no usa `ingrediente_id` todavía (solo `Mezcla`, un semielaborado, lo usa para su línea de Huevina). Pero si en el futuro se edita una línea de `receta_producto_final` para usar `ingrediente_id`, haría falta el mismo cambio que ya se hizo en `Producciones.jsx` — si no, esa línea no ofrecería ningún lote para consumir.
 
-**No requiere `familia_ingrediente`** — esa sería la mejora futura de sugerencia automática de variantes intercambiables (ver exploración de diseño ya discutida). Esto es solo quitar un bloqueo de UI que hoy no tiene ningún respaldo en el modelo.
-
-No implementado — solo el diagnóstico y el arreglo mínimo propuesto, para cuando se aborde.
+No implementado — solo el diagnóstico, para cuando se aborde (o para cuando una receta real de producto final necesite `ingrediente_id`, lo que llegue antes).
