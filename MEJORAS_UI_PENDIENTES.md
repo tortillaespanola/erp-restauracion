@@ -65,3 +65,13 @@ No implementado — solo la idea recogida, para cuando se aborde.
 No es urgente hoy: la receta real de Tortilla no usa `ingrediente_id` todavía (solo `Mezcla`, un semielaborado, lo usa para su línea de Huevina). Pero si en el futuro se edita una línea de `receta_producto_final` para usar `ingrediente_id`, haría falta el mismo cambio que ya se hizo en `Producciones.jsx` — si no, esa línea no ofrecería ningún lote para consumir.
 
 No implementado — solo el diagnóstico, para cuando se aborde (o para cuando una receta real de producto final necesite `ingrediente_id`, lo que llegue antes).
+
+## 6. Formato de compra vs. unidad de consumo — caso real: aceite de oliva (litros vs. kg)
+
+El aceite de oliva se compra y consume en litros, pero se pesa en báscula al consumir (kg reales). Para la carga de histórico actual se asume densidad 1:1 (litros = kg) por simplicidad — introduce un error real de ~8-9% frente a la densidad real del aceite (~0.91-0.92 kg/l).
+
+No bloquea el histórico actual: es una aproximación consciente y documentada, no un error sin detectar.
+
+**Cuándo retomarlo**: cuando se aborde el caso general de formato de compra vs. unidad de consumo (no encontrado como pendiente ya documentado en ningún sitio — ni aquí ni en `PENDIENTES_MODELO.md` — pese a haberse mencionado antes; si existe una decisión de diseño previa sobre esto, no quedó escrita), incluir densidad como campo de `articulos_compra` (o específico de este caso) para poder convertir correctamente entre litros comprados y kg consumidos.
+
+No implementado — solo la aproximación documentada, para cuando se aborde.

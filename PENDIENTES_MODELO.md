@@ -48,3 +48,13 @@ El orden correcto es crear primero los ingredientes (`Ingredientes.jsx`), luego 
 **Por qué no se resolvió ahora**: no hay todavía ningún caso real de onboarding de un segundo negocio — documentarlo como checklist formal ahora sería escribir un procedimiento sin nadie que lo siga ni lo valide.
 
 **Cuándo retomarlo**: cuando se aborde el onboarding real de un negocio/cliente nuevo, documentar esto como guía/checklist de alta inicial.
+
+## 5. Campo de origen/país para `articulos_compra`
+
+Relevante para trazabilidad y posible etiquetado, especialmente en materia prima (ej. huevos suizos, aceite español). Cambio pequeño: columna nullable en `articulos_compra` — falta decidir si texto libre o país controlado (tabla/enum).
+
+Si en el futuro el origen resultara variar lote a lote para un mismo artículo (excepción, no la norma), el patrón ya existente es dar de alta un artículo nuevo vinculado al mismo ingrediente — mismo mecanismo que ya resuelve variantes de proveedor/calidad (ver `articulo_ingrediente`), no necesita campo de lote aparte.
+
+**Por qué no se resolvió ahora**: no hay ningún caso real hoy que lo exija (ni un cliente pidiendo trazabilidad de origen, ni una necesidad de etiquetado activa) — decidir texto libre vs. controlado sin un caso real delante corre el mismo riesgo que un importador genérico: adivinar mal el formato.
+
+**Cuándo retomarlo**: cuando exista un caso real de trazabilidad o etiquetado que lo requiera, decidir la forma del campo (texto libre vs. país controlado) en ese momento, con el caso real delante.
