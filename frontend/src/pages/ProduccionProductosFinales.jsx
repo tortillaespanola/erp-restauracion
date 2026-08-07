@@ -7,15 +7,17 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Sele
 async function cargarIngredientesConLotes(productoFinalId) {
   const { data: receta } = await supabase
     .from('receta_producto_final')
-    .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados(nombre, unidad)')
+    .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados(nombre, unidad), ingredientes(nombre, unidad)')
     .eq('producto_final_id', productoFinalId)
 
   return Promise.all(
     (receta || []).map(async (linea) => {
-      const esArticulo = !!linea.articulo_id
+      const esArticuloDirecto = !!linea.articulo_id
+      const esIngrediente = !!linea.ingrediente_id
+      const esArticulo = esArticuloDirecto || esIngrediente
       let lotes = []
 
-      if (esArticulo) {
+      if (esArticuloDirecto) {
         const { data } = await supabase
           .from('stock_lotes_articulo')
           .select('*')
@@ -23,6 +25,21 @@ async function cargarIngredientesConLotes(productoFinalId) {
           .gt('stock_disponible', 0)
           .order('fecha_caducidad', { ascending: true, nullsFirst: false })
         lotes = data || []
+      } else if (esIngrediente) {
+        const { data: vinculos } = await supabase
+          .from('articulo_ingrediente')
+          .select('articulo_id')
+          .eq('ingrediente_id', linea.ingrediente_id)
+        const articuloIds = (vinculos || []).map((v) => v.articulo_id)
+        if (articuloIds.length > 0) {
+          const { data } = await supabase
+            .from('stock_lotes_articulo')
+            .select('*')
+            .in('articulo_id', articuloIds)
+            .gt('stock_disponible', 0)
+            .order('fecha_caducidad', { ascending: true, nullsFirst: false })
+          lotes = data || []
+        }
       } else {
         const { data } = await supabase
           .from('stock_lotes_semielaborado')
@@ -35,10 +52,12 @@ async function cargarIngredientesConLotes(productoFinalId) {
 
       return {
         esArticulo,
+        esIngrediente,
         articulo_id: linea.articulo_id,
+        ingrediente_id: linea.ingrediente_id,
         ingrediente_semielaborado_id: linea.ingrediente_semielaborado_id,
-        nombre: esArticulo ? linea.articulos_compra?.nombre : linea.semielaborados?.nombre,
-        unidad: esArticulo ? linea.articulos_compra?.unidad : linea.semielaborados?.unidad,
+        nombre: esArticuloDirecto ? linea.articulos_compra?.nombre : esIngrediente ? linea.ingredientes?.nombre : linea.semielaborados?.nombre,
+        unidad: esArticuloDirecto ? linea.articulos_compra?.unidad : esIngrediente ? linea.ingredientes?.unidad : linea.semielaborados?.unidad,
         cantidadOrientativa: linea.cantidad,
         lotes,
       }
@@ -340,7 +359,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         <div className="mt-3 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
           {ingredientes.map((ing) => (
-            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_semielaborado_id}`}
+            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
               onAdd={(loteId, cantidad) => registrarConsumo(ing, loteId, cantidad)} />
           ))}
@@ -393,7 +412,7 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
               const label = ingrediente.esArticulo
-                ? `${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
+                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
                 : `Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
               return <option key={id} value={id}>{label}</option>
             })}
@@ -591,7 +610,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         <div className="mt-3 flex flex-col gap-2">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Añadir más consumo</p>
           {ingredientes.map((ing) => (
-            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_semielaborado_id}`}
+            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
               onAdd={(loteId, cantidad) => anadirLinea(ing, loteId, cantidad)} />
           ))}
