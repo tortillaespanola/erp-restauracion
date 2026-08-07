@@ -75,3 +75,13 @@ No bloquea el histórico actual: es una aproximación consciente y documentada, 
 **Cuándo retomarlo**: cuando se aborde el caso general de formato de compra vs. unidad de consumo (no encontrado como pendiente ya documentado en ningún sitio — ni aquí ni en `PENDIENTES_MODELO.md` — pese a haberse mencionado antes; si existe una decisión de diseño previa sobre esto, no quedó escrita), incluir densidad como campo de `articulos_compra` (o específico de este caso) para poder convertir correctamente entre litros comprados y kg consumidos.
 
 No implementado — solo la aproximación documentada, para cuando se aborde.
+
+## 7. Componente de fecha personalizado
+
+**Problema detectado:** los inputs `<input type="date">` nativos dependen del idioma/locale configurado en el navegador de cada máquina, no del sistema operativo. Si el navegador tiene el idioma en inglés (US), el orden de los campos cambia a mm/dd en vez de dd/mm, causando confusión al introducir fechas manualmente.
+
+**Solución propuesta:** sustituir los inputs de fecha nativos por un componente de fecha personalizado en React (ej. `react-datepicker`), que controle el formato dd/mm/aaaa de forma fija desde el código, independiente de la configuración de cada máquina/navegador.
+
+**Prioridad:** baja/media — no bloquea el uso actual (se soluciona a nivel de navegador), pero mejora la robustez del sistema al desplegar en distintas máquinas o para otros usuarios futuros.
+
+**Fase:** revisar durante Layers 1 y 2 (UI/UX).
