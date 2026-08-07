@@ -58,3 +58,13 @@ Si en el futuro el origen resultara variar lote a lote para un mismo artículo (
 **Por qué no se resolvió ahora**: no hay ningún caso real hoy que lo exija (ni un cliente pidiendo trazabilidad de origen, ni una necesidad de etiquetado activa) — decidir texto libre vs. controlado sin un caso real delante corre el mismo riesgo que un importador genérico: adivinar mal el formato.
 
 **Cuándo retomarlo**: cuando exista un caso real de trazabilidad o etiquetado que lo requiera, decidir la forma del campo (texto libre vs. país controlado) en ese momento, con el caso real delante.
+
+## 6. `producciones_producto_final` no valida en ningún nivel de backend que `pedido_id` corresponda a un pedido no cancelado/servido
+
+Verificado contra el código y la base real (ver caso OV-260022): el único punto que impedía crear una producción sobre un pedido cancelado era de frontend (`Pedidos.jsx`, botón "Iniciar producción" — recién corregido). A nivel de backend no hay ningún `CHECK`, trigger o RPC que lo valide; probado con un `INSERT` directo (en transacción de prueba, con ROLLBACK) sobre un pedido real cancelado y tuvo éxito sin ningún error.
+
+Si en el futuro se añade otra vía de creación de producciones (API directa, importador, otra pantalla), este hueco volvería a ser accesible sin que nadie lo note.
+
+**Por qué no se resolvió ahora**: no urgente mientras el único punto de entrada real sea `Pedidos.jsx` con el fix de frontend ya aplicado — añadir una validación de backend para un único punto de entrada ya cubierto sería adelantar trabajo sin un segundo caso real que lo justifique.
+
+**Cuándo retomarlo**: si aparece una segunda vía de creación de `producciones_producto_final` (API, importador, otra pantalla), añadir la validación a nivel de backend (trigger `BEFORE INSERT` que compruebe `pedidos_venta.estado`) para que no dependa solo del frontend que la llame.
