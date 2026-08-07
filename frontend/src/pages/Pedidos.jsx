@@ -308,7 +308,7 @@ function Pedidos() {
                         <td className="py-1.5">{linea.cantidad} {unidad}</td>
                         <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
                         <td className="py-1.5 text-right">
-                          {esProducto && !completa && (
+                          {esProducto && !completa && p.estado !== 'servido' && p.estado !== 'cancelado' && (
                             <LinkAction
                               tone="blue"
                               className="text-xs"
