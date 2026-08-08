@@ -85,3 +85,19 @@ No implementado — solo la aproximación documentada, para cuando se aborde.
 **Prioridad:** baja/media — no bloquea el uso actual (se soluciona a nivel de navegador), pero mejora la robustez del sistema al desplegar en distintas máquinas o para otros usuarios futuros.
 
 **Fase:** revisar durante Layers 1 y 2 (UI/UX).
+
+## 8. `AlbaranesCompra.jsx`: reasignar retroactivamente un albarán `compra_directa` a un pedido existente
+
+Hoy no hay forma de, tras crear un albarán como `compra_directa`, vincularlo a posteriori a un `pedido_compra_id` (cambiar `tipo_origen` a `'pedido'`). Surgió al revisar un caso real que resultó no serlo (el albarán en cuestión ya estaba bien vinculado); el pedido duplicado que lo motivaba (`OC-260005`) se borró directamente. Queda el diseño ya pensado, sin implementar, para cuando aparezca un caso real:
+
+**Dónde**: en el modal "Editar albarán", solo cuando el albarán editado tiene `tipo_origen = 'compra_directa'` — un `<Select>` "Vincular a pedido existente" filtrado por `pedidos_compra` del mismo `proveedor_id` y `estado = 'pendiente'` (reutilizando `pedidosCompraPendientes`, ya cargado). Acción explícita y separada de "Guardar cambios" (no mezclar con la edición de líneas), porque toca una mutación distinta: cabecera + todas las líneas.
+
+**Punto no obvio, verificado contra el trigger real**: actualizar solo `albaranes_compra.pedido_compra_id` **no dispara nada** — `actualizar_estado_pedido_compra()` es `AFTER ... ON entrada_material` y calcula todo a partir de `entrada_material.linea_pedido_compra_id`, no del campo de cabecera. Hace falta además actualizar `linea_pedido_compra_id` en cada `entrada_material` de ese albarán (emparejando por `articulo_id` contra las líneas del pedido elegido) — eso sí dispara el trigger y recalcula el estado del pedido correctamente. Importante: esta actualización debe alcanzar también a las líneas bloqueadas (`locked`, ya consumidas/ajustadas) — el flujo actual de `handleSubmit` las excluye de cualquier UPDATE, pero vincular a un pedido no toca cantidad/precio, así que debería estar permitido incluso sobre una línea bloqueada.
+
+**Validación al guardar** (bloquear con aviso claro si falla):
+- El pedido elegido debe ser del mismo proveedor que el albarán (defensa además del filtro del desplegable).
+- Cada `articulo_id` del albarán debe existir entre las líneas del pedido elegido, y de forma no ambigua (si el pedido tuviera más de una línea para el mismo artículo, no hay forma automática de saber cuál corresponde).
+- **No bloquear** solo porque el pedido ya tenga otro albarán vinculado — eso es entrega parcial normal (mismo patrón ya soportado en pedidos de venta), bloquearlo rompería un caso legítimo.
+- Sobre-cobertura (que la cantidad total vinculada supere lo pedido): no bloquear tampoco — nada más en el flujo de compras lo bloquea hoy (a diferencia de ventas, que sí valida stock disponible), así que sería inconsistente introducirlo solo aquí.
+
+No implementado — solo el diseño, para cuando aparezca un caso real.
