@@ -71,7 +71,7 @@ function PedidosCompra() {
       }
       const { data, error } = await supabase
         .from('articulo_proveedor')
-        .select('precio, articulos_compra(id, nombre, unidad)')
+        .select('precio, referencia_proveedor, articulos_compra(id, nombre, unidad)')
         .eq('proveedor_id', proveedorId)
 
       if (error) {
@@ -84,12 +84,24 @@ function PedidosCompra() {
             nombre: ap.articulos_compra.nombre,
             unidad: ap.articulos_compra.unidad,
             precioPactado: ap.precio,
+            referenciaProveedor: ap.referencia_proveedor,
           }))
         )
       }
     }
     cargarArticulosDelProveedor()
   }, [proveedorId])
+
+  function handleProveedorChange(nuevoProveedorId) {
+    const hayLineasRellenas = lineas.some((l) => l.articulo_id || l.cantidad || l.precio_unitario)
+    if (proveedorId && nuevoProveedorId !== proveedorId && hayLineasRellenas) {
+      if (!confirm('Cambiar de proveedor borrará las líneas ya introducidas, ¿continuar?')) {
+        return
+      }
+      setLineas([{ ...lineaVacia }])
+    }
+    setProveedorId(nuevoProveedorId)
+  }
 
   function handleLineaChange(index, campo, valor) {
     setLineas((prev) => {
@@ -187,7 +199,7 @@ function PedidosCompra() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Field label="Proveedor">
-                <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} required>
+                <Select value={proveedorId} onChange={(e) => handleProveedorChange(e.target.value)} required>
                   <option value="">Selecciona proveedor</option>
                   {proveedores.map((p) => (
                     <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
@@ -224,7 +236,9 @@ function PedidosCompra() {
                           {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
                         </option>
                         {articulosDelProveedor.map((a) => (
-                          <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                          <option key={a.id} value={a.id}>
+                            {a.nombre} ({a.unidad}){a.referenciaProveedor ? ` — ref. ${a.referenciaProveedor}` : ''}
+                          </option>
                         ))}
                       </Select>
                       <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
