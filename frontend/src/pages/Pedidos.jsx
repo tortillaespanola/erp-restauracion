@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
-const lineaVacia = { tipo: 'producto', producto_final_id: '', articulo_id: '', cantidad: '', precio_unitario: '' }
+const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', cantidad: '', precio_unitario: '' }
 
 const ESTADO_BADGE = {
   pendiente: 'gray',
@@ -33,6 +33,9 @@ function Pedidos() {
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
+
+  const [editandoId, setEditandoId] = useState(null)
+  const [lineasABorrar, setLineasABorrar] = useState([])
 
   async function cargarDatos() {
     setCargando(true)
@@ -92,6 +95,10 @@ function Pedidos() {
   }
 
   function removeLinea(index) {
+    const linea = lineas[index]
+    if (linea.id) {
+      setLineasABorrar((prev) => [...prev, linea.id])
+    }
     setLineas((prev) => prev.filter((_, i) => i !== index))
   }
 
@@ -101,6 +108,47 @@ function Pedidos() {
     setFechaEntrega('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
+    setEditandoId(null)
+    setLineasABorrar([])
+  }
+
+  async function handleEditar(pedido) {
+    const lineaIds = pedido.lineas_pedido_venta.map((l) => l.id)
+
+    const [resProduccion, resAlbaran] = await Promise.all([
+      supabase.from('producciones_producto_final').select('id', { count: 'exact', head: true }).eq('pedido_id', pedido.id),
+      lineaIds.length > 0
+        ? supabase.from('lineas_albaran_venta').select('id', { count: 'exact', head: true }).in('linea_pedido_id', lineaIds)
+        : Promise.resolve({ count: 0, error: null }),
+    ])
+
+    if (resProduccion.error || resAlbaran.error) {
+      alert('Error al comprobar si el pedido se puede editar: ' + (resProduccion.error || resAlbaran.error).message)
+      return
+    }
+
+    if ((resProduccion.count || 0) > 0 || (resAlbaran.count || 0) > 0) {
+      alert('Este pedido ya tiene producción o entregas registradas; no se puede editar todavía — cancélalo y crea uno nuevo, o contacta con soporte.')
+      return
+    }
+
+    setClienteId(String(pedido.cliente_id))
+    setFecha(pedido.fecha)
+    setFechaEntrega(pedido.fecha_entrega_prevista ?? '')
+    setNotas(pedido.notas ?? '')
+    setLineas(
+      pedido.lineas_pedido_venta.map((l) => ({
+        id: l.id,
+        tipo: l.producto_final_id ? 'producto' : 'mercaderia',
+        producto_final_id: l.producto_final_id ? String(l.producto_final_id) : '',
+        articulo_id: l.articulo_id ? String(l.articulo_id) : '',
+        cantidad: String(l.cantidad),
+        precio_unitario: l.precio_unitario != null ? String(l.precio_unitario) : '',
+      }))
+    )
+    setLineasABorrar([])
+    setEditandoId(pedido.id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleSubmit(e) {
@@ -111,6 +159,69 @@ function Pedidos() {
     )
     if (lineasValidas.length === 0) {
       alert('Añade al menos una línea con producto/mercadería y cantidad')
+      return
+    }
+
+    function calcularCamposLinea(l) {
+      return {
+        producto_final_id: l.tipo === 'producto' ? parseInt(l.producto_final_id) : null,
+        articulo_id: l.tipo === 'mercaderia' ? parseInt(l.articulo_id) : null,
+        cantidad: parseFloat(l.cantidad),
+        precio_unitario: l.precio_unitario ? parseFloat(l.precio_unitario) : null,
+      }
+    }
+
+    if (editandoId) {
+      const { error: errorUpdate } = await supabase
+        .from('pedidos_venta')
+        .update({
+          cliente_id: parseInt(clienteId),
+          fecha,
+          fecha_entrega_prevista: fechaEntrega || null,
+          notas: notas || null,
+        })
+        .eq('id', editandoId)
+
+      if (errorUpdate) {
+        alert('Error al actualizar el pedido: ' + errorUpdate.message)
+        return
+      }
+
+      if (lineasABorrar.length > 0) {
+        const { error: errorBorrar } = await supabase
+          .from('lineas_pedido_venta')
+          .delete()
+          .in('id', lineasABorrar)
+        if (errorBorrar) {
+          alert('Error al borrar líneas: ' + errorBorrar.message)
+          return
+        }
+      }
+
+      for (const l of lineasValidas.filter((l) => l.id)) {
+        const { error } = await supabase
+          .from('lineas_pedido_venta')
+          .update(calcularCamposLinea(l))
+          .eq('id', l.id)
+        if (error) {
+          alert('Error al actualizar una línea: ' + error.message)
+          return
+        }
+      }
+
+      const nuevas = lineasValidas.filter((l) => !l.id)
+      if (nuevas.length > 0) {
+        const { error } = await supabase
+          .from('lineas_pedido_venta')
+          .insert(nuevas.map((l) => ({ pedido_id: editandoId, ...calcularCamposLinea(l) })))
+        if (error) {
+          alert('Error al añadir nuevas líneas: ' + error.message)
+          return
+        }
+      }
+
+      resetForm()
+      cargarDatos()
       return
     }
 
@@ -132,10 +243,7 @@ function Pedidos() {
 
     const lineasParaInsertar = lineasValidas.map((l) => ({
       pedido_id: pedidoCreado.id,
-      producto_final_id: l.tipo === 'producto' ? parseInt(l.producto_final_id) : null,
-      articulo_id: l.tipo === 'mercaderia' ? parseInt(l.articulo_id) : null,
-      cantidad: parseFloat(l.cantidad),
-      precio_unitario: l.precio_unitario ? parseFloat(l.precio_unitario) : null,
+      ...calcularCamposLinea(l),
     }))
 
     const { error: errorLineas } = await supabase
@@ -167,7 +275,7 @@ function Pedidos() {
       <PageHeader title="Pedidos" subtitle="Registra lo que pide un cliente, lanza la producción que haga falta, y créalo como albarán de venta cuando esté listo." />
 
       <Card className="mb-6">
-        <CardHeader title="Nuevo pedido" />
+        <CardHeader title={editandoId ? 'Editar pedido' : 'Nuevo pedido'} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -247,7 +355,12 @@ function Pedidos() {
               </button>
             </div>
 
-            <Button type="submit" className="self-start">Guardar pedido</Button>
+            <div className="flex gap-2">
+              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar pedido'}</Button>
+              {editandoId && (
+                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar edición</Button>
+              )}
+            </div>
           </form>
         </CardBody>
       </Card>
@@ -275,6 +388,9 @@ function Pedidos() {
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0 items-start">
+                  {p.estado !== 'servido' && p.estado !== 'cancelado' && (
+                    <LinkAction tone="blue" onClick={() => handleEditar(p)}>Editar</LinkAction>
+                  )}
                   {p.estado !== 'servido' && p.estado !== 'cancelado' && (
                     <LinkAction tone="blue" onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)}>
                       Crear albarán de venta
