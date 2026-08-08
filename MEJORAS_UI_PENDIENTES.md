@@ -117,3 +117,25 @@ No implementado — solo el diseño, para cuando aparezca un caso real.
 Esta idea ya se había identificado antes (durante el diagnóstico del filtro estricto de `articulo_id`) pero se perdió al reescribir la entrada #5 para documentar el hueco de `ingrediente_id` — de ahí que quede ahora como entrada propia, separada, para no perderla de nuevo.
 
 No implementado — solo el diseño, para cuando se aborde.
+
+## 10. Mostrar `referencia_proveedor` en el desplegable de selección de artículo
+
+En el desplegable de selección de artículo (`PedidosCompra.jsx` y/o `AlbaranesCompra.jsx` en modo `compra_directa`), mostrar junto al nombre del artículo la `referencia_proveedor` (`articulo_proveedor.referencia_proveedor`) — dato ya capturado pero nunca mostrado en ningún desplegable, ya documentado hace tiempo como "capturado pero no reutilizado".
+
+Como es N:M por proveedor, en principio parecía necesario decidir qué hacer en pantallas sin proveedor fijado (referencia preferente vs. omitir) — **pero confirmado que no hace falta**: en `PedidosCompra.jsx` el proveedor ya se elige primero, así que no hay ambigüedad. El desplegable de artículos que aparece después siempre puede mostrar directamente la `referencia_proveedor` de ESE proveedor ya fijado (join simple `articulo_proveedor` por `proveedor_id` + `articulo_id`), sin necesidad de decidir entre preferente/omitir.
+
+Cambio más simple de lo que se planteaba inicialmente: solo añadir la referencia al label del desplegable ya existente.
+
+Mejora de trazabilidad al identificar artículos rápido, sobre todo con nombres largos o similares entre sí.
+
+No implementado — solo la idea recogida, para cuando se aborde.
+
+## 11. `PedidosCompra.jsx`: cambiar de proveedor con líneas ya rellenas borra artículos sin avisar, deja cantidad/precio huérfanos
+
+En `PedidosCompra.jsx`, cambiar de proveedor después de haber rellenado líneas de pedido borra silenciosamente los artículos seleccionados (probablemente porque ya no pertenecen al nuevo proveedor) pero deja las cantidades y precios de esas líneas colgados sin avisar — el usuario no se entera de que sus datos quedaron inconsistentes hasta que lo nota por sí mismo.
+
+**Comportamiento correcto:** si se cambia de proveedor con líneas ya rellenas, mostrar una advertencia clara antes de proceder (ej. `confirm()` o modal: "Cambiar de proveedor borrará las líneas ya introducidas, ¿continuar?") y, si se confirma, limpiar las líneas por completo (no dejar cantidad/precio huérfanos de un artículo ya borrado).
+
+**Prioridad:** más alta que mejoras cosméticas — puede llevar a guardar un pedido con datos inconsistentes sin que el usuario lo perciba.
+
+No implementado — solo el diagnóstico, para cuando se aborde.
