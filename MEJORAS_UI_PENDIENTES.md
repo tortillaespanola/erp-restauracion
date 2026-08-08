@@ -139,3 +139,18 @@ En `PedidosCompra.jsx`, cambiar de proveedor después de haber rellenado líneas
 **Prioridad:** más alta que mejoras cosméticas — puede llevar a guardar un pedido con datos inconsistentes sin que el usuario lo perciba.
 
 No implementado — solo el diagnóstico, para cuando se aborde.
+
+## 12. `Pedidos.jsx` (venta): no existe ningún flujo de edición, solo crear y cancelar
+
+`Pedidos.jsx` (pedidos de venta) no tiene ningún flujo de edición — solo `handleSubmit` (crear) y `handleCancelar` (marcar `estado = 'cancelado'`, sin tocar líneas ni borrar nada). A diferencia de `AlbaranesCompra.jsx`, que sí tiene el ciclo completo de edición (`editandoId`, `lineasABorrar`, `handleEditar`, rama de `handleSubmit` para update, líneas bloqueadas con icono de candado cuando ya están consumidas/ajustadas).
+
+**Trasplantar el mismo patrón es mecánicamente posible, pero más complejo que en compras**, por una asimetría real de esquema, no cosmética:
+
+- `lineas_albaran_venta.linea_pedido_id` **sí** es FK exacta a la línea (`lineas_pedido_venta.id`) — igual de limpio que en compras, sin ambigüedad. Determinar qué líneas ya tienen entrega (parcial o total) es una query directa.
+- `producciones_producto_final.pedido_id` es FK a la **cabecera** del pedido, no a la línea — enlace blando por diseño (comentario explícito en la migración `20260801_pedidos_venta.sql`: "Enlace blando (trazabilidad), no reserva dura"). Determinar qué línea concreta ya tiene producción vinculada solo se puede hacer cruzando `pedido_id` + `producto_final_id`, lo cual es **ambiguo** si el pedido tiene dos líneas del mismo `producto_final_id` — nada en el modelo ni en la UI actual lo impide hoy.
+
+**Antes de implementar, decidir con el usuario:** ¿bloquear la línea igualmente por precaución cuando hay ambigüedad (dos líneas del mismo producto en el mismo pedido), o aceptar el riesgo y no bloquear por este criterio?
+
+**Tamaño estimado:** bastante mayor que las mejoras mecánicas de `PedidosCompra.jsx` (#10 y #11) — del orden de ~150-200 líneas de patrón trasplantado más una decisión de diseño abierta, no solo trasplante directo.
+
+No implementado — solo el diagnóstico, para cuando se aborde.
