@@ -103,3 +103,17 @@ Hoy no hay forma de, tras crear un albarán como `compra_directa`, vincularlo a 
 - Sobre-cobertura (que la cantidad total vinculada supere lo pedido): no bloquear tampoco — nada más en el flujo de compras lo bloquea hoy (a diferencia de ventas, que sí valida stock disponible), así que sería inconsistente introducirlo solo aquí.
 
 No implementado — solo el diseño, para cuando aparezca un caso real.
+
+## 9. Desplegable de consumo sin filtro estricto de `articulo_id`, con motivo/nota para sustituciones excepcionales
+
+**Distinta de la #5** (esa es sobre reconocer líneas de receta con `ingrediente_id` — variantes genuinamente fungibles, tipo Huevina de distinto proveedor). Esta es sobre poder consumir, excepcionalmente, un artículo **distinto** al que fija la receta, cuando no son intercambiables en el caso normal — caso real que la motivó: Caja Grande y Caja Pequeña, cada una va con su tortilla, solo se sustituyen si se agota la que corresponde. Vincularlas al mismo `ingrediente_id` (como si fueran fungibles, patrón de la #5) sería incorrecto aquí: haría que ambas aparecieran como opciones indistinguibles en el desplegable de consumo **siempre**, no solo en la excepción — riesgo nuevo en el caso normal, no solo pérdida de una señal en el caso raro. Se descartó esa vía explícitamente tras evaluarlo.
+
+**Diagnóstico confirmado contra el trigger real**: `check_consumo_produccion_pf()` (y por el mismo patrón, `check_consumo_produccion()`) **no valida en ningún momento que el lote consumido pertenezca al `articulo_id` de la receta** — el backend ya permite consumir un artículo distinto sin ningún problema. El único bloqueo hoy es de frontend: `cargarIngredientesConLotes()`, tanto en `Producciones.jsx` como en `ProduccionProductosFinales.jsx`, filtra el desplegable de consumo de cada línea estrictamente por `.eq('articulo_id', linea.articulo_id)` (o el `ingrediente_semielaborado_id`/`ingrediente_id` equivalente).
+
+**Arreglo propuesto** (en ambas pantallas):
+1. Quitar el filtro estricto — dejar elegir cualquier lote disponible en stock del mismo tipo (artículo o semielaborado), con el artículo/semielaborado de receta destacado/preseleccionado por defecto para no cambiar el flujo normal.
+2. Añadir un campo `motivo`/nota **nullable** a `consumo_produccion_pf` y `consumo_produccion` (mismo espíritu que `ajustes_articulo.motivo`, pero opcional — la mayoría de consumos son la elección normal de receta y no lo necesitan). Se rellena **solo** cuando el lote elegido no coincide con el artículo/semielaborado que fija la receta de esa línea — esa es la señal que permite después contar/detectar cuántas veces hubo una sustitución excepcional (ej. cuántas veces se usó Caja Grande para una Tortilla Pequeña).
+
+Esta idea ya se había identificado antes (durante el diagnóstico del filtro estricto de `articulo_id`) pero se perdió al reescribir la entrada #5 para documentar el hueco de `ingrediente_id` — de ahí que quede ahora como entrada propia, separada, para no perderla de nuevo.
+
+No implementado — solo el diseño, para cuando se aborde.
