@@ -51,6 +51,8 @@ Distinto de dos campos que ya existen y que podrían confundirse con este:
 
 Cambio pequeño: columna de texto libre nullable en `pedidos_compra`, mismo patrón que `numero_albaran`.
 
+**Caso real que la motiva** (sube su prioridad relativa frente a otros pendientes menores de este documento): el episodio de `OC-260002`/`OC-260005` (Hogashop, ver commit `9e69efb`) — un pedido duplicado por error que quedó pendiente sin forma de detectarlo hasta revisar manualmente. Con este campo, la referencia de confirmación del proveedor habría permitido detectar el duplicado antes (dos pedidos con la misma referencia del proveedor sería la señal), en vez de descubrirlo al revisar un albarán ya vinculado.
+
 No implementado — solo la idea recogida, para cuando se aborde.
 
 ## 5. `ProduccionProductosFinales.jsx` no reconoce líneas de receta por `ingrediente_id`
