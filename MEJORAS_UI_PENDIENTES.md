@@ -203,3 +203,26 @@ Registro de consumo en `Producciones.jsx`/`ProduccionProductosFinales.jsx` es un
 **Decisión de diseño ya recomendada**: permitir registro parcial (solo líneas completadas), no exigir las 4 líneas rellenas a la vez, mismo patrón que `lineasValidas` ya usado en `Pedidos.jsx`/`PedidosCompra.jsx`.
 
 No implementado — solo el diagnóstico y la estimación, para cuando se aborde.
+
+## 15. `AlbaranesVenta.jsx`: permitir "forzar" añadir un producto fuera del pedido ligado
+
+**Contexto — parte 1 ya implementada (filtro por defecto):** cuando el albarán viene con `pedido_id`, la lista de "Añadir productos finales"/"Añadir mercadería" ahora filtra por defecto a los productos/artículos que están en las líneas de ese pedido (`productosMostrados`/`articulosMostrados`, derivadas de `pedidoLineas`). Un albarán sin `pedido_id` (evento directo / venta directa) sigue mostrando el catálogo completo, sin cambios. Esto cierra el hueco de integridad más básico (añadir sin darse cuenta algo que el cliente no pidió), pero es solo el filtro — no hay forma de saltárselo cuando sí hace falta (venta real de algo adicional en el momento de la entrega).
+
+**Lo que falta — parte 2, NO implementada, solo diseño:** un mecanismo explícito para forzar la inclusión de un producto/artículo fuera de las líneas del pedido, dejando constancia de que fue una adición en el momento de la entrega. Toca tres capas, no una:
+
+**a) Esquema.** `lineas_pedido_venta` hoy solo tiene `id, pedido_id, producto_final_id, articulo_id, cantidad, precio_unitario, created_at, negocio_id` — verificado contra la base real, no hay ningún campo de texto/notas/origen. Hace falta una columna nueva nullable (decisión abierta: texto libre tipo `notas`, o un booleano `forzado`/`origen` tipo enum) antes de poder anotar nada.
+
+**b) RPC de inserción atómica (no dos `.insert()` sueltos).** El flujo naive sería: insertar la línea nueva en `lineas_pedido_venta`, capturar su `id`, e insertarlo como `linea_pedido_id` en la nueva línea de `lineas_albaran_venta`. Pero son dos llamadas `.insert()` separadas desde el cliente — Supabase/PostgREST no las envuelve en una transacción común. Si la segunda falla, queda una línea de pedido huérfana ya guardada, sin entrega, sin que nadie lo note — mismo tipo de riesgo de no-atomicidad ya documentado en la entrada 14. La forma correcta es un RPC nuevo que haga ambos inserts en una sola transacción, siguiendo el patrón ya probado en este código (`rpc_editar_produccion_semielaborado`/`_producto_final`).
+
+**c) Frontend.** Toggle/sección para revelar productos fuera del pedido (además de `productosMostrados`/`articulosMostrados`), marcar esas líneas como "forzadas" en el estado local de `lineas`, aviso visual en la tabla de líneas del albarán, y reestructurar `handleSubmit` para llamar al RPC en vez del insert directo actual quando haya líneas forzadas.
+
+**Decisiones abiertas, no resueltas:**
+- **Formato de la anotación**: texto libre vs. booleano/enum controlado (columna nueva en `lineas_pedido_venta`, punto (a) de arriba).
+- **Precio de la línea de pedido forzada — quién lo decide**: usar el mismo precio ya tecleado en la línea del albarán (`ProductoParaVender`/`ArticuloParaVender` ya tienen ese campo) es razonable y consistente con un precedente ya existente (`lineas_pedido_compra.precio_unitario` y `entrada_material.precio` ya son independientes entre sí sin sincronización, en compras). Pero una vez creadas, las dos filas (pedido y albarán) quedan desacopladas — si se edita el precio del albarán después, el de la línea de pedido no se actualiza solo. A confirmar explícitamente antes de implementar, no asumir en silencio.
+- **Interacción con la entrada 12 (Fase 2)**: si el pedido ya tenía dos líneas del mismo producto (nada lo impide hoy, ver entrada 12), forzar una tercera línea del mismo producto agrava esa ambigüedad ya conocida sobre qué línea concreta corresponde a qué producción/entrega. No es un problema nuevo de esta entrada, pero se solapan y conviene tenerlo presente si se abordan juntas.
+
+**Ya cubierto sin trabajo extra**: la validación de stock (`check_stock_producto_final()`) es independiente de si existe línea de pedido o no, así que no hay riesgo nuevo de sobreventa por este cambio.
+
+**Tamaño estimado**: migración (~15-20 líneas) + RPC nuevo (~50-70 líneas, rama producto/mercadería) + frontend en `AlbaranesVenta.jsx` (~80-120 líneas: toggle, estado de líneas forzadas, aviso visual, `handleSubmit` reestructurado) — del orden de **150-200 líneas repartidas en 3 capas**, sensiblemente más grande que el filtro de la parte 1 (que fue ~15 líneas, un solo archivo, sin backend).
+
+No implementado — solo el diagnóstico y el diseño, para cuando se aborde.
