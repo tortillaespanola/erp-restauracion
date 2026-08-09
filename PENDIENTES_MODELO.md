@@ -68,3 +68,11 @@ Si en el futuro se añade otra vía de creación de producciones (API directa, i
 **Por qué no se resolvió ahora**: no urgente mientras el único punto de entrada real sea `Pedidos.jsx` con el fix de frontend ya aplicado — añadir una validación de backend para un único punto de entrada ya cubierto sería adelantar trabajo sin un segundo caso real que lo justifique.
 
 **Cuándo retomarlo**: si aparece una segunda vía de creación de `producciones_producto_final` (API, importador, otra pantalla), añadir la validación a nivel de backend (trigger `BEFORE INSERT` que compruebe `pedidos_venta.estado`) para que no dependa solo del frontend que la llame.
+
+## 7. Internacionalización: la capa de interfaz se puede posponer, el contenido de texto libre del usuario no
+
+La capa de interfaz (textos de botones/menús/mensajes) sí puede ser la última pieza a montar, mismo patrón ya usado en las webs de Española/Company Valencia (`data-i18n`). Pero el contenido de texto libre introducido por el usuario (nombres de artículos, categorías, ingredientes, notas) no se traduce solo — si algún futuro cliente opera en un idioma distinto, ese contenido queda fijo en el idioma en que se tecleó, sin mecanismo de traducción entre negocios.
+
+**Por qué no se resolvió ahora**: no es un problema para el negocio actual (todo en español) — no hay ningún caso real que lo exija todavía.
+
+**Cuándo retomarlo**: antes de asumir que "idiomas" es solo una tarea de UI final, si algún día hay un cliente multi-idioma real — revisar entonces qué mecanismo de traducción (o de convivencia de idiomas) hace falta para el contenido ya introducido por usuarios, no solo para los textos fijos de la interfaz.
