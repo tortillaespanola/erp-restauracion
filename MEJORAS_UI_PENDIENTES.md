@@ -243,3 +243,18 @@ Verificado por grep exhaustivo en las cuatro pantallas que ofrecen selector de l
    - **(b) Selector de rango de fecha** que el usuario controla activamente, para acotar la búsqueda cuando ya sabe aproximadamente cuándo ocurrió el lote que busca.
 
 No implementado — no es urgente hoy (volumen bajo), para cuando el número de lotes por ítem lo justifique.
+
+## 17. `AlbaranesVenta.jsx`: precio y cantidad pactados en el pedido no se heredan al construir el albarán
+
+**Confirmado que sigue sin resolver** — no se abordó en ninguna sesión hasta ahora. Consolidado aquí por primera vez: el hallazgo ya existía disperso en `FLUJO_TORTILLA.md` (líneas 85, 88, 115 y 139, descrito ahí como "la asimetría más notable del sistema", Paso 6, cuello de botella #8 de la Sección A), pero **nunca tuvo entrada propia en este documento** — no había ninguna entrada desactualizada que cerrar, solo la ausencia de un punto de seguimiento accionable fuera de `FLUJO_TORTILLA.md`.
+
+**Verificado contra el código real, no solo contra el diagnóstico previo**: cuando `AlbaranesVenta.jsx` se abre desde un pedido (`pedidoIdParam`), `pedidoLineas` (`AlbaranesVenta.jsx:262-268`) se usa **solo para filtrar** qué productos/artículos aparecen en la lista de "añadir" — nunca se pasa a `ProductoParaVender`/`ArticuloParaVender` como prop, así que esos componentes no tienen forma de saber cuál es la línea de pedido correspondiente. Consecuencia directa:
+
+- `ProductoParaVender` (`AlbaranesVenta.jsx:434-439`): `cantidad` arranca vacía (`''`); `precio` arranca con `producto.precio_venta` — el precio de catálogo por defecto, **no** el `precio_unitario` pactado en `lineas_pedido_venta` para ese pedido concreto.
+- `ArticuloParaVender` (`AlbaranesVenta.jsx:494-499`): igual para `cantidad`; `precio` arranca vacío del todo (ni siquiera hay un default de catálogo aquí).
+
+**Riesgo real, no solo fricción de tecleo** (ya señalado en `FLUJO_TORTILLA.md` cuello de botella #8): si el precio pactado en el pedido difiere del `precio_venta` de catálogo (o de lo que se teclee de memoria) y nadie lo nota, el albarán —y la factura que sale de él— puede quedar con un precio distinto al pactado, sin ningún aviso.
+
+**Solución no diseñada todavía, dirección probable**: pasar la línea de `pedidoLineas` que corresponde a cada `producto`/`articulo` mostrado como prop adicional a `ProductoParaVender`/`ArticuloParaVender`, y usar su `cantidad`/`precio_unitario` como valor inicial de los campos (en vez de `''`/`producto.precio_venta`) cuando exista. Sin diseñar todavía: qué pasa si la cantidad pactada supera el stock disponible del lote elegido (¿capar, avisar, dejar tal cual?), y si debe ser prellenado editable (probable) o de solo lectura.
+
+No implementado — para cuando se aborde.
