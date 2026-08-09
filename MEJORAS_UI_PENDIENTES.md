@@ -154,3 +154,13 @@ No implementado — solo el diagnóstico, para cuando se aborde.
 **Tamaño estimado:** bastante mayor que las mejoras mecánicas de `PedidosCompra.jsx` (#10 y #11) — del orden de ~150-200 líneas de patrón trasplantado más una decisión de diseño abierta, no solo trasplante directo.
 
 No implementado — solo el diagnóstico, para cuando se aborde.
+
+## 13. `Clientes.jsx`: refinar la UX del toggle activo/inactivo
+
+Implementado en el commit que añade `clientes.activo` (columna boolean, default `true`): listado con badge "Activo"/"Inactivo" clicable para alternar directamente ahí, y filtro `.eq('activo', true)` solo en el desplegable de cliente de "Nuevo pedido" (`Pedidos.jsx`). Funciona, probado en runtime real por el usuario. Pendiente, como mejora de UX, no de corrección:
+
+1. **Mover el toggle al formulario de edición**, quitándolo del listado — hoy se cambia con un clic directo sobre el badge de la fila; el usuario prefiere que solo se pueda cambiar desde "Editar cliente".
+2. **Semáforo en vez de badge de texto** en el listado — sustituir el badge "Activo"/"Inactivo" por un indicador visual simple (punto rojo/verde), sin texto.
+3. **Ordenar inactivos al final del listado** — hoy `cargarClientes()` ordena solo por `nombre` (`supabase.from('clientes').select('*').order('nombre')`); haría falta un segundo criterio de orden (activos primero, luego por nombre) o un `order('activo', { ascending: false })` antes del `order('nombre')`.
+
+No implementado — solo la idea recogida, para cuando se aborde.

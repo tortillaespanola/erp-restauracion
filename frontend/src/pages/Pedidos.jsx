@@ -54,7 +54,7 @@ function Pedidos() {
           )
         `)
         .order('fecha', { ascending: false }),
-      supabase.from('clientes').select('id, nombre').order('nombre'),
+      supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('articulos_compra').select('id, nombre, unidad').eq('tipo_material', 'TRD').order('nombre'),
     ])

@@ -96,6 +96,19 @@ function Clientes() {
     cargarClientes()
   }
 
+  async function handleToggleActivo(c) {
+    const { error } = await supabase
+      .from('clientes')
+      .update({ activo: !c.activo })
+      .eq('id', c.id)
+
+    if (error) {
+      alert('Error al cambiar el estado: ' + error.message)
+      return
+    }
+    cargarClientes()
+  }
+
   return (
     <div>
       <PageHeader title="Clientes" />
@@ -109,6 +122,7 @@ function Clientes() {
             <EmptyState>Todavía no hay clientes dados de alta.</EmptyState>
           ) : (
             <>
+              <div className="overflow-x-auto">
               <Table>
                 <Thead>
                   <Th>Tipo</Th>
@@ -116,11 +130,12 @@ function Clientes() {
                   <Th>CIF</Th>
                   <Th>Email</Th>
                   <Th>Teléfono</Th>
+                  <Th>Estado</Th>
                   <Th></Th>
                 </Thead>
                 <tbody className="divide-y divide-gray-100">
                   {clientes.map((c) => (
-                    <tr key={c.id} className="hover:bg-blue-50/40">
+                    <tr key={c.id} className={`hover:bg-blue-50/40 ${c.activo === false ? 'opacity-60' : ''}`}>
                       <Td>
                         <Badge color={c.tipo === 'empresa' ? 'blue' : 'gray'}>
                           {c.tipo === 'empresa' ? 'Empresa' : 'Particular'}
@@ -130,6 +145,13 @@ function Clientes() {
                       <Td className="text-gray-500">{c.cif ?? '-'}</Td>
                       <Td className="text-gray-500">{c.email ?? '-'}</Td>
                       <Td className="text-gray-500">{c.telefono ?? '-'}</Td>
+                      <Td>
+                        <button type="button" onClick={() => handleToggleActivo(c)} title="Clic para cambiar el estado">
+                          <Badge color={c.activo === false ? 'gray' : 'green'}>
+                            {c.activo === false ? 'Inactivo' : 'Activo'}
+                          </Badge>
+                        </button>
+                      </Td>
                       <Td className="text-right whitespace-nowrap">
                         <LinkAction tone="blue" onClick={() => handleEditar(c)} className="mr-3">Editar</LinkAction>
                         <LinkAction tone="red" onClick={() => handleBorrar(c.id)}>Borrar</LinkAction>
@@ -138,6 +160,7 @@ function Clientes() {
                   ))}
                 </tbody>
               </Table>
+              </div>
               <CardFooter>{clientes.length} cliente{clientes.length === 1 ? '' : 's'}</CardFooter>
             </>
           )}
