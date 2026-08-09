@@ -226,3 +226,16 @@ No implementado — solo el diagnóstico y la estimación, para cuando se aborde
 **Tamaño estimado**: migración (~15-20 líneas) + RPC nuevo (~50-70 líneas, rama producto/mercadería) + frontend en `AlbaranesVenta.jsx` (~80-120 líneas: toggle, estado de líneas forzadas, aviso visual, `handleSubmit` reestructurado) — del orden de **150-200 líneas repartidas en 3 capas**, sensiblemente más grande que el filtro de la parte 1 (que fue ~15 líneas, un solo archivo, sin backend).
 
 No implementado — solo el diagnóstico y el diseño, para cuando se aborde.
+
+## 16. `AjustesStock.jsx`: desplegable de lote crecerá sin límite con el histórico, sin distinción visual ni acotado por fecha
+
+Verificado por grep exhaustivo en las cuatro pantallas que ofrecen selector de lote: `AjustesStock.jsx` es la **única** que no filtra por `stock_disponible > 0` en sus tres consultas de lote (`stock_lotes_articulo` línea 80, `stock_lotes_semielaborado` línea 87, `stock_lotes_producto_final` línea 94) — y es **correcto** que no lo haga, porque necesita poder mostrar y ajustar/corregir lotes ya agotados (a diferencia de las otras tres, donde ofrecer un lote sin stock para consumir/vender sí sería un bug). Las otras tres pantallas (`Producciones.jsx`, `ProduccionProductosFinales.jsx`, `AlbaranesVenta.jsx`) ya filtran correctamente con `.gt('stock_disponible', 0)` en todas sus consultas de lote — sin cambios necesarios ahí.
+
+**El hueco no es de corrección, es de escalabilidad visual**: con el tiempo, la lista completa (agotados + con stock, histórico completo sin acotar) de cada ítem crecerá y será difícil de escanear de un vistazo para encontrar el lote correcto. Dos mejoras complementarias a evaluar cuando el volumen lo justifique — atacan el mismo problema de fondo desde ángulos distintos, ninguna sustituye a la otra:
+
+1. **Agrupación visual por stock**: separar lotes con stock de lotes agotados dentro del mismo desplegable (ej. agrupación con `<optgroup>`, o una sección colapsable "Lotes agotados" aparte de la lista principal), en vez de filtrar por completo — mantiene la capacidad de corrección sobre cualquier lote sin perder legibilidad.
+2. **Filtro por fecha**: acotar el desplegable por antigüedad. Dos variantes posibles a decidir cuando se aborde, no necesariamente excluyentes:
+   - **(a) Por defecto, solo lotes de los últimos N meses**, ocultando histórico muy antiguo salvo que se pida explícitamente ver más ("mostrar todos").
+   - **(b) Selector de rango de fecha** que el usuario controla activamente, para acotar la búsqueda cuando ya sabe aproximadamente cuándo ocurrió el lote que busca.
+
+No implementado — no es urgente hoy (volumen bajo), para cuando el número de lotes por ítem lo justifique.
