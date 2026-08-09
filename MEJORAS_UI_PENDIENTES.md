@@ -17,10 +17,14 @@ Verificado en las tres pantallas que ofrecen selector de lote — **no es el mis
 |---|---|---|---|
 | `AjustesStock.jsx` | Artículo | `proveedor`, `fecha_caducidad` | Ya expuestos por la vista `stock_lotes_articulo` — solo falta usarlos en el label, copiando lo que ya hacen `Producciones.jsx`/`ProduccionProductosFinales.jsx`. Cambio de frontend puro, sin tocar el modelo. |
 | Las 3 pantallas | Artículo | `notas` (de `entrada_material.notas`) | **No disponible todavía** — `stock_lotes_articulo` no expone esta columna. Haría falta añadirla a la vista primero (columna aditiva, mismo patrón que `ubicacion_id` en la Capa 2 de ubicaciones) antes de poder mostrarla en ningún sitio. |
-| Las 3 pantallas | Semielaborado | `codigo_lote` (de `producciones_semielaborado.codigo_lote`) | **No disponible todavía** — `stock_lotes_semielaborado` no lo expone. Útil porque hoy dos lotes de semielaborado de la misma fecha son indistinguibles en el desplegable (`Producción ${fecha} · disp.`, sin más). |
+| ~~Las 3 pantallas~~ | ~~Semielaborado~~ | ~~`codigo_lote`~~ | ✅ **Implementado** — ver nota abajo. |
 | Las 3 pantallas | Semielaborado | `notas` (de `producciones_semielaborado.notas`) | **No disponible todavía** — mismo caso que `notas` de artículo: falta añadirla a `stock_lotes_semielaborado` primero. |
 
-No implementado — solo el diagnóstico de qué campo falta en qué pantalla y de dónde saldría, para cuando se aborde.
+**✅ `codigo_lote` de semielaborado y producto final — implementado.** Añadido a `stock_lotes_semielaborado` y `stock_lotes_producto_final` (migración `20260820_codigo_lote_stock_lotes.sql`, mismo patrón aditivo que `ubicacion_id`) y al label de las tres pantallas (`AjustesStock.jsx` semielaborado y producto final, `Producciones.jsx` y `ProduccionProductosFinales.jsx` en su rama de consumo de semielaborado). Motivado por colisiones reales confirmadas contra datos existentes, no solo teóricas: `stock_lotes_semielaborado` produccion_id 45/46 (mismo `semielaborado_id`, misma `fecha`, mismo `stock_disponible` — etiqueta idéntica antes del fix) y `stock_lotes_producto_final` produccion_id 61/62 y 66/67 (mismo caso). Probado en runtime real contra esos cuatro lotes exactos: ahora cada uno muestra su `codigo_lote` real (`WIP-MIXKZ-260015`/`260016`, `FG-TEKZ24-260003`/`260004`/`260007`/`260008`) y se distinguen sin ambigüedad.
+
+**Nuevo hallazgo, no corregido en este cambio**: `AlbaranesVenta.jsx:478` tiene el mismo problema para el desplegable de lote de producto final al vender (`Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.`, sin `codigo_lote`) — no estaba dentro de las tres pantallas originales de esta entrada, se detectó al verificar el alcance completo del fix. La vista ya expone `codigo_lote` (mismo cambio de esta migración), así que el arreglo ahí sería solo de label, mismo patrón ya aplicado en las otras pantallas — pendiente de decidir si se aborda junto o aparte.
+
+`proveedor`/`fecha_caducidad` de artículo en `AjustesStock.jsx` y `notas` (artículo y semielaborado) siguen sin implementar — sin cambios en este commit.
 
 ## 2. Vista viva de stock, con enlace a ajuste rápido
 

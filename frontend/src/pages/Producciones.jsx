@@ -418,7 +418,7 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
               const label = ingrediente.esArticulo
                 ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
-                : `Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
+                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
               return <option key={id} value={id}>{label}</option>
             })}
           </Select>

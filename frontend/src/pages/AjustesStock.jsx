@@ -227,8 +227,8 @@ function AjustesStock() {
                   const label = tipo === 'articulo'
                     ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
                     : tipo === 'semielaborado'
-                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha}${l.fecha_caducidad ? ' · caduca ' + l.fecha_caducidad : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha}${l.fecha_caducidad ? ' · caduca ' + l.fecha_caducidad : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
                   return <option key={id} value={id}>{label}</option>
                 })}
               </Select>
