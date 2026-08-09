@@ -2,26 +2,38 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
+const MOTIVO_CATEGORIA_LABEL = {
+  caducado: 'Caducado',
+  roto: 'Roto',
+  evento_no_consumido: 'Evento no consumido',
+  otro: 'Otro',
+}
+
 function AjustesStock() {
   const [tipo, setTipo] = useState('articulo')
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
+  const [productosFinales, setProductosFinales] = useState([])
   const [itemId, setItemId] = useState('')
   const [lotes, setLotes] = useState([])
   const [loteId, setLoteId] = useState('')
   const [cantidad, setCantidad] = useState('')
   const [motivo, setMotivo] = useState('')
+  const [motivoCategoria, setMotivoCategoria] = useState('')
+  const [motivoDetalle, setMotivoDetalle] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [historial, setHistorial] = useState([])
   const [cargando, setCargando] = useState(true)
 
   async function cargarBase() {
     setCargando(true)
-    const [resArt, resSemi, resAjArt, resAjSemi] = await Promise.all([
+    const [resArt, resSemi, resPF, resAjArt, resAjSemi, resAjPF] = await Promise.all([
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
       supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
+      supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('ajustes_articulo').select('*, articulos_compra(nombre, unidad)').order('fecha', { ascending: false }),
       supabase.from('ajustes_semielaborado').select('*, semielaborados(nombre, unidad)').order('fecha', { ascending: false }),
+      supabase.from('ajustes_producto_final').select('*, producciones_producto_final(producto_final_id, productos_finales(nombre))').order('fecha', { ascending: false }),
     ])
 
     if (resArt.error) console.error(resArt.error)
@@ -30,13 +42,23 @@ function AjustesStock() {
     if (resSemi.error) console.error(resSemi.error)
     else setSemielaborados(resSemi.data)
 
+    if (resPF.error) console.error(resPF.error)
+    else setProductosFinales(resPF.data)
+
     const historialArt = (resAjArt.data || []).map((a) => ({
       ...a, tipo: 'articulo', nombre: a.articulos_compra?.nombre, unidad: a.articulos_compra?.unidad,
     }))
     const historialSemi = (resAjSemi.data || []).map((a) => ({
       ...a, tipo: 'semielaborado', nombre: a.semielaborados?.nombre, unidad: a.semielaborados?.unidad,
     }))
-    const combinado = [...historialArt, ...historialSemi].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+    const historialPF = (resAjPF.data || []).map((a) => ({
+      ...a,
+      tipo: 'producto_final',
+      nombre: a.producciones_producto_final?.productos_finales?.nombre,
+      unidad: 'uds',
+      motivo: MOTIVO_CATEGORIA_LABEL[a.motivo_categoria] + (a.motivo_detalle ? ` — ${a.motivo_detalle}` : ''),
+    }))
+    const combinado = [...historialArt, ...historialSemi, ...historialPF].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
     setHistorial(combinado)
 
     setCargando(false)
@@ -60,11 +82,18 @@ function AjustesStock() {
           .eq('articulo_id', itemId)
           .order('fecha_recepcion', { ascending: true })
         setLotes(data || [])
-      } else {
+      } else if (tipo === 'semielaborado') {
         const { data } = await supabase
           .from('stock_lotes_semielaborado')
           .select('*')
           .eq('semielaborado_id', itemId)
+          .order('fecha', { ascending: true })
+        setLotes(data || [])
+      } else {
+        const { data } = await supabase
+          .from('stock_lotes_producto_final')
+          .select('*')
+          .eq('producto_final_id', itemId)
           .order('fecha', { ascending: true })
         setLotes(data || [])
       }
@@ -77,6 +106,8 @@ function AjustesStock() {
     setLoteId('')
     setCantidad('')
     setMotivo('')
+    setMotivoCategoria('')
+    setMotivoDetalle('')
     setFecha(new Date().toISOString().slice(0, 10))
     setLotes([])
   }
@@ -84,7 +115,12 @@ function AjustesStock() {
   async function handleSubmit(e) {
     e.preventDefault()
 
-    if (!itemId || !loteId || !cantidad || !motivo) {
+    if (tipo === 'producto_final') {
+      if (!itemId || !loteId || !cantidad || !motivoCategoria) {
+        alert('Selecciona el producto, el lote, la cantidad y el motivo')
+        return
+      }
+    } else if (!itemId || !loteId || !cantidad || !motivo) {
       alert('Selecciona el ítem, el lote, la cantidad y el motivo')
       return
     }
@@ -103,12 +139,24 @@ function AjustesStock() {
         alert('Error al guardar el ajuste: ' + error.message)
         return
       }
-    } else {
+    } else if (tipo === 'semielaborado') {
       const { error } = await supabase.from('ajustes_semielaborado').insert({
         semielaborado_id: parseInt(itemId),
         produccion_id: parseInt(loteId),
         cantidad: cant,
         motivo,
+        fecha,
+      })
+      if (error) {
+        alert('Error al guardar el ajuste: ' + error.message)
+        return
+      }
+    } else {
+      const { error } = await supabase.from('ajustes_producto_final').insert({
+        produccion_pf_id: parseInt(loteId),
+        cantidad: cant,
+        motivo_categoria: motivoCategoria,
+        motivo_detalle: motivoDetalle || null,
         fecha,
       })
       if (error) {
@@ -124,7 +172,7 @@ function AjustesStock() {
   async function handleBorrar(a) {
     if (!confirm('¿Seguro que quieres eliminar este ajuste? El stock volverá a su valor anterior.')) return
 
-    const tabla = a.tipo === 'articulo' ? 'ajustes_articulo' : 'ajustes_semielaborado'
+    const tabla = a.tipo === 'articulo' ? 'ajustes_articulo' : a.tipo === 'semielaborado' ? 'ajustes_semielaborado' : 'ajustes_producto_final'
     const { error } = await supabase.from(tabla).delete().eq('id', a.id)
     if (error) {
       alert('Error al borrar: ' + error.message)
@@ -133,7 +181,7 @@ function AjustesStock() {
     cargarBase()
   }
 
-  const items = tipo === 'articulo' ? articulos : semielaborados
+  const items = tipo === 'articulo' ? articulos : tipo === 'semielaborado' ? semielaborados : productosFinales
 
   return (
     <div>
@@ -154,12 +202,17 @@ function AjustesStock() {
                   onChange={() => { setTipo('semielaborado'); setItemId('') }} />
                 Semielaborado
               </label>
+              <label className="flex items-center gap-1.5">
+                <input type="radio" checked={tipo === 'producto_final'}
+                  onChange={() => { setTipo('producto_final'); setItemId('') }} />
+                Producto final
+              </label>
             </div>
 
             <Select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
-              <option value="">Selecciona {tipo === 'articulo' ? 'artículo' : 'semielaborado'}</option>
+              <option value="">Selecciona {tipo === 'articulo' ? 'artículo' : tipo === 'semielaborado' ? 'semielaborado' : 'producto final'}</option>
               {items.map((i) => (
-                <option key={i.id} value={i.id}>{i.nombre} ({i.unidad})</option>
+                <option key={i.id} value={i.id}>{i.nombre} ({tipo === 'producto_final' ? 'uds' : i.unidad})</option>
               ))}
             </Select>
 
@@ -173,7 +226,9 @@ function AjustesStock() {
                   const esMasAntiguo = index === 0
                   const label = tipo === 'articulo'
                     ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    : tipo === 'semielaborado'
+                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Producción ${l.fecha}${l.fecha_caducidad ? ' · caduca ' + l.fecha_caducidad : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
                   return <option key={id} value={id}>{label}</option>
                 })}
               </Select>
@@ -188,11 +243,29 @@ function AjustesStock() {
               <Field label="Fecha">
                 <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
               </Field>
-              <Field label="Motivo">
-                <Input type="text" placeholder="Caducidad, rotura, error pesaje..." value={motivo}
-                  onChange={(e) => setMotivo(e.target.value)} required />
-              </Field>
+              {tipo === 'producto_final' ? (
+                <Field label="Motivo">
+                  <Select value={motivoCategoria} onChange={(e) => setMotivoCategoria(e.target.value)} required>
+                    <option value="">Selecciona motivo</option>
+                    {Object.entries(MOTIVO_CATEGORIA_LABEL).map(([valor, label]) => (
+                      <option key={valor} value={valor}>{label}</option>
+                    ))}
+                  </Select>
+                </Field>
+              ) : (
+                <Field label="Motivo">
+                  <Input type="text" placeholder="Caducidad, rotura, error pesaje..." value={motivo}
+                    onChange={(e) => setMotivo(e.target.value)} required />
+                </Field>
+              )}
             </div>
+
+            {tipo === 'producto_final' && (
+              <Field label="Detalle del motivo (opcional)">
+                <Input type="text" placeholder="Aclaración adicional..." value={motivoDetalle}
+                  onChange={(e) => setMotivoDetalle(e.target.value)} />
+              </Field>
+            )}
 
             <Button type="submit" className="self-start">Registrar ajuste</Button>
           </form>
