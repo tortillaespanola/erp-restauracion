@@ -78,15 +78,38 @@ No bloquea el histórico actual: es una aproximación consciente y documentada, 
 
 No implementado — solo la aproximación documentada, para cuando se aborde.
 
-## 7. Componente de fecha personalizado
+## 7. Formato de fecha: input nativo dependiente de locale + falta de formateo en pantalla/PDF
 
-**Problema detectado:** los inputs `<input type="date">` nativos dependen del idioma/locale configurado en el navegador de cada máquina, no del sistema operativo. Si el navegador tiene el idioma en inglés (US), el orden de los campos cambia a mm/dd en vez de dd/mm, causando confusión al introducir fechas manualmente.
+**Problema original (input):** los inputs `<input type="date">` nativos dependen del idioma/locale configurado en el navegador de cada máquina, no del sistema operativo. Si el navegador tiene el idioma en inglés (US), el orden de los campos cambia a mm/dd en vez de dd/mm, causando confusión al introducir fechas manualmente.
 
-**Solución propuesta:** sustituir los inputs de fecha nativos por un componente de fecha personalizado en React (ej. `react-datepicker`), que controle el formato dd/mm/aaaa de forma fija desde el código, independiente de la configuración de cada máquina/navegador.
+**Solución propuesta para el input:** sustituir los inputs de fecha nativos por un componente de fecha personalizado en React (ej. `react-datepicker`), que controle el formato dd/mm/aaaa de forma fija desde el código, independiente de la configuración de cada máquina/navegador.
 
-**Prioridad:** baja/media — no bloquea el uso actual (se soluciona a nivel de navegador), pero mejora la robustez del sistema al desplegar en distintas máquinas o para otros usuarios futuros.
+**Hallazgo real, más amplio (grep exhaustivo hecho al intentar centralizar el formato de fecha):** hoy **NO existe ningún formateo de fecha en ningún sitio** — todas las fechas se muestran en ISO crudo (`2026-04-23`), no en dd/mm/aaaa ni en ningún otro formato. No es un caso de formato disperso que consolidar en un helper; es que no hay formato en absoluto todavía. **29 sitios en 9 archivos:**
+
+| Archivo | Sitios |
+|---|---|
+| `AjustesStock.jsx` | 3 |
+| `Producciones.jsx` | 5 |
+| `ProduccionProductosFinales.jsx` | 5 |
+| `Pedidos.jsx` | 2 |
+| `PedidosCompra.jsx` | 2 |
+| `FacturasVenta.jsx` | 3 |
+| `FacturasCompra.jsx` | 3 |
+| `AlbaranesCompra.jsx` | 2 |
+| `AlbaranesVenta.jsx` | 3 |
+| `lib/generarPdf.js` | 1 |
+
+Incluye `lib/generarPdf.js` — el punto donde se imprime la fecha en los PDF de factura/albarán ya entregados a clientes reales, no solo pantallas internas (`FacturasVenta.jsx` y `AlbaranesVenta.jsx` solo pasan el dato en crudo hasta ahí, el formateo real ocurriría en ese único punto).
+
+**Por eso este cambio no es un refactor invisible**: migrar cambia lo que ve el usuario en pantalla y lo que aparece en documentos oficiales ya entregados a clientes — no es solo reorganizar código existente.
+
+**Cuándo se aborde**: crear un helper centralizado (`lib/formatFecha.js`) con un formato fijo por defecto (dd/mm/aaaa), sin configurabilidad desde `Configuracion.jsx` todavía (eso es una iteración futura sobre el mismo helper). Priorizar primero `generarPdf.js` y las pantallas de cara a cliente (facturas, albaranes) sobre los labels de desplegable de lote (los más numerosos pero menos críticos). El selector de idioma para abreviatura de mes y la configurabilidad desde `Configuracion.jsx` quedan fuera hasta que exista esa base.
+
+**Prioridad:** baja/media para el problema del input nativo (se soluciona a nivel de navegador); a revisar la prioridad real del formateo de pantalla/PDF cuando se aborde, dado el volumen (29 sitios) y que toca documentos ya entregados a clientes.
 
 **Fase:** revisar durante Layers 1 y 2 (UI/UX).
+
+No implementado — solo el diagnóstico y el inventario completo, para cuando se aborde.
 
 ## 8. `AlbaranesCompra.jsx`: reasignar retroactivamente un albarán `compra_directa` a un pedido existente
 
