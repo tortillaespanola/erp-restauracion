@@ -128,7 +128,7 @@ Cambio más simple de lo que se planteaba inicialmente: solo añadir la referenc
 
 Mejora de trazabilidad al identificar artículos rápido, sobre todo con nombres largos o similares entre sí.
 
-No implementado — solo la idea recogida, para cuando se aborde.
+✅ Implementado (commit `9905a4e`, 2026-08-08).
 
 ## 11. `PedidosCompra.jsx`: cambiar de proveedor con líneas ya rellenas borra artículos sin avisar, deja cantidad/precio huérfanos
 
@@ -138,7 +138,7 @@ En `PedidosCompra.jsx`, cambiar de proveedor después de haber rellenado líneas
 
 **Prioridad:** más alta que mejoras cosméticas — puede llevar a guardar un pedido con datos inconsistentes sin que el usuario lo perciba.
 
-No implementado — solo el diagnóstico, para cuando se aborde.
+✅ Implementado (commit `9905a4e`, 2026-08-08).
 
 ## 12. `Pedidos.jsx` (venta): no existe ningún flujo de edición, solo crear y cancelar
 
@@ -153,7 +153,7 @@ No implementado — solo el diagnóstico, para cuando se aborde.
 
 **Tamaño estimado:** bastante mayor que las mejoras mecánicas de `PedidosCompra.jsx` (#10 y #11) — del orden de ~150-200 líneas de patrón trasplantado más una decisión de diseño abierta, no solo trasplante directo.
 
-No implementado — solo el diagnóstico, para cuando se aborde.
+✅ Fase 1 implementada (commit `6ae2954`, 2026-08-08): bloqueo completo de edición cuando el pedido tiene producción o entregas vinculadas; edición libre de cabecera y líneas cuando no. Fase 2 (bloqueo por línea en el caso ambiguo) sigue sin implementar — pendiente de decisión.
 
 ## 13. `Clientes.jsx`: refinar la UX del toggle activo/inactivo
 
