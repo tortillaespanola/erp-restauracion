@@ -187,3 +187,19 @@ Implementado en el commit que añade `clientes.activo` (columna boolean, default
 3. **Ordenar inactivos al final del listado** — hoy `cargarClientes()` ordena solo por `nombre` (`supabase.from('clientes').select('*').order('nombre')`); haría falta un segundo criterio de orden (activos primero, luego por nombre) o un `order('activo', { ascending: false })` antes del `order('nombre')`.
 
 No implementado — solo la idea recogida, para cuando se aborde.
+
+## 14. Registro de consumo en `Producciones.jsx`/`ProduccionProductosFinales.jsx` es uno-a-uno, no batch
+
+Registro de consumo en `Producciones.jsx`/`ProduccionProductosFinales.jsx` es uno-a-uno (cada línea de receta dispara su propio guardado+refresco) en vez de batch.
+
+**Hallazgo importante**: esto no es solo fricción de UX — un fallo a mitad del registro (ej. ingrediente 3 de 4 sin stock) deja los ingredientes anteriores ya guardados de forma no atómica.
+
+**El trigger de validación (`check_consumo_produccion(_pf)`) ya es `DEFERRABLE INITIALLY DEFERRED`**, así que un `insert` multi-fila normal ya sería atómico sin necesitar ninguna migración de esquema.
+
+**El patrón "acumular en estado, confirmar en bloque" ya existe en el mismo archivo** (`ProduccionCerradaEdicion`, vía RPC) — extender el mismo patrón a `ProduccionAbierta`.
+
+**Tamaño estimado**: ~80-120 líneas, dos archivos casi idénticos.
+
+**Decisión de diseño ya recomendada**: permitir registro parcial (solo líneas completadas), no exigir las 4 líneas rellenas a la vez, mismo patrón que `lineasValidas` ya usado en `Pedidos.jsx`/`PedidosCompra.jsx`.
+
+No implementado — solo el diagnóstico y la estimación, para cuando se aborde.
