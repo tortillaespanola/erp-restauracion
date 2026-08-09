@@ -6,6 +6,19 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Inpu
 
 const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', cantidad: '', precio_unitario: '' }
 
+const GRUPO_ESTADO = { pendiente: 0, en_produccion: 0, servido: 1, cancelado: 1 }
+
+function compararPedidos(a, b) {
+  const grupoA = GRUPO_ESTADO[a.estado] ?? 0
+  const grupoB = GRUPO_ESTADO[b.estado] ?? 0
+  if (grupoA !== grupoB) return grupoA - grupoB
+
+  if (!a.fecha_entrega_prevista && !b.fecha_entrega_prevista) return 0
+  if (!a.fecha_entrega_prevista) return 1
+  if (!b.fecha_entrega_prevista) return -1
+  return a.fecha_entrega_prevista.localeCompare(b.fecha_entrega_prevista)
+}
+
 const ESTADO_BADGE = {
   pendiente: 'gray',
   en_produccion: 'amber',
@@ -60,7 +73,7 @@ function Pedidos() {
     ])
 
     if (resPedidos.error) console.error(resPedidos.error)
-    else setPedidos(resPedidos.data)
+    else setPedidos((resPedidos.data ?? []).sort(compararPedidos))
 
     if (resClientes.error) console.error(resClientes.error)
     else setClientes(resClientes.data)
