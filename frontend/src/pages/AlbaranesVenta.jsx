@@ -475,7 +475,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
           <option value="">Selecciona lote de producción</option>
           {lotesConDisponibleReal.map((l) => (
             <option key={l.produccion_id} value={l.produccion_id}>
-              Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.
+              {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.
             </option>
           ))}
         </Select>
