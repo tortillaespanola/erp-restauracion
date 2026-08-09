@@ -259,6 +259,14 @@ function AlbaranesVenta() {
     cargarDatos()
   }
 
+  const productosMostrados = pedidoIdParam
+    ? productos.filter((p) => pedidoLineas.some((l) => l.producto_final_id === p.id))
+    : productos
+
+  const articulosMostrados = pedidoIdParam
+    ? articulosMercaderia.filter((a) => pedidoLineas.some((l) => l.articulo_id === a.id))
+    : articulosMercaderia
+
   function prepararDocumento(alb) {
     return {
       numero: alb.numero_albaran || `#${alb.id}`,
@@ -313,7 +321,7 @@ function AlbaranesVenta() {
             <div>
               <SectionLabel>Añadir productos finales</SectionLabel>
               <div className="flex flex-col gap-3">
-                {productos.map((prod) => (
+                {productosMostrados.map((prod) => (
                   <ProductoParaVender
                     key={prod.id}
                     producto={prod}
@@ -325,11 +333,11 @@ function AlbaranesVenta() {
               </div>
             </div>
 
-            {articulosMercaderia.length > 0 && (
+            {articulosMostrados.length > 0 && (
               <div>
                 <SectionLabel>Añadir mercadería</SectionLabel>
                 <div className="flex flex-col gap-3">
-                  {articulosMercaderia.map((art) => (
+                  {articulosMostrados.map((art) => (
                     <ArticuloParaVender
                       key={art.id}
                       articulo={art}
