@@ -242,6 +242,17 @@ function AlbaranesCompra() {
         }
       }
 
+      for (const l of lineasValidas.filter((l) => l.id && l.locked)) {
+        const { error } = await supabase
+          .from('entrada_material')
+          .update({ fecha_caducidad: l.fecha_caducidad || null, notas: l.notas || null })
+          .eq('id', l.id)
+        if (error) {
+          alert('Error al actualizar caducidad/notas de una línea bloqueada: ' + error.message)
+          return
+        }
+      }
+
       const nuevas = lineasValidas.filter((l) => !l.id)
       if (nuevas.length > 0) {
         const { error } = await supabase
@@ -394,11 +405,20 @@ function AlbaranesCompra() {
                   if (linea.locked) {
                     const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
                     return (
-                      <div key={index} className="border border-gray-200 rounded-md p-3 bg-gray-50 text-sm text-gray-500 flex items-start gap-2">
-                        <IconLock size={15} className="mt-0.5 shrink-0" />
-                        <div>
-                          {art?.nombre ?? 'Artículo'} · {linea.cantidad} · {linea.precio || '-'}
-                          <span className="block text-xs mt-1">Esta línea ya está consumida/ajustada y no se puede modificar.</span>
+                      <div key={index} className="border border-gray-200 rounded-md p-3 bg-gray-50 text-sm text-gray-500 flex flex-col gap-2">
+                        <div className="flex items-start gap-2">
+                          <IconLock size={15} className="mt-0.5 shrink-0" />
+                          <div>
+                            {art?.nombre ?? 'Artículo'} · {linea.cantidad} · {linea.precio || '-'}
+                            <span className="block text-xs mt-1">Artículo, cantidad y precio ya consumidos/ajustados — no se pueden modificar. Fecha de caducidad y notas sí.</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
+                          <Input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
+                            onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
+                            title="Fecha de caducidad (opcional)" />
+                          <Input type="text" placeholder="Notas" value={linea.notas}
+                            onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
                         </div>
                       </div>
                     )
