@@ -477,9 +477,10 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
           <option value="">Selecciona lote de producción</option>
           {lotesConDisponibleReal.map((l) => {
             const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
+            const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
             return (
               <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
-                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : ''}
+                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
               </option>
             )
           })}
@@ -540,9 +541,10 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
           <option value="">Selecciona lote</option>
           {lotesConDisponibleReal.map((l) => {
             const fechaPosterior = fechaAlbaran && l.fecha_recepcion > fechaAlbaran
+            const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
             return (
               <option key={l.entrada_material_id} value={l.entrada_material_id} disabled={fechaPosterior}>
-                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : ''}
+                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
               </option>
             )
           })}

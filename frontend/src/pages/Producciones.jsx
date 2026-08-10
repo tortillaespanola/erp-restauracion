@@ -366,6 +366,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
           {ingredientes.map((ing) => (
             <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
+              fechaDestino={produccion.fecha}
               onAdd={(loteId, cantidad) => registrarConsumo(ing, loteId, cantidad)} />
           ))}
         </div>
@@ -391,7 +392,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   )
 }
 
-function IngredienteConsumo({ ingrediente, onAdd }) {
+function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
   const [loteId, setLoteId] = useState('')
   const [cantidad, setCantidad] = useState('')
 
@@ -416,9 +417,10 @@ function IngredienteConsumo({ ingrediente, onAdd }) {
             <option value="">Selecciona lote</option>
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
+              const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
               const label = ingrediente.esArticulo
-                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
-                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.`
+                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
               return <option key={id} value={id}>{label}</option>
             })}
           </Select>
@@ -619,6 +621,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
           {ingredientes.map((ing) => (
             <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
+              fechaDestino={fecha}
               onAdd={(loteId, cantidad) => anadirLinea(ing, loteId, cantidad)} />
           ))}
         </div>
