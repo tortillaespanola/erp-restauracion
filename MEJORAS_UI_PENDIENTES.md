@@ -270,3 +270,27 @@ No implementado — para cuando se aborde.
 Reduce cálculo mental y errores de signo al pesar en el momento.
 
 No implementado — solo la idea recogida, para cuando se aborde.
+
+## 19. `tipo_venta = 'evento_directo'` es inalcanzable desde la interfaz
+
+**Prioridad: alta.** Confirmado con certeza (grep exhaustivo de `tipo_venta`/`evento_directo` en todo `frontend/src`): **cero resultados**. Todo albarán creado desde `AlbaranesVenta.jsx` queda como `pedido_planificado` por `default` de columna — no hay ningún selector, radio button, ni lógica condicional que permita marcarlo como `evento_directo`.
+
+El backend completo para este caso ya está implementado y probado en esta misma sesión: bypass de stock insuficiente en `check_stock_producto_final()`, registro de incidencias en `incidencias_stock_producto_final`/`incidencias_stock_semielaborado`/`incidencias_stock_articulo`. **Pero es código muerto en la práctica del lado frontend** — nada en la interfaz puede activarlo.
+
+Este es el **bottleneck #1 original de `FLUJO_TORTILLA.md`**, sigue sin resolver. Prioridad alta porque es la funcionalidad que motivó buena parte del trabajo de modelo de esta sesión (showcooking/evento sin fricción de venta) — el modelo está listo, falta la puerta de entrada en la UI.
+
+No implementado — solo el diagnóstico, para cuando se aborde.
+
+## 20. Reasignación retroactiva de albarán de venta a pedido — más compleja que el equivalente de compras (#8)
+
+**No es una ampliación de la entrada #8** (reasignar `AlbaranesCompra.jsx` de `compra_directa` a un pedido existente) — es un caso distinto, con una capa extra que compras no tiene.
+
+`producciones_producto_final.pedido_id` es un enlace blando declarado en el momento de producir (a qué pedido se destina esa producción). El trigger de incidencias de reparto (`registrar_incidencia_reparto_pedido()`, ampliado en esta misma sesión) compara ese enlace declarado contra el pedido realmente usado en cada línea de venta (`linea_pedido_id`). Vincular retroactivamente un albarán ya existente a un pedido dado de alta después casi con certeza generaría una incidencia de reparto — la producción de origen nunca pudo declarar ese pedido como suyo, porque no existía todavía cuando se produjo.
+
+**Requiere decisión de diseño explícita** antes de implementar nada: ¿suprimir esa incidencia esperada específicamente en este caso (vinculación retroactiva reconocida), o dejarla aparecer sin más y regularizarla a mano como cualquier otra?
+
+**Además, `AlbaranesVenta.jsx` no tiene ningún flujo de edición en absoluto** (confirmado: grep de `handleEditar`/`editandoId`, cero resultados) — a diferencia de `AlbaranesCompra.jsx`, que sí lo tiene y donde la entrada #8 solo necesita añadir una función dentro de un modal ya existente. Aquí el fix no es "añadir la función de reasignación": primero hay que construir el modal de edición completo, y solo entonces añadir la reasignación dentro de él.
+
+**Tamaño mayor que #8** — capa de diseño adicional (la incidencia esperada) más el trabajo de edición que en compras ya estaba resuelto de antemano.
+
+No implementado — solo el diagnóstico, para cuando se aborde.
