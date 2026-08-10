@@ -15,6 +15,7 @@ function ProductosFinales() {
   const [nombre, setNombre] = useState('')
   const [codigo, setCodigo] = useState('')
   const [precioVenta, setPrecioVenta] = useState('')
+  const [diasCaducidadDefault, setDiasCaducidadDefault] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
   const [editandoId, setEditandoId] = useState(null)
@@ -84,6 +85,7 @@ function ProductosFinales() {
     setNombre('')
     setCodigo('')
     setPrecioVenta('')
+    setDiasCaducidadDefault('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
     setEditandoId(null)
@@ -93,6 +95,7 @@ function ProductosFinales() {
     setNombre(p.nombre ?? '')
     setCodigo(p.codigo ?? '')
     setPrecioVenta(p.precio_venta ?? '')
+    setDiasCaducidadDefault(p.dias_caducidad_default ?? '')
     setNotas(p.notas ?? '')
 
     const lineasCargadas = p.receta_producto_final.map((l) => ({
@@ -128,6 +131,7 @@ function ProductosFinales() {
           nombre,
           codigo: codigo || null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
+          dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
         .eq('id', editandoId)
@@ -153,6 +157,7 @@ function ProductosFinales() {
           nombre,
           codigo: codigo || null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
+          dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
         .select()
@@ -225,6 +230,10 @@ function ProductosFinales() {
               </Field>
               <Field label="Precio de venta">
                 <Input type="number" step="0.01" value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} />
+              </Field>
+              <Field label="Días de caducidad por defecto (opcional)">
+                <Input type="number" step="1" min="0" placeholder="Ej. 3" value={diasCaducidadDefault}
+                  onChange={(e) => setDiasCaducidadDefault(e.target.value)} />
               </Field>
             </div>
             <Field label="Notas (opcional)">

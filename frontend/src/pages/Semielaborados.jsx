@@ -14,6 +14,7 @@ function Semielaborados() {
   const [nombre, setNombre] = useState('')
   const [codigo, setCodigo] = useState('')
   const [unidad, setUnidad] = useState('')
+  const [diasCaducidadDefault, setDiasCaducidadDefault] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
   const [editandoId, setEditandoId] = useState(null)
@@ -83,6 +84,7 @@ function Semielaborados() {
     setNombre('')
     setCodigo('')
     setUnidad('')
+    setDiasCaducidadDefault('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
     setEditandoId(null)
@@ -92,6 +94,7 @@ function Semielaborados() {
     setNombre(s.nombre ?? '')
     setCodigo(s.codigo ?? '')
     setUnidad(s.unidad ?? '')
+    setDiasCaducidadDefault(s.dias_caducidad_default ?? '')
     setNotas(s.notas ?? '')
 
     const lineasCargadas = s.receta_semielaborado.map((l) => ({
@@ -123,7 +126,13 @@ function Semielaborados() {
     if (editandoId) {
       const { error: errorUpdate } = await supabase
         .from('semielaborados')
-        .update({ nombre, codigo: codigo || null, unidad, notas: notas || null })
+        .update({
+          nombre,
+          codigo: codigo || null,
+          unidad,
+          dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
+          notas: notas || null,
+        })
         .eq('id', editandoId)
 
       if (errorUpdate) {
@@ -143,7 +152,13 @@ function Semielaborados() {
     } else {
       const { data: semiCreado, error: errorSemi } = await supabase
         .from('semielaborados')
-        .insert({ nombre, codigo: codigo || null, unidad, notas: notas || null })
+        .insert({
+          nombre,
+          codigo: codigo || null,
+          unidad,
+          dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
+          notas: notas || null,
+        })
         .select()
         .single()
 
@@ -204,6 +219,10 @@ function Semielaborados() {
               </Field>
               <Field label="Unidad de producción">
                 <Input type="text" placeholder="kg, l, ud..." value={unidad} onChange={(e) => setUnidad(e.target.value)} required />
+              </Field>
+              <Field label="Días de caducidad por defecto (opcional)">
+                <Input type="number" step="1" min="0" placeholder="Ej. 3" value={diasCaducidadDefault}
+                  onChange={(e) => setDiasCaducidadDefault(e.target.value)} />
               </Field>
             </div>
             <Field label="Notas (opcional)">
