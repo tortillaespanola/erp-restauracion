@@ -173,6 +173,11 @@ function Pedidos() {
   async function handleSubmit(e) {
     e.preventDefault()
 
+    if (fechaEntrega && fechaEntrega < fecha) {
+      alert('La fecha de entrega prevista no puede ser anterior a la fecha del pedido')
+      return
+    }
+
     const lineasValidas = lineas.filter(
       (l) => l.cantidad && (l.producto_final_id || l.articulo_id)
     )
@@ -311,6 +316,9 @@ function Pedidos() {
               </Field>
               <Field label="Fecha de entrega prevista (opcional)">
                 <Input type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} />
+                {fechaEntrega && fechaEntrega < fecha && (
+                  <p className="text-red-600 text-xs mt-1">No puede ser anterior a la fecha del pedido</p>
+                )}
               </Field>
             </div>
             <Field label="Notas (opcional)">
