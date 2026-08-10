@@ -95,10 +95,22 @@ Esto es un riesgo de **seguridad alimentaria**, no solo de integridad de datos �
 
 - `entrada_material.fecha_caducidad` (artículo) — capturada manualmente al recibir el albarán.
 - `producciones_producto_final.fecha_caducidad` (producto final) — calculada de forma **independiente**, solo a partir de `productos_finales.dias_caducidad_default` + la fecha de producción (`calcular_fecha_caducidad_pf()`), **nunca** a partir de la `fecha_caducidad` de los ingredientes realmente consumidos en esa producción.
-- `producciones_semielaborado` — **no tiene columna `fecha_caducidad` en absoluto**, verificado contra el esquema real.
+- `producciones_semielaborado` — ~~no tiene columna `fecha_caducidad` en absoluto~~ **actualización: ya la tiene** (`dias_caducidad_default` en `semielaborados` + `fecha_caducidad` en `producciones_semielaborado`, mismo patrón que producto final, migración `20260824_fecha_caducidad_semielaborado.sql`). Sigue siendo un cálculo **independiente** por nivel, no heredado de ingredientes — el resto de esta entrada sigue vigente tal cual.
 
 **Decisión de modelo pendiente**: ¿debería la caducidad de un nivel heredar/acotarse por la caducidad más próxima de sus ingredientes consumidos (ej. una producción de Mezcla no podría caducar después que su Huevina más próxima a caducar), o mantener el diseño actual de valores independientes por nivel, cada uno con su propia lógica de cálculo o captura manual?
 
 **Por qué no se resolvió ahora**: sin caso real urgente todavía que fuerce la decisión — cambiar `calcular_fecha_caducidad_pf()` para que dependa de los ingredientes consumidos (en vez de solo `dias_caducidad_default`) es una decisión de diseño no trivial (¿qué pasa si un ingrediente no tiene `fecha_caducidad` capturada? ¿se ignora, o bloquea el cálculo?) que no conviene tomar sin un caso real delante.
 
 **Cuándo retomarlo**: junto con la entrada 8 si se aborda el aviso de consumo de materia prima caducada — son temas relacionados (ambos giran sobre cómo se usa `fecha_caducidad` a través de los niveles) pero decisiones independientes; no es necesario resolver ambas a la vez.
+
+## 10. Historial de vigencia de `dias_caducidad_default` — sin caso real todavía
+
+`dias_caducidad_default` (en `productos_finales` y, desde la entrada 9, también en `semielaborados`) es un único valor mutable por ítem, sin historial de cambios. Si cambiara por normativa, no quedaría constancia de qué valor aplicaba en cada fecha pasada — solo el valor actual.
+
+**Por qué no es un problema hoy**: el diseño ya protege lo que de verdad importa. `fecha_caducidad` de cada producción se calcula **una vez**, al cerrar (`calcular_fecha_caducidad_semi()`/`_pf()`, disparado solo en la transición `abierta → cerrada`), y queda grabado como una foto fija en esa fila — no es una referencia viva a `dias_caducidad_default`. Si el valor por defecto cambia después, ninguna producción ya cerrada se ve afectada ni se recalcula retroactivamente (comportamiento correcto: un lote ya cerrado bajo la regla antigua no debe cambiar de fecha de caducidad porque alguien actualizó un ajuste). Así que la pregunta "qué caducidad tenía este lote" ya tiene respuesta directa sin necesitar reconstruir la regla — se lee `fecha_caducidad` de la producción concreta.
+
+Un historial de vigencia (tabla tipo `dias_caducidad_historico: producto_id, dias, vigente_desde`) solo aportaría algo distinto: reconstruir la **regla** en sí para auditoría (ej. "por qué 10 días y no 8 en marzo"), no el resultado ya calculado.
+
+**Por qué no se resolvió ahora**: `dias_caducidad_default` está en `null` para el 100% de productos finales y semielaborados reales hoy (verificado) — nunca se ha usado, y mucho menos cambiado. Construir un historial de versionado para un valor que nadie ha tocado nunca sería complejidad especulativa sin caso real, mismo criterio que el resto de este documento. Si algún día se cambia a mano, queda un rastro informal pero real vía migración fechada y documentada (mismo patrón ya usado en esta sesión, ej. `20260821_fix_fecha_entrega_prevista_typos.sql`).
+
+**Cuándo retomarlo**: si `dias_caducidad_default` empieza a usarse de verdad y, además, cambia al menos una vez por un motivo que necesite quedar auditado (normativa, cambio de proveedor de packaging, etc.) — no antes.
