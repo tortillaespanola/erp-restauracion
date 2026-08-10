@@ -260,3 +260,13 @@ No implementado — no es urgente hoy (volumen bajo), para cuando el número de 
 **Solución no diseñada todavía, dirección probable**: pasar la línea de `pedidoLineas` que corresponde a cada `producto`/`articulo` mostrado como prop adicional a `ProductoParaVender`/`ArticuloParaVender`, y usar su `cantidad`/`precio_unitario` como valor inicial de los campos (en vez de `''`/`producto.precio_venta`) cuando exista. Sin diseñar todavía: qué pasa si la cantidad pactada supera el stock disponible del lote elegido (¿capar, avisar, dejar tal cual?), y si debe ser prellenado editable (probable) o de solo lectura.
 
 No implementado — para cuando se aborde.
+
+## 18. `AjustesStock.jsx`: solo permite ajuste relativo, no "cantidad final medida"
+
+`AjustesStock.jsx` solo permite introducir el ajuste como cantidad relativa (suma/resta sobre el stock actual). En la práctica, muchas veces el flujo real es pesar físicamente el lote y teclear la cantidad final resultante, no calcular mentalmente la diferencia respecto al stock registrado.
+
+**Mejora**: añadir un segundo modo de entrada ("Cantidad final" junto al ya existente "Ajuste relativo"), donde el usuario teclea el peso/cantidad real medida y el sistema calcula automáticamente el ajuste (cantidad final − stock actual del lote) y lo guarda igual que hoy en `ajustes_articulo`/`_semielaborado`/`_producto_final` — mismo dato final, solo cambia cómo se introduce.
+
+Reduce cálculo mental y errores de signo al pesar en el momento.
+
+No implementado — solo la idea recogida, para cuando se aborde.
