@@ -83,7 +83,7 @@ function AlbaranesCompra() {
 
       const { data, error } = await supabase
         .from('articulo_proveedor')
-        .select('precio, articulos_compra(id, nombre, unidad, requiere_control_temperatura, temperatura_min, temperatura_max)')
+        .select('precio, referencia_proveedor, articulos_compra(id, nombre, unidad, requiere_control_temperatura, temperatura_min, temperatura_max)')
         .eq('proveedor_id', proveedorId)
 
       if (error) {
@@ -96,6 +96,7 @@ function AlbaranesCompra() {
             nombre: ap.articulos_compra.nombre,
             unidad: ap.articulos_compra.unidad,
             precioPactado: ap.precio,
+            referenciaProveedor: ap.referencia_proveedor,
             requiereTemperatura: ap.articulos_compra.requiere_control_temperatura,
             temperaturaMin: ap.articulos_compra.temperatura_min,
             temperaturaMax: ap.articulos_compra.temperatura_max,
@@ -434,7 +435,9 @@ function AlbaranesCompra() {
                             {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
                           </option>
                           {articulosDelProveedor.map((a) => (
-                            <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
+                            <option key={a.id} value={a.id}>
+                              {a.nombre} ({a.unidad}){a.referenciaProveedor ? ` — ref. ${a.referenciaProveedor}` : ''}
+                            </option>
                           ))}
                         </Select>
                         <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}

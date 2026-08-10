@@ -155,7 +155,9 @@ Cambio más simple de lo que se planteaba inicialmente: solo añadir la referenc
 
 Mejora de trazabilidad al identificar artículos rápido, sobre todo con nombres largos o similares entre sí.
 
-✅ Implementado (commit `9905a4e`, 2026-08-08).
+✅ Implementado en `PedidosCompra.jsx` (commit `9905a4e`, 2026-08-08).
+
+✅ Implementado también en `AlbaranesCompra.jsx` (modo `compra_directa` y modo "pedido", misma estructura de proveedor ya fijado). Probado en runtime real con proveedor Prodega: mismo resultado que en `PedidosCompra.jsx` (`"AOVE SPAIN (l) — ref. 125410"`, etc.), sin errores de consola.
 
 ## 11. `PedidosCompra.jsx`: cambiar de proveedor con líneas ya rellenas borra artículos sin avisar, deja cantidad/precio huérfanos
 
