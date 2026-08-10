@@ -328,6 +328,7 @@ function AlbaranesVenta() {
                     onAdd={addLineaProducto}
                     refrescoStock={refrescoStock}
                     cantidadYaEnLineas={cantidadYaEnLineas}
+                    fechaAlbaran={fecha}
                   />
                 ))}
               </div>
@@ -344,6 +345,7 @@ function AlbaranesVenta() {
                       onAdd={addLineaMercaderia}
                       refrescoStock={refrescoStock}
                       cantidadYaEnLineas={cantidadYaEnLineasArticulo}
+                      fechaAlbaran={fecha}
                     />
                   ))}
                 </div>
@@ -431,7 +433,7 @@ function AlbaranesVenta() {
   )
 }
 
-function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas }) {
+function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
@@ -473,11 +475,14 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
           <option value="">Selecciona lote de producción</option>
-          {lotesConDisponibleReal.map((l) => (
-            <option key={l.produccion_id} value={l.produccion_id}>
-              {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.
-            </option>
-          ))}
+          {lotesConDisponibleReal.map((l) => {
+            const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
+            return (
+              <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
+                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : ''}
+              </option>
+            )
+          })}
         </Select>
         <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
@@ -491,7 +496,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   )
 }
 
-function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas }) {
+function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
@@ -533,11 +538,14 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
           <option value="">Selecciona lote</option>
-          {lotesConDisponibleReal.map((l) => (
-            <option key={l.entrada_material_id} value={l.entrada_material_id}>
-              {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.
-            </option>
-          ))}
+          {lotesConDisponibleReal.map((l) => {
+            const fechaPosterior = fechaAlbaran && l.fecha_recepcion > fechaAlbaran
+            return (
+              <option key={l.entrada_material_id} value={l.entrada_material_id} disabled={fechaPosterior}>
+                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : ''}
+              </option>
+            )
+          })}
         </Select>
         <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
