@@ -482,6 +482,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
   const [fecha, setFecha] = useState(produccion.fecha)
   const [cantidadProducida, setCantidadProducida] = useState(String(produccion.cantidad_producida))
   const [notas, setNotas] = useState(produccion.notas ?? '')
+  const [fechaCaducidad, setFechaCaducidad] = useState(produccion.fecha_caducidad ?? '')
   const [lineas, setLineas] = useState(() =>
     produccion.consumo_produccion_pf.map((c) => {
       const { nombre, unidad } = nombreIngredienteDeLinea(c)
@@ -557,6 +558,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
       p_cantidad_producida: parseFloat(cantidadProducida),
       p_notas: notas || null,
       p_lineas,
+      p_fecha_caducidad: fechaCaducidad || null,
     })
 
     setGuardando(false)
@@ -576,7 +578,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Field label="Fecha">
           <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
         </Field>
@@ -586,6 +588,9 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         </Field>
         <Field label="Notas">
           <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
+        </Field>
+        <Field label="Fecha de caducidad (opcional)">
+          <Input type="date" value={fechaCaducidad} onChange={(e) => setFechaCaducidad(e.target.value)} />
         </Field>
       </div>
 
