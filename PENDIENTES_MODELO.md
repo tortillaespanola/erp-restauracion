@@ -76,3 +76,29 @@ La capa de interfaz (textos de botones/menús/mensajes) sí puede ser la última
 **Por qué no se resolvió ahora**: no es un problema para el negocio actual (todo en español) — no hay ningún caso real que lo exija todavía.
 
 **Cuándo retomarlo**: antes de asumir que "idiomas" es solo una tarea de UI final, si algún día hay un cliente multi-idioma real — revisar entonces qué mecanismo de traducción (o de convivencia de idiomas) hace falta para el contenido ya introducido por usuarios, no solo para los textos fijos de la interfaz.
+
+## 8. Ninguna validación compara fecha de consumo/producción contra `fecha_caducidad` del lote origen
+
+**Prioridad: alta — riesgo real, no cosmético.** Verificado con certeza (grep exhaustivo en migraciones y frontend, ver diagnóstico previo): se puede consumir o producir con materia prima ya caducada sin ningún aviso, en ningún nivel — ni trigger de backend, ni validación de frontend. El único chequeo de fecha que existe en `check_consumo_produccion()`/`check_consumo_produccion_pf()` compara la fecha de recepción del lote (`albaranes_compra.fecha`) contra la fecha de la producción destino, no la `fecha_caducidad`.
+
+Esto es un riesgo de **seguridad alimentaria**, no solo de integridad de datos — un negocio de restauración puede estar sirviendo producto elaborado con materia prima caducada sin que el sistema lo detecte ni lo registre en ningún sitio.
+
+**Pendiente de diseñar**: ¿aviso (banner/`confirm`) o bloqueo duro? Probablemente aviso, no bloqueo — mismo criterio ya aplicado en `evento_directo` (permitir la operación con una señal visible, no impedirla), porque usar algo justo caducado hoy puede ser una decisión operativa legítima que corresponde a un humano, no al sistema. Pero **sin el aviso, hoy ni siquiera se sabe que está pasando** — ese es el problema real a resolver, independientemente de si al final se decide avisar o bloquear.
+
+**Por qué no se resolvió ahora**: detectado como parte de un diagnóstico solicitado explícitamente (edición de `fecha_caducidad` en `entrada_material` ya consumido), no como trabajo en curso — hace falta decidir el mecanismo (aviso vs. bloqueo) antes de implementar nada.
+
+**Cuándo retomarlo**: pronto, dado el riesgo — no requiere un caso real adicional para justificarse, a diferencia de otras entradas de este documento. Al abordarlo, decidir también en qué punto(s) exactos se compara la fecha: en `check_consumo_produccion(_pf)` (consumo de artículo/semielaborado) y, si aplica, en el cierre de producción de producto final.
+
+## 9. Caducidad desconectada entre los tres niveles (artículo, semielaborado, producto final)
+
+**Prioridad: alta — riesgo real de trazabilidad, no cosmético.** Verificado contra el esquema real: la caducidad solo existe hoy en dos de los tres niveles, y de forma completamente desconectada entre sí:
+
+- `entrada_material.fecha_caducidad` (artículo) — capturada manualmente al recibir el albarán.
+- `producciones_producto_final.fecha_caducidad` (producto final) — calculada de forma **independiente**, solo a partir de `productos_finales.dias_caducidad_default` + la fecha de producción (`calcular_fecha_caducidad_pf()`), **nunca** a partir de la `fecha_caducidad` de los ingredientes realmente consumidos en esa producción.
+- `producciones_semielaborado` — **no tiene columna `fecha_caducidad` en absoluto**, verificado contra el esquema real.
+
+**Decisión de modelo pendiente**: ¿debería la caducidad de un nivel heredar/acotarse por la caducidad más próxima de sus ingredientes consumidos (ej. una producción de Mezcla no podría caducar después que su Huevina más próxima a caducar), o mantener el diseño actual de valores independientes por nivel, cada uno con su propia lógica de cálculo o captura manual?
+
+**Por qué no se resolvió ahora**: sin caso real urgente todavía que fuerce la decisión — cambiar `calcular_fecha_caducidad_pf()` para que dependa de los ingredientes consumidos (en vez de solo `dias_caducidad_default`) es una decisión de diseño no trivial (¿qué pasa si un ingrediente no tiene `fecha_caducidad` capturada? ¿se ignora, o bloquea el cálculo?) que no conviene tomar sin un caso real delante.
+
+**Cuándo retomarlo**: junto con la entrada 8 si se aborda el aviso de consumo de materia prima caducada — son temas relacionados (ambos giran sobre cómo se usa `fecha_caducidad` a través de los niveles) pero decisiones independientes; no es necesario resolver ambas a la vez.
