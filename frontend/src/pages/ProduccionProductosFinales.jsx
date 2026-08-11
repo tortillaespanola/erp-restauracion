@@ -443,11 +443,13 @@ function labelLote(ingrediente, l, fechaDestino, fechaPosterior) {
 // líneas rellenas (confirmar en bloque, añadir a una edición, etc.) —
 // este componente no tiene acción ni estado propios.
 function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
+  const [mostrarSustituto, setMostrarSustituto] = useState(false)
   const idDeLote = (l) => (ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id)
   const deReceta = ingrediente.lotes.filter((l) => l.esDeReceta)
   const otros = ingrediente.lotes.filter((l) => !l.esDeReceta)
   const loteSeleccionado = ingrediente.lotes.find((l) => value.loteId && idDeLote(l) === parseInt(value.loteId))
   const esSustitucion = !!loteSeleccionado && !loteSeleccionado.esDeReceta
+  const panelSustitutoVisible = mostrarSustituto || esSustitucion
 
   function opcion(l) {
     const fechaPosterior = !ingrediente.esArticulo && fechaDestino && l.fecha > fechaDestino
@@ -455,32 +457,55 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-md p-3">
+    <div className={`border rounded-md p-3 ${esSustitucion ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
       <p className="text-sm font-medium text-gray-700">
         {ingrediente.nombre}
         <span className="text-gray-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
+        {esSustitucion && <span className="ml-2 text-xs font-semibold text-amber-600">SUSTITUCIÓN EXCEPCIONAL</span>}
       </p>
 
-      {ingrediente.lotes.length === 0 ? (
+      {deReceta.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
+          <Select value={esSustitucion ? '' : value.loteId}
+            onChange={(e) => onChange({ ...value, loteId: e.target.value, nota: '' })} className="text-sm">
+            <option value="">Selecciona lote</option>
+            {deReceta.map(opcion)}
+          </Select>
+          <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+            onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
+            className="text-sm" title="Se redondeará a 3 decimales" />
+        </div>
+      )}
+
+      {deReceta.length === 0 && !panelSustitutoVisible && (
         <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
-            <Select value={value.loteId} onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
-              <option value="">Selecciona lote</option>
-              {deReceta.length > 0 && <optgroup label="De receta">{deReceta.map(opcion)}</optgroup>}
-              {otros.length > 0 && <optgroup label="Otros artículos disponibles (sustitución excepcional)">{otros.map(opcion)}</optgroup>}
+      )}
+
+      {otros.length > 0 && !panelSustitutoVisible && (
+        <LinkAction tone="blue" onClick={() => setMostrarSustituto(true)} className="text-xs mt-2 inline-block">
+          ¿No hay lote de receta disponible? Buscar sustituto
+        </LinkAction>
+      )}
+
+      {otros.length > 0 && panelSustitutoVisible && (
+        <div className="mt-2 pt-2 border-t border-amber-200">
+          <p className="text-xs font-semibold text-amber-700 mb-1.5 uppercase tracking-wide">Sustitución excepcional — misma categoría</p>
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 items-center">
+            <Select value={esSustitucion ? value.loteId : ''}
+              onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
+              <option value="">Selecciona lote sustituto</option>
+              {otros.map(opcion)}
             </Select>
-            <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
-              onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-              className="text-sm" title="Se redondeará a 3 decimales" />
+            {deReceta.length === 0 && (
+              <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+                onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
+                className="text-sm" title="Se redondeará a 3 decimales" />
+            )}
           </div>
-          {esSustitucion && (
-            <Input type="text" placeholder="Motivo de la sustitución (opcional)" value={value.nota ?? ''}
-              onChange={(e) => onChange({ ...value, nota: e.target.value })}
-              className="text-sm mt-2 w-full" />
-          )}
-        </>
+          <Input type="text" placeholder="Motivo de la sustitución (opcional)" value={value.nota ?? ''}
+            onChange={(e) => onChange({ ...value, nota: e.target.value })}
+            className="text-sm mt-2 w-full" />
+        </div>
       )}
     </div>
   )
