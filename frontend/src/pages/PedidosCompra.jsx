@@ -29,6 +29,7 @@ function PedidosCompra() {
   const [proveedorId, setProveedorId] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [fechaEntrega, setFechaEntrega] = useState('')
+  const [referenciaProveedor, setReferenciaProveedor] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
 
@@ -130,6 +131,7 @@ function PedidosCompra() {
     setProveedorId('')
     setFecha(new Date().toISOString().slice(0, 10))
     setFechaEntrega('')
+    setReferenciaProveedor('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
   }
@@ -154,6 +156,7 @@ function PedidosCompra() {
         proveedor_id: parseInt(proveedorId),
         fecha,
         fecha_entrega_prevista: fechaEntrega || null,
+        referencia_proveedor: referenciaProveedor || null,
         notas: notas || null,
       })
       .select()
@@ -222,9 +225,15 @@ function PedidosCompra() {
                 )}
               </Field>
             </div>
-            <Field label="Notas (opcional)">
-              <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
-            </Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Field label="Referencia del proveedor (opcional)">
+                <Input type="text" value={referenciaProveedor} onChange={(e) => setReferenciaProveedor(e.target.value)}
+                  placeholder="Nº de confirmación que da el proveedor a este pedido" />
+              </Field>
+              <Field label="Notas (opcional)">
+                <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
+              </Field>
+            </div>
 
             {proveedorId && articulosDelProveedor.length === 0 && (
               <p className="text-sm text-amber-600">
@@ -293,6 +302,7 @@ function PedidosCompra() {
                   </p>
                   <p className="text-sm text-gray-500">
                     {formatFecha(p.fecha)}{p.fecha_entrega_prevista && ` · entrega prevista ${formatFecha(p.fecha_entrega_prevista)}`}
+                    {p.referencia_proveedor && ` · ref. proveedor: ${p.referencia_proveedor}`}
                   </p>
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>

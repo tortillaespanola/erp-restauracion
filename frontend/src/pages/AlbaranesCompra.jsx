@@ -36,7 +36,7 @@ function AlbaranesCompra() {
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase
         .from('pedidos_compra')
-        .select('id, codigo_pedido, proveedor_id, proveedores(nombre_comercial), lineas_pedido_compra(id, articulo_id, cantidad, precio_unitario, articulos_compra(nombre, unidad))')
+        .select('id, codigo_pedido, proveedor_id, referencia_proveedor, proveedores(nombre_comercial), lineas_pedido_compra(id, articulo_id, cantidad, precio_unitario, articulos_compra(nombre, unidad))')
         .eq('estado', 'pendiente')
         .order('fecha', { ascending: false }),
     ])
@@ -371,6 +371,9 @@ function AlbaranesCompra() {
                   {proveedorId && (
                     <p className="text-xs text-gray-400 mt-1">
                       Proveedor: {proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
+                      {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor && (
+                        <> · Ref. proveedor: {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor}</>
+                      )}
                     </p>
                   )}
                 </Field>
