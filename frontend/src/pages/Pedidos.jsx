@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
@@ -410,7 +411,7 @@ function Pedidos() {
                     <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
                   </p>
                   <p className="text-sm text-gray-500">
-                    {p.fecha}{p.fecha_entrega_prevista && ` · entrega prevista ${p.fecha_entrega_prevista}`}
+                    {formatFecha(p.fecha)}{p.fecha_entrega_prevista && ` · entrega prevista ${formatFecha(p.fecha_entrega_prevista)}`}
                   </p>
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>

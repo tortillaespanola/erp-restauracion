@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase } from './supabase'
+import { formatFecha } from './formatFecha'
 
 // Convierte una URL de imagen en base64 y devuelve también sus proporciones reales
 function urlToBase64(url) {
@@ -73,7 +74,7 @@ export async function generarDocumentoPdf(tipo, documento) {
   y += 7
   doc.setFontSize(10)
   doc.setTextColor(100)
-  doc.text(`Fecha: ${documento.fecha}`, 15, y)
+  doc.text(`Fecha: ${formatFecha(documento.fecha)}`, 15, y)
   y += 10
 
   // Datos del cliente/proveedor

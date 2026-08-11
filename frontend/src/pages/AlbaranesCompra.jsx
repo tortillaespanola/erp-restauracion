@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
@@ -516,7 +517,7 @@ function AlbaranesCompra() {
                 <div>
                   <p className="font-semibold text-[#1C2938]">{alb.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
                   <p className="text-sm text-gray-500">
-                    Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                    Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
                     {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{alb.codigo_interno}</span>}
                   </p>
                 </div>
@@ -544,7 +545,7 @@ function AlbaranesCompra() {
                       <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
                       <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
                       <td className="py-1.5">{linea.precio ?? '-'}</td>
-                      <td className="py-1.5">{linea.fecha_caducidad ?? '-'}</td>
+                      <td className="py-1.5">{linea.fecha_caducidad ? formatFecha(linea.fecha_caducidad) : '-'}</td>
                       <td className="py-1.5 text-gray-500">{linea.notas ?? '-'}</td>
                       <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
                         {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}

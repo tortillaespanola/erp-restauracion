@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -329,7 +330,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         <div>
           <p className="font-semibold text-[#1C2938]">{produccion.productos_finales?.nombre} <span className="text-amber-600 text-sm font-normal">— en curso</span></p>
           <p className="text-sm text-gray-500">
-            Iniciada el {produccion.fecha}
+            Iniciada el {formatFecha(produccion.fecha)}
             {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
           </p>
         </div>
@@ -415,8 +416,8 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
               const fechaPosterior = !ingrediente.esArticulo && fechaDestino && l.fecha > fechaDestino
               const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
               const label = ingrediente.esArticulo
-                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
-                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${fechaPosterior ? ' — ⚠ fecha posterior, no se podrá consumir' : caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)}${l.fecha_caducidad ? ` · cad. ${formatFecha(l.fecha_caducidad)}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${fechaPosterior ? ' — ⚠ fecha posterior, no se podrá consumir' : caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
               return <option key={id} value={id} disabled={fechaPosterior}>{label}</option>
             })}
           </Select>
@@ -443,7 +444,7 @@ function ProduccionCerrada({ produccion, onCambio, onBorrar }) {
               {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
             </p>
             <p className="text-sm text-gray-500">
-              {produccion.fecha}
+              {formatFecha(produccion.fecha)}
               {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
             </p>
             {produccion.notas && <p className="text-sm text-gray-400 italic">{produccion.notas}</p>}

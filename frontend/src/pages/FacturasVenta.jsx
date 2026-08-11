@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
@@ -218,7 +219,7 @@ function FacturasVenta() {
                         checked={albaranesSeleccionados.includes(alb.id)}
                         onChange={() => toggleAlbaran(alb.id)}
                       />
-                      Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                      Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
                     </label>
                   ))}
                 </div>
@@ -244,7 +245,7 @@ function FacturasVenta() {
                 <div>
                   <p className="font-semibold text-[#1C2938]">{f.clientes?.nombre ?? 'Sin cliente'}</p>
                   <p className="text-sm text-gray-500">
-                    Factura {f.numero_factura || '(sin número)'} · {f.fecha}
+                    Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
                     {f.total != null && ` · ${f.total} €`}
                   </p>
                 </div>
@@ -260,7 +261,7 @@ function FacturasVenta() {
                 {f.factura_venta_albaran.length === 0
                   ? '—'
                   : f.factura_venta_albaran
-                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || '(sin número)'} (${rel.albaranes_venta?.fecha})`)
+                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || '(sin número)'} (${formatFecha(rel.albaranes_venta?.fecha)})`)
                       .join(', ')}
               </div>
             </Card>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
@@ -396,7 +397,7 @@ function AlbaranesVenta() {
                 <div>
                   <p className="font-semibold text-[#1C2938]">{alb.clientes?.nombre ?? 'Sin cliente'}</p>
                   <p className="text-sm text-gray-500">
-                    Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                    Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
                   </p>
                   {alb.notas && <p className="text-sm text-gray-400 italic">{alb.notas}</p>}
                 </div>
@@ -480,7 +481,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
             const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
             return (
               <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
-                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {l.fecha} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
+                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {formatFecha(l.fecha)} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
               </option>
             )
           })}
@@ -544,7 +545,7 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
             const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
             return (
               <option key={l.entrada_material_id} value={l.entrada_material_id} disabled={fechaPosterior}>
-                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {l.fecha_recepcion} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
+                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {formatFecha(l.fecha_recepcion)} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
               </option>
             )
           })}

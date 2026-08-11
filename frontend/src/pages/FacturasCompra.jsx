@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 function FacturasCompra() {
@@ -186,7 +187,7 @@ function FacturasCompra() {
                         checked={albaranesSeleccionados.includes(alb.id)}
                         onChange={() => toggleAlbaran(alb.id)}
                       />
-                      Albarán {alb.numero_albaran || '(sin número)'} · {alb.fecha}
+                      Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
                     </label>
                   ))}
                 </div>
@@ -212,7 +213,7 @@ function FacturasCompra() {
                 <div>
                   <p className="font-semibold text-[#1C2938]">{f.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
                   <p className="text-sm text-gray-500">
-                    Factura {f.numero_factura || '(sin número)'} · {f.fecha}
+                    Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
                     {f.total != null && ` · ${f.total} €`}
                     {f.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{f.codigo_interno}</span>}
                   </p>
@@ -225,7 +226,7 @@ function FacturasCompra() {
                 {f.factura_compra_albaran.length === 0
                   ? '—'
                   : f.factura_compra_albaran
-                      .map((rel) => `${rel.albaranes_compra?.numero_albaran || '(sin número)'} (${rel.albaranes_compra?.fecha})`)
+                      .map((rel) => `${rel.albaranes_compra?.numero_albaran || '(sin número)'} (${formatFecha(rel.albaranes_compra?.fecha)})`)
                       .join(', ')}
               </div>
             </Card>

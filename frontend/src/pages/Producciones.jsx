@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -336,7 +337,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold text-[#1C2938]">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— en curso</span></p>
-          <p className="text-sm text-gray-500">Iniciada el {produccion.fecha}</p>
+          <p className="text-sm text-gray-500">Iniciada el {formatFecha(produccion.fecha)}</p>
         </div>
         <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
       </div>
@@ -419,8 +420,8 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
               const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
               const label = ingrediente.esArticulo
-                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion}${l.fecha_caducidad ? ` · cad. ${l.fecha_caducidad}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
-                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)}${l.fecha_caducidad ? ` · cad. ${formatFecha(l.fecha_caducidad)}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
               return <option key={id} value={id}>{label}</option>
             })}
           </Select>
@@ -446,7 +447,7 @@ function ProduccionCerrada({ produccion, onCambio, onBorrar }) {
               {produccion.cantidad_producida} {produccion.semielaborados?.unidad} de {produccion.semielaborados?.nombre}
               {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
             </p>
-            <p className="text-sm text-gray-500">{produccion.fecha}</p>
+            <p className="text-sm text-gray-500">{formatFecha(produccion.fecha)}</p>
             {produccion.notas && <p className="text-sm text-gray-400 italic">{produccion.notas}</p>}
           </div>
           <div className="flex gap-3 shrink-0">

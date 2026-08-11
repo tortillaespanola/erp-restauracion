@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatFecha } from '../lib/formatFecha'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 const MOTIVO_CATEGORIA_LABEL = {
@@ -225,10 +226,10 @@ function AjustesStock() {
                   const id = tipo === 'articulo' ? l.entrada_material_id : l.produccion_id
                   const esMasAntiguo = index === 0
                   const label = tipo === 'articulo'
-                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${l.fecha_recepcion} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
                     : tipo === 'semielaborado'
-                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${l.fecha}${l.fecha_caducidad ? ' · caduca ' + l.fecha_caducidad : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)}${l.fecha_caducidad ? ' · caduca ' + formatFecha(l.fecha_caducidad) : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
                   return <option key={id} value={id}>{label}</option>
                 })}
               </Select>
@@ -290,7 +291,7 @@ function AjustesStock() {
             <tbody className="divide-y divide-gray-100">
               {historial.map((a) => (
                 <tr key={`${a.tipo}-${a.id}`} className="hover:bg-blue-50/40">
-                  <Td className="text-gray-500">{a.fecha}</Td>
+                  <Td className="text-gray-500">{formatFecha(a.fecha)}</Td>
                   <Td className="font-medium">{a.nombre} <span className="text-gray-400 text-xs font-normal">({a.tipo})</span></Td>
                   <Td className={`font-medium ${a.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {a.cantidad >= 0 ? '+' : ''}{a.cantidad} {a.unidad}
