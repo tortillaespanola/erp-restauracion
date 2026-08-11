@@ -67,7 +67,7 @@ function AlbaranesVenta() {
     async function cargarPedido() {
       const { data } = await supabase
         .from('pedidos_venta')
-        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id, cantidad, lineas_albaran_venta(cantidad))')
+        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario, lineas_albaran_venta(cantidad))')
         .eq('id', pedidoIdParam)
         .single()
 
@@ -122,6 +122,12 @@ function AlbaranesVenta() {
   function cantidadYaEnLineasArticulo(entradaMaterialId) {
     return lineas
       .filter((l) => l.entrada_material_id === entradaMaterialId)
+      .reduce((sum, l) => sum + l.cantidad, 0)
+  }
+
+  function cantidadYaEnLineasLibres(lineaPedidoId) {
+    return lineas
+      .filter((l) => l.linea_pedido_id === lineaPedidoId)
       .reduce((sum, l) => sum + l.cantidad, 0)
   }
 
@@ -187,7 +193,7 @@ function AlbaranesVenta() {
     ])
   }
 
-  function addLineaLibre(descripcion, cantidad, precio) {
+  function addLineaLibre(descripcion, cantidad, precio, lineaPedidoId = null) {
     const cant = parseFloat(cantidad)
 
     if (!descripcion.trim() || !cant || cant <= 0) {
@@ -203,7 +209,7 @@ function AlbaranesVenta() {
         descripcion: descripcion.trim(),
         cantidad: cant,
         precio_unitario: precio ? parseFloat(precio) : null,
-        linea_pedido_id: null,
+        linea_pedido_id: lineaPedidoId,
       },
     ])
   }
@@ -290,6 +296,13 @@ function AlbaranesVenta() {
     ? articulosMercaderia.filter((a) => pedidoLineas.some((l) => l.articulo_id === a.id))
     : articulosMercaderia
 
+  const lineasLibresPendientes = pedidoIdParam
+    ? pedidoLineas
+        .filter((l) => l.producto_final_id == null && l.articulo_id == null)
+        .map((l) => ({ ...l, restante: l.cantidad - l.entregado_previo - cantidadYaEnLineasLibres(l.id) }))
+        .filter((l) => l.restante > 0)
+    : []
+
   function prepararDocumento(alb) {
     return {
       numero: alb.numero_albaran || `#${alb.id}`,
@@ -370,6 +383,17 @@ function AlbaranesVenta() {
                       cantidadYaEnLineas={cantidadYaEnLineasArticulo}
                       fechaAlbaran={fecha}
                     />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {lineasLibresPendientes.length > 0 && (
+              <div>
+                <SectionLabel>Líneas pendientes de este pedido (otro / servicio)</SectionLabel>
+                <div className="flex flex-col gap-3">
+                  {lineasLibresPendientes.map((l) => (
+                    <LineaPedidoLibrePendiente key={l.id} linea={l} onAdd={addLineaLibre} />
                   ))}
                 </div>
               </div>
@@ -579,6 +603,42 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
             )
           })}
         </Select>
+        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+          className="text-sm" title="Se redondeará a 3 decimales" />
+        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          onChange={(e) => setPrecio(e.target.value)}
+          className="text-sm" />
+        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+      </div>
+    </div>
+  )
+}
+
+// Línea 'otro/servicio' de un pedido, todavía sin servir del todo.
+// Descripción/cantidad/precio precargados desde el pedido pero editables;
+// linea_pedido_id se fija explícitamente (a diferencia de LineaLibreParaVender,
+// que siempre lo deja en null) para que se compute como servida.
+function LineaPedidoLibrePendiente({ linea, onAdd }) {
+  const [descripcion, setDescripcion] = useState(linea.descripcion ?? '')
+  const [cantidad, setCantidad] = useState(String(linea.restante))
+  const [precio, setPrecio] = useState(linea.precio_unitario ?? '')
+
+  useEffect(() => {
+    setCantidad(String(linea.restante))
+  }, [linea.restante])
+
+  function handleAdd() {
+    onAdd(descripcion, cantidad, precio, linea.id)
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-md p-3">
+      <p className="text-sm font-medium text-gray-700">
+        {linea.descripcion} <span className="text-gray-400 text-xs">— {linea.restante} uds. pendientes del pedido</span>
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
+        <Input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="text-sm" />
         <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
           className="text-sm" title="Se redondeará a 3 decimales" />
