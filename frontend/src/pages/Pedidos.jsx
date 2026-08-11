@@ -14,10 +14,16 @@ function compararPedidos(a, b) {
   const grupoB = GRUPO_ESTADO[b.estado] ?? 0
   if (grupoA !== grupoB) return grupoA - grupoB
 
-  // Cerrados (servido/cancelado): fecha_entrega_prevista ya no aporta urgencia
-  // real — orden por fecha de creación descendente, como antes de ea97ec2.
+  // Cerrados (servido/cancelado): sin urgencia que ordenar, así que se usa
+  // fecha_entrega_prevista descendente como proxy de "cuándo se cerró" (en
+  // la carga de histórico coincide con la fecha real de entrega) — los
+  // recién cerrados quedan arriba del grupo en vez de mezclados por fecha
+  // de creación del pedido.
   if (grupoA === 1) {
-    return b.fecha.localeCompare(a.fecha)
+    if (!a.fecha_entrega_prevista && !b.fecha_entrega_prevista) return 0
+    if (!a.fecha_entrega_prevista) return 1
+    if (!b.fecha_entrega_prevista) return -1
+    return b.fecha_entrega_prevista.localeCompare(a.fecha_entrega_prevista)
   }
 
   if (!a.fecha_entrega_prevista && !b.fecha_entrega_prevista) return 0
