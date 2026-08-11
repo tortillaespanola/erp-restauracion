@@ -135,7 +135,9 @@ Incluye `lib/generarPdf.js` — el punto donde se imprime la fecha en los PDF de
 
 **Fase:** revisar durante Layers 1 y 2 (UI/UX).
 
-**En curso** — diseño confirmado (helper centralizado `lib/formatFecha.js`, constante `FORMATO_FECHA`, sin persistencia en base de datos ni configurabilidad por `negocio_id` todavía). Fase 1 (17 inputs) y Fase 2 (26 sitios de visualización + PDF) se implementan por separado, con verificación en runtime real de cada una antes de comitear.
+✅ **Implementado, en dos fases, cada una probada en runtime real antes de comitear:**
+- **Fase 1** (commit `2db61bd`): componente `DateInput` (`src/components/ui.jsx`, envolviendo `react-datepicker`, formato fijo dd/MM/yyyy, locale español), sustituyendo los 17 `<input type="date">` nativos en los 9 archivos.
+- **Fase 2** (commit `1f3e943`): helper `lib/formatFecha.js` (constante `FORMATO_FECHA`, sin persistencia en base de datos ni configurabilidad por `negocio_id` todavía — decisión documentada arriba), sustituyendo los 26 sitios de visualización más `lib/generarPdf.js`. Verificado con un PDF de albarán real descargado: `Fecha: 03/06/2026`.
 
 ## 8. `AlbaranesCompra.jsx`: reasignar retroactivamente un albarán `compra_directa` a un pedido existente
 
