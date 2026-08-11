@@ -432,34 +432,10 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   )
 }
 
-// Dos modos: con onAdd (lote+cantidad propios, botón "+ Añadir a la lista",
-// usado por ProduccionCerradaEdicion) o controlado con value/onChange (sin
-// botón propio, usado por ProduccionAbierta — el confirmado es un único
-// botón para todas las líneas a la vez).
-function IngredienteConsumo({ ingrediente, fechaDestino, onAdd, value, onChange }) {
-  const controlado = onAdd === undefined
-  const [loteIdLocal, setLoteIdLocal] = useState('')
-  const [cantidadLocal, setCantidadLocal] = useState('')
-
-  const loteId = controlado ? value.loteId : loteIdLocal
-  const cantidad = controlado ? value.cantidad : cantidadLocal
-
-  function cambiarLoteId(v) {
-    if (controlado) onChange({ ...value, loteId: v })
-    else setLoteIdLocal(v)
-  }
-
-  function cambiarCantidad(v) {
-    if (controlado) onChange({ ...value, cantidad: v })
-    else setCantidadLocal(v)
-  }
-
-  function handleAdd() {
-    onAdd(loteId, cantidad)
-    setLoteIdLocal('')
-    setCantidadLocal('')
-  }
-
+// Fila controlada (lote + cantidad): el padre decide qué hacer con las
+// líneas rellenas (confirmar en bloque, añadir a una edición, etc.) —
+// este componente no tiene acción ni estado propios.
+function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
   return (
     <div className="border border-gray-200 rounded-md p-3">
       <p className="text-sm font-medium text-gray-700">
@@ -470,8 +446,8 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd, value, onChange 
       {ingrediente.lotes.length === 0 ? (
         <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
       ) : (
-        <div className={`grid grid-cols-1 gap-2 mt-2 items-center ${controlado ? 'md:grid-cols-[2fr_1fr]' : 'md:grid-cols-[2fr_1fr_auto]'}`}>
-          <Select value={loteId} onChange={(e) => cambiarLoteId(e.target.value)} className="text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
+          <Select value={value.loteId} onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
             <option value="">Selecciona lote</option>
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
@@ -482,10 +458,9 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd, value, onChange 
               return <option key={id} value={id}>{label}</option>
             })}
           </Select>
-          <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
-            onChange={(e) => cambiarCantidad(e.target.value)}
+          <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+            onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
             className="text-sm" title="Se redondeará a 3 decimales" />
-          {!controlado && <LinkAction tone="blue" onClick={handleAdd}>+ Añadir a la lista</LinkAction>}
         </div>
       )}
     </div>
@@ -560,6 +535,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  const [filasNuevas, setFilasNuevas] = useState({})
 
   useEffect(() => {
     cargarIngredientesConLotes(produccion.semielaborado_id).then((ings) => {
@@ -576,24 +552,40 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
     setLineas((prev) => prev.map((l, i) => (i === index ? { ...l, _deleted: true } : l)))
   }
 
-  function anadirLinea(ingrediente, loteId, cantidad) {
-    const cant = parseFloat(cantidad)
-    if (!loteId || !cant || cant <= 0) {
-      alert('Selecciona un lote e introduce una cantidad válida')
+  function filaNuevaDe(ing) {
+    return filasNuevas[claveIngrediente(ing)] ?? { loteId: '', cantidad: '' }
+  }
+
+  function actualizarFilaNueva(ing, valor) {
+    setFilasNuevas((prev) => ({ ...prev, [claveIngrediente(ing)]: valor }))
+  }
+
+  function filasNuevasCompletas() {
+    return ingredientes
+      .map((ing) => ({ ing, fila: filaNuevaDe(ing) }))
+      .filter(({ fila }) => fila.loteId && parseFloat(fila.cantidad) > 0)
+  }
+
+  function anadirLineasRellenas() {
+    const completas = filasNuevasCompletas()
+    if (completas.length === 0) {
+      alert('Rellena lote y cantidad de al menos una línea')
       return
     }
+
     setLineas((prev) => [
       ...prev,
-      {
+      ...completas.map(({ ing, fila }) => ({
         id: null,
-        entrada_material_id: ingrediente.esArticulo ? parseInt(loteId) : null,
-        produccion_origen_id: ingrediente.esArticulo ? null : parseInt(loteId),
-        cantidad: String(cant),
+        entrada_material_id: ing.esArticulo ? parseInt(fila.loteId) : null,
+        produccion_origen_id: ing.esArticulo ? null : parseInt(fila.loteId),
+        cantidad: String(parseFloat(fila.cantidad)),
         _deleted: false,
-        _nombre: ingrediente.nombre,
-        _unidad: ingrediente.unidad,
-      },
+        _nombre: ing.nombre,
+        _unidad: ing.unidad,
+      })),
     ])
+    setFilasNuevas({})
   }
 
   async function guardar() {
@@ -677,11 +669,15 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         <div className="mt-3 flex flex-col gap-2">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Añadir más consumo</p>
           {ingredientes.map((ing) => (
-            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
+            <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
               fechaDestino={fecha}
-              onAdd={(loteId, cantidad) => anadirLinea(ing, loteId, cantidad)} />
+              value={filaNuevaDe(ing)}
+              onChange={(valor) => actualizarFilaNueva(ing, valor)} />
           ))}
+          <Button variant="secondary" size="sm" onClick={anadirLineasRellenas}>
+            {`+ Añadir líneas${filasNuevasCompletas().length > 0 ? ` (${filasNuevasCompletas().length})` : ''}`}
+          </Button>
         </div>
       )}
 
