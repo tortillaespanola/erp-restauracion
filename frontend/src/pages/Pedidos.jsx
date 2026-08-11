@@ -145,19 +145,28 @@ function Pedidos() {
   async function handleEditar(pedido) {
     const lineaIds = pedido.lineas_pedido_venta.map((l) => l.id)
 
-    const [resProduccion, resAlbaran] = await Promise.all([
+    const [resProduccion, resAlbaran, resProduccionTanda, resSemielaboradoTanda] = await Promise.all([
       supabase.from('producciones_producto_final').select('id', { count: 'exact', head: true }).eq('pedido_id', pedido.id),
       lineaIds.length > 0
         ? supabase.from('lineas_albaran_venta').select('id', { count: 'exact', head: true }).in('linea_pedido_id', lineaIds)
         : Promise.resolve({ count: 0, error: null }),
+      // Flujo de tanda (POS_CONTRATOS_PANTALLA.md): producciones_producto_final.pedido_id
+      // queda sin rellenar a propósito en ese flujo — el vínculo real es tanda_id, no
+      // pedido_id, así que el chequeo de arriba no lo detecta.
+      pedido.tanda_id
+        ? supabase.from('producciones_producto_final').select('id', { count: 'exact', head: true }).eq('tanda_id', pedido.tanda_id)
+        : Promise.resolve({ count: 0, error: null }),
+      pedido.tanda_id
+        ? supabase.from('producciones_semielaborado').select('id', { count: 'exact', head: true }).eq('tanda_id', pedido.tanda_id)
+        : Promise.resolve({ count: 0, error: null }),
     ])
 
-    if (resProduccion.error || resAlbaran.error) {
-      alert('Error al comprobar si el pedido se puede editar: ' + (resProduccion.error || resAlbaran.error).message)
+    if (resProduccion.error || resAlbaran.error || resProduccionTanda.error || resSemielaboradoTanda.error) {
+      alert('Error al comprobar si el pedido se puede editar: ' + (resProduccion.error || resAlbaran.error || resProduccionTanda.error || resSemielaboradoTanda.error).message)
       return
     }
 
-    if ((resProduccion.count || 0) > 0 || (resAlbaran.count || 0) > 0) {
+    if ((resProduccion.count || 0) > 0 || (resAlbaran.count || 0) > 0 || (resProduccionTanda.count || 0) > 0 || (resSemielaboradoTanda.count || 0) > 0) {
       alert('Este pedido ya tiene producción o entregas registradas; no se puede editar todavía — cancélalo y crea uno nuevo, o contacta con soporte.')
       return
     }
