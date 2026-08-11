@@ -64,6 +64,22 @@ async function cargarIngredientesConLotes(productoFinalId) {
   )
 }
 
+// Nivel `nivel` de necesidades_pedidos() sobre los pedidos de una tanda — recalculado en vivo contra
+// el conjunto ACTUAL de pedidos de la tanda (no memorizado desde la Pantalla 1), mismo patrón ya
+// usado en Producciones.jsx.
+async function necesidadesDeTanda(tandaId, nivel) {
+  const { data: pedidos } = await supabase.from('pedidos_venta').select('id').eq('tanda_id', tandaId)
+  const pedidoIds = (pedidos || []).map((p) => p.id)
+  if (pedidoIds.length === 0) return []
+
+  const { data: necesidades, error } = await supabase.rpc('necesidades_pedidos', { p_pedido_ids: pedidoIds })
+  if (error) {
+    console.error('Error calculando necesidades de la tanda:', error)
+    return []
+  }
+  return (necesidades || []).filter((n) => n.nivel === nivel)
+}
+
 function nombreIngredienteDeLinea(c) {
   const ing = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
   return { nombre: ing?.nombre, unidad: ing?.unidad }
@@ -82,8 +98,18 @@ function ProduccionProductosFinales() {
   const [cargando, setCargando] = useState(true)
 
   const pedidoId = searchParams.get('pedido_id')
+  const tandaId = searchParams.get('tanda_id')
   const [productoId, setProductoId] = useState(searchParams.get('producto_final_id') ?? '')
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10))
+
+  // Si solo hace falta un producto final para esta tanda, se preselecciona — igual que en
+  // Producciones.jsx con el semielaborado.
+  useEffect(() => {
+    if (!tandaId) return
+    necesidadesDeTanda(tandaId, 'producto_final').then((pfs) => {
+      if (pfs.length === 1) setProductoId(String(pfs[0].item_id))
+    })
+  }, [tandaId])
 
   async function cargarDatos() {
     setCargando(true)
@@ -137,6 +163,7 @@ function ProduccionProductosFinales() {
         estado: 'abierta',
         fecha: fechaInicio,
         pedido_id: pedidoId ? parseInt(pedidoId) : null,
+        tanda_id: tandaId || null,
       })
 
     if (error) {
@@ -171,7 +198,14 @@ function ProduccionProductosFinales() {
 
   return (
     <div>
-      <PageHeader title="Producción de productos finales" subtitle="Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida." />
+      <PageHeader
+        title="Producción de productos finales"
+        subtitle={
+          tandaId
+            ? 'Iniciando producción para una tanda de "Pedidos del día" — la cantidad, los consumos y el lote de Mezcla recién cerrado se sugieren según los pedidos de esa tanda.'
+            : 'Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida.'
+        }
+      />
 
       <Card className="mb-6">
         <CardBody>
@@ -262,6 +296,10 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [notas, setNotas] = useState(produccion.notas ?? '')
   const [cerrando, setCerrando] = useState(false)
 
+  const [cantidadObjetivo, setCantidadObjetivo] = useState('')
+  const [cantidadSugerida, setCantidadSugerida] = useState(null)
+  const [produccionesSemiCerradasDeTanda, setProduccionesSemiCerradasDeTanda] = useState(null)
+
   async function cargarIngredientes() {
     setCargandoIngredientes(true)
     setIngredientes(await cargarIngredientesConLotes(produccion.producto_final_id))
@@ -271,6 +309,57 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   useEffect(() => {
     cargarIngredientes()
   }, [])
+
+  // Recalculado en vivo contra el conjunto actual de pedidos de la tanda, mismo patrón que
+  // Producciones.jsx. Además, para el/los ingrediente(s) de tipo semielaborado, se resuelve qué
+  // producciones_semielaborado ya están cerradas bajo la misma tanda -- necesario para preseleccionar
+  // el lote de Mezcla recién cerrado (ver el efecto de precarga más abajo).
+  useEffect(() => {
+    if (!produccion.tanda_id) return
+    necesidadesDeTanda(produccion.tanda_id, 'producto_final').then((filas) => {
+      const fila = filas.find((f) => f.item_id === produccion.producto_final_id)
+      if (fila) setCantidadSugerida(Number(fila.cantidad_necesaria))
+    })
+    supabase
+      .from('producciones_semielaborado')
+      .select('id')
+      .eq('tanda_id', produccion.tanda_id)
+      .eq('estado', 'cerrada')
+      .then(({ data }) => setProduccionesSemiCerradasDeTanda((data || []).map((p) => p.id)))
+  }, [])
+
+  // Precarga automática, solo la primera vez que hay dato suficiente (cantidadObjetivo vacío evita
+  // repetirla en recargas posteriores) -- además de cantidad/consumos (igual que Producciones.jsx),
+  // preselecciona el lote de Mezcla recién cerrado bajo la misma tanda: en un flujo POS lo normal es
+  // consumir de inmediato lo que se acaba de producir, no solo ordenarlo por caducidad como el resto
+  // de casos. El usuario puede editar cantidadObjetivo y volver a precargar con "Recalcular consumos".
+  useEffect(() => {
+    if (cantidadSugerida == null || ingredientes.length === 0 || produccionesSemiCerradasDeTanda == null || cantidadObjetivo) return
+    setCantidadObjetivo(String(cantidadSugerida))
+    const precarga = {}
+    for (const ing of ingredientes) {
+      let loteId = ''
+      if (!ing.esArticulo) {
+        const loteRecienCerrado = ing.lotes.find((l) => l.esDeReceta && produccionesSemiCerradasDeTanda.includes(l.produccion_id))
+        if (loteRecienCerrado) loteId = String(loteRecienCerrado.produccion_id)
+      }
+      precarga[claveIngrediente(ing)] = { loteId, cantidad: (ing.cantidadOrientativa * cantidadSugerida).toFixed(3) }
+    }
+    setFilasConsumo(precarga)
+  }, [cantidadSugerida, ingredientes, produccionesSemiCerradasDeTanda])
+
+  function recalcularConsumosSugeridos() {
+    const objetivo = parseFloat(cantidadObjetivo)
+    if (!objetivo || objetivo <= 0) return
+    setFilasConsumo((prev) => {
+      const next = {}
+      for (const ing of ingredientes) {
+        const clave = claveIngrediente(ing)
+        next[clave] = { ...(prev[clave] ?? { loteId: '' }), cantidad: (ing.cantidadOrientativa * objetivo).toFixed(3) }
+      }
+      return next
+    })
+  }
 
   function filaDe(ing) {
     return filasConsumo[claveIngrediente(ing)] ?? { loteId: '', cantidad: '' }
@@ -376,6 +465,23 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         </div>
         <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
       </div>
+
+      {produccion.tanda_id && (
+        <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">
+          <Field label="Cantidad a producir (unidades) — sugerida por la tanda" className="w-64">
+            <Input
+              type="number"
+              step="0.001"
+              value={cantidadObjetivo}
+              onChange={(e) => setCantidadObjetivo(e.target.value)}
+              placeholder={cantidadSugerida != null ? String(cantidadSugerida) : 'Calculando...'}
+            />
+          </Field>
+          <LinkAction tone="blue" onClick={recalcularConsumosSugeridos} className="text-xs">
+            Recalcular consumos sugeridos
+          </LinkAction>
+        </div>
+      )}
 
       {produccion.consumo_produccion_pf.length > 0 && (
         <table className="w-full mt-3 text-sm">

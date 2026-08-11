@@ -150,7 +150,16 @@ No hay forma de distinguir "esto es lo que pedí producir" de "esto es lo que de
 
 **Sustitución excepcional, aviso de caducidad y batch de consumo**: mismos tres patrones descritos en la Pantalla 3, aplicados aquí a `consumo_produccion_pf` en vez de `consumo_produccion` — no se repiten los detalles, es el mismo contrato.
 
-**Qué falta hoy:** nada a nivel de esquema — `producciones_producto_final.tanda_id` ya existe. El campo `pedido_id` singular se mantiene sin cambios para el flujo de un pedido suelto que ya existe; no hace falta ninguna tabla puente N a N para el caso agregado, `tanda_id` ya lo resuelve. Falta la pantalla y los tres patrones heredados de la Pantalla 3.
+✅ **Implementado — integrado en `ProduccionProductosFinales.jsx` (`?tanda_id=`), mismo patrón que la Pantalla 3.** Entrada nueva desde la Pantalla 1: enlace "Producir producto final →" junto al de "Producir semielaborado →", hacia `/produccion-productos?tanda_id=X`.
+
+Gana lo mismo que `Producciones.jsx` (preselección de producto final si la tanda solo necesita uno, `tanda_id` guardado al iniciar, "Cantidad a producir — sugerida por la tanda" con precarga automática de consumos) **más la pieza específica de esta pantalla**: para el ingrediente de tipo semielaborado, la precarga resuelve qué `producciones_semielaborado` están `cerrada` bajo la misma tanda y, si el lote de receta coincide, preselecciona directamente su `produccion_id` como `loteId` — no solo lo ordena por caducidad como el resto de ingredientes. Los ingredientes de tipo artículo (ej. la caja/packaging) siguen sin preseleccionar lote, igual que antes.
+
+Probado en runtime real, login real, **encadenado con la Parte 2** (misma tanda de principio a fin): tanda confirmada desde la Pantalla 1 real → Mezcla producida y cerrada en `Producciones.jsx` (lote `WIP-MIXKZ-260063`) → indicador de la Pantalla 1 pasó a "Semielab. generado / Producto final pendiente" → `ProduccionProductosFinales.jsx` abierta desde el enlace de la tanda:
+- Producto final preseleccionado correctamente (único con necesidad en la tanda).
+- Cantidad sugerida = 1 (coincidente con el nivel `producto_final` de `necesidades_pedidos()`).
+- **El lote de Mezcla recién cerrado apareció preseleccionado** en el `<select>` — verificado no solo visualmente sino leyendo el `value` del control (`110`, el id exacto de esa producción), y confirmado después contra `consumo_produccion_pf.produccion_origen_id = 110` en la base de datos tras confirmar.
+- El ingrediente de tipo artículo (Caja) no se preseleccionó, como corresponde.
+- 0 errores de consola en toda la cadena. Las producciones reales preexistentes (semielaborado sin tanda, y un producto final cerrado histórico) quedaron intactas — verificado explícitamente. Producción de producto final, producción de semielaborado, consumos, pedido y tanda de prueba borrados al terminar; el stock de los 5 lotes reales usados (Patata, Huevina, AOVE, Caja ×2) volvió exactamente a sus valores anteriores.
 
 ---
 

@@ -313,6 +313,11 @@ function PedidosDelDia() {
                             Producir semielaborado →
                           </LinkAction>
                         )}
+                        {g.tandaId && (
+                          <LinkAction tone="green" onClick={() => navigate(`/produccion-productos?tanda_id=${g.tandaId}`)} className="text-xs">
+                            Producir producto final →
+                          </LinkAction>
+                        )}
                       </div>
                     </div>
                   )
