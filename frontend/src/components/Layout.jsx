@@ -47,6 +47,7 @@ const TITULOS = {
   '/albaranes-compra': ['Albaranes de compra', 'Compras · Albaranes compra'],
   '/facturas-compra': ['Facturas de compra', 'Compras · Facturas compra'],
   '/pedidos-del-dia': ['Pedidos del día', 'Producción · Pedidos del día'],
+  '/cierre-tanda': ['Cierre / entrega', 'Producción · Cierre de tanda'],
   '/ingredientes': ['Ingredientes', 'Producción · Ingredientes'],
   '/semielaborados': ['Semielaborados', 'Producción · Semielaborados'],
   '/producciones': ['Producciones', 'Producción · Producciones'],

@@ -318,6 +318,11 @@ function PedidosDelDia() {
                             Producir producto final →
                           </LinkAction>
                         )}
+                        {g.tandaId && g.estadoPF === 'generado' && (
+                          <LinkAction tone="blue" onClick={() => navigate(`/cierre-tanda?tanda_id=${g.tandaId}`)} className="text-xs">
+                            Cerrar y repartir →
+                          </LinkAction>
+                        )}
                       </div>
                     </div>
                   )
