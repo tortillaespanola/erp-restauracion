@@ -34,6 +34,10 @@ Propuesta: una vista viva de stock con enlace directo a `AjustesStock.jsx` con e
 
 Incluye también la idea de un ajuste rápido ("kill") para limpiar stock antiguo sin consumo por error de pesaje — no hace falta modelo nuevo, el mecanismo de ajustes con motivo ya existe; es solo UI. Diseñar con alguna fricción mínima intencional (confirmación, motivo obligatorio) para que un clic accidental no borre stock real.
 
+**Precisión 1 — identificar lotes caducados, con enlace directo al ajuste.** Las tres vistas de stock (`stock_lotes_articulo`, `stock_lotes_semielaborado`, `stock_lotes_producto_final`) ya exponen `fecha_caducidad` — de `entrada_material` en el primer caso, y calculada por los triggers `calcular_fecha_caducidad_semi()`/`calcular_fecha_caducidad_pf()` en los otros dos (trabajo de caducidad completado en esta sesión: Partes 1-4 + el fix de `dias_caducidad_default` en `Semielaborados.jsx`/`ProductosFinales.jsx`). Hoy esa fecha solo se ve, con aviso ⚠, dentro de los desplegables de consumo/venta — no hay ningún sitio para revisar de un vistazo qué lotes ya caducaron sin tener que abrir cada producción/venta una por una. La vista viva de stock debe marcar visualmente los lotes con `fecha_caducidad < hoy` y ofrecer un enlace directo a `AjustesStock.jsx` con ese lote preseleccionado, para darlos de baja sin buscarlo a mano — conecta dos piezas que ya existen (caducidad y ajustes) pero que hoy no se ven juntas en ningún sitio.
+
+**Precisión 2 — segmentar por tipo, no lista plana.** Requisito de diseño para cuando se construya la pantalla: artículo, semielaborado y producto final son entidades distintas con vistas de stock distintas (`stock_lotes_articulo`/`stock_lotes_semielaborado`/`stock_lotes_producto_final`) — la vista debe segmentarlos claramente (secciones separadas, pestañas o agrupación equivalente), no mezclarlos en una única lista plana.
+
 No implementado — solo la idea recogida, para cuando se aborde.
 
 ## 3. Aviso visual (no bloqueo) cuando la fecha de producción se aleja de la fecha de entrega prevista del pedido
