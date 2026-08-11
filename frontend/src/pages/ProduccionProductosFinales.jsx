@@ -71,6 +71,10 @@ function nombreIngredienteDeLinea(c) {
   return { nombre: ing?.nombre, unidad: ing?.unidad }
 }
 
+function claveIngrediente(ing) {
+  return `${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`
+}
+
 function ProduccionProductosFinales() {
   const [searchParams] = useSearchParams()
   const [productos, setProductos] = useState([])
@@ -253,6 +257,8 @@ function ProduccionProductosFinales() {
 function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
+  const [filasConsumo, setFilasConsumo] = useState({})
+  const [confirmando, setConfirmando] = useState(false)
 
   const [cantidadProducida, setCantidadProducida] = useState('')
   const [notas, setNotas] = useState(produccion.notas ?? '')
@@ -268,25 +274,46 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     cargarIngredientes()
   }, [])
 
-  async function registrarConsumo(ingrediente, loteId, cantidad) {
-    const cant = parseFloat(cantidad)
-    if (!loteId || !cant || cant <= 0) {
-      alert('Selecciona un lote e introduce una cantidad válida')
+  function filaDe(ing) {
+    return filasConsumo[claveIngrediente(ing)] ?? { loteId: '', cantidad: '' }
+  }
+
+  function actualizarFila(ing, valor) {
+    setFilasConsumo((prev) => ({ ...prev, [claveIngrediente(ing)]: valor }))
+  }
+
+  function filasCompletas() {
+    return ingredientes
+      .map((ing) => ({ ing, fila: filaDe(ing) }))
+      .filter(({ fila }) => fila.loteId && parseFloat(fila.cantidad) > 0)
+  }
+
+  async function confirmarConsumo() {
+    const completas = filasCompletas()
+    if (completas.length === 0) {
+      alert('Rellena lote y cantidad de al menos una línea')
       return
     }
 
-    const { error } = await supabase.from('consumo_produccion_pf').insert({
+    setConfirmando(true)
+
+    const filas = completas.map(({ ing, fila }) => ({
       produccion_pf_id: produccion.id,
-      entrada_material_id: ingrediente.esArticulo ? parseInt(loteId) : null,
-      produccion_origen_id: ingrediente.esArticulo ? null : parseInt(loteId),
-      cantidad: cant,
-    })
+      entrada_material_id: ing.esArticulo ? parseInt(fila.loteId) : null,
+      produccion_origen_id: ing.esArticulo ? null : parseInt(fila.loteId),
+      cantidad: parseFloat(fila.cantidad),
+    }))
+
+    const { error } = await supabase.from('consumo_produccion_pf').insert(filas)
+
+    setConfirmando(false)
 
     if (error) {
-      alert('Error al registrar el consumo: ' + error.message)
+      alert('Ninguna línea se ha guardado — revisa el error y vuelve a confirmar:\n\n' + error.message)
       return
     }
 
+    setFilasConsumo({})
     await cargarIngredientes()
     onCambio()
   }
@@ -305,6 +332,14 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     if (!cantidadProducida || parseFloat(cantidadProducida) <= 0) {
       alert('Indica la cantidad neta producida')
       return
+    }
+
+    const pendientes = filasCompletas().length
+    if (pendientes > 0) {
+      const continuar = confirm(
+        `Tienes ${pendientes} línea(s) de consumo rellenas pero sin confirmar — se perderán si cierras ahora sin confirmarlas antes. ¿Cerrar de todas formas?`
+      )
+      if (!continuar) return
     }
 
     const { error } = await supabase
@@ -360,11 +395,15 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         <div className="mt-3 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
           {ingredientes.map((ing) => (
-            <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
+            <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
               fechaDestino={produccion.fecha}
-              onAdd={(loteId, cantidad) => registrarConsumo(ing, loteId, cantidad)} />
+              value={filaDe(ing)}
+              onChange={(valor) => actualizarFila(ing, valor)} />
           ))}
+          <Button variant="success" size="sm" onClick={confirmarConsumo} disabled={confirmando}>
+            {confirmando ? 'Confirmando...' : `Confirmar consumo${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
+          </Button>
         </div>
       )}
 
@@ -388,14 +427,32 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   )
 }
 
-function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
-  const [loteId, setLoteId] = useState('')
-  const [cantidad, setCantidad] = useState('')
+// Dos modos: con onAdd (lote+cantidad propios, botón "+ Añadir a la lista",
+// usado por ProduccionCerradaEdicion) o controlado con value/onChange (sin
+// botón propio, usado por ProduccionAbierta — el confirmado es un único
+// botón para todas las líneas a la vez).
+function IngredienteConsumo({ ingrediente, fechaDestino, onAdd, value, onChange }) {
+  const controlado = onAdd === undefined
+  const [loteIdLocal, setLoteIdLocal] = useState('')
+  const [cantidadLocal, setCantidadLocal] = useState('')
+
+  const loteId = controlado ? value.loteId : loteIdLocal
+  const cantidad = controlado ? value.cantidad : cantidadLocal
+
+  function cambiarLoteId(v) {
+    if (controlado) onChange({ ...value, loteId: v })
+    else setLoteIdLocal(v)
+  }
+
+  function cambiarCantidad(v) {
+    if (controlado) onChange({ ...value, cantidad: v })
+    else setCantidadLocal(v)
+  }
 
   function handleAdd() {
     onAdd(loteId, cantidad)
-    setLoteId('')
-    setCantidad('')
+    setLoteIdLocal('')
+    setCantidadLocal('')
   }
 
   return (
@@ -408,8 +465,8 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
       {ingrediente.lotes.length === 0 ? (
         <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-2 mt-2 items-center">
-          <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
+        <div className={`grid grid-cols-1 gap-2 mt-2 items-center ${controlado ? 'md:grid-cols-[2fr_1fr]' : 'md:grid-cols-[2fr_1fr_auto]'}`}>
+          <Select value={loteId} onChange={(e) => cambiarLoteId(e.target.value)} className="text-sm">
             <option value="">Selecciona lote</option>
             {ingrediente.lotes.map((l) => {
               const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
@@ -422,9 +479,9 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
             })}
           </Select>
           <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
-            onChange={(e) => setCantidad(e.target.value)}
+            onChange={(e) => cambiarCantidad(e.target.value)}
             className="text-sm" title="Se redondeará a 3 decimales" />
-          <LinkAction tone="blue" onClick={handleAdd}>+ Registrar consumo</LinkAction>
+          {!controlado && <LinkAction tone="blue" onClick={handleAdd}>+ Añadir a la lista</LinkAction>}
         </div>
       )}
     </div>
