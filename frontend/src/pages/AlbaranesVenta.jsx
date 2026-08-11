@@ -84,6 +84,9 @@ function AlbaranesVenta() {
     cargarPedido()
   }, [pedidoIdParam])
 
+  // Devuelve la línea de pedido completa (no solo el id), con .restante ya
+  // calculado, para poder tanto atribuir la entrega (.id) como precargar
+  // cantidad/precio pactados en el formulario.
   function lineaPedidoPara(tipo, id) {
     const candidatas = pedidoLineas.filter((l) =>
       tipo === 'producto' ? l.producto_final_id === id : l.articulo_id === id
@@ -94,15 +97,16 @@ function AlbaranesVenta() {
     // (lo ya entregado en albaranes previos + lo que se está añadiendo en
     // esta misma sesión antes de guardar) — no siempre a la primera que
     // coincida por producto, que atribuía mal cuando un pedido tenía más
-    // de una línea del mismo producto.
-    const noCubierta = candidatas.find((l) => {
-      const enSesion = lineas
-        .filter((x) => x.linea_pedido_id === l.id)
-        .reduce((sum, x) => sum + x.cantidad, 0)
-      return l.entregado_previo + enSesion < l.cantidad
-    })
+    // de una línea del mismo producto (caso real: pedidos de Zum Kuss con
+    // una línea a precio normal y otra de muestra a precio distinto).
+    const conRestante = candidatas.map((l) => ({
+      ...l,
+      restante: l.cantidad - l.entregado_previo - cantidadYaEnLineasLibres(l.id),
+    }))
 
-    return (noCubierta ?? candidatas[0]).id
+    const noCubierta = conRestante.find((l) => l.restante > 0)
+
+    return noCubierta ?? conRestante[0]
   }
 
   function resetForm() {
@@ -157,7 +161,7 @@ function AlbaranesVenta() {
         produccion_pf_id: idProduccion,
         cantidad: cant,
         precio_unitario: precio ? parseFloat(precio) : null,
-        linea_pedido_id: lineaPedidoPara('producto', producto.id),
+        linea_pedido_id: lineaPedidoPara('producto', producto.id)?.id ?? null,
       },
     ])
   }
@@ -188,7 +192,7 @@ function AlbaranesVenta() {
         entrada_material_id: idEntrada,
         cantidad: cant,
         precio_unitario: precio ? parseFloat(precio) : null,
-        linea_pedido_id: lineaPedidoPara('mercaderia', articulo.id),
+        linea_pedido_id: lineaPedidoPara('mercaderia', articulo.id)?.id ?? null,
       },
     ])
   }
@@ -365,6 +369,7 @@ function AlbaranesVenta() {
                     refrescoStock={refrescoStock}
                     cantidadYaEnLineas={cantidadYaEnLineas}
                     fechaAlbaran={fecha}
+                    lineaPedido={pedidoIdParam ? lineaPedidoPara('producto', prod.id) : null}
                   />
                 ))}
               </div>
@@ -382,6 +387,7 @@ function AlbaranesVenta() {
                       refrescoStock={refrescoStock}
                       cantidadYaEnLineas={cantidadYaEnLineasArticulo}
                       fechaAlbaran={fecha}
+                      lineaPedido={pedidoIdParam ? lineaPedidoPara('mercaderia', art.id) : null}
                     />
                   ))}
                 </div>
@@ -487,12 +493,23 @@ function AlbaranesVenta() {
   )
 }
 
-function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran }) {
+function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran, lineaPedido }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
-  const [cantidad, setCantidad] = useState('')
-  const [precio, setPrecio] = useState(producto.precio_venta ?? '')
+  const [cantidad, setCantidad] = useState(lineaPedido?.restante > 0 ? String(lineaPedido.restante) : '')
+  const [precio, setPrecio] = useState(lineaPedido?.restante > 0 ? lineaPedido.precio_unitario : (producto.precio_venta ?? ''))
+
+  // Precarga la próxima línea de pedido pendiente (precio/cantidad pactados),
+  // editable. Resincroniza tras cada "+ Añadir" — si el pedido tenía más de
+  // una línea del mismo producto (ej. una a precio normal y otra de muestra),
+  // pasa a precargar la siguiente pendiente en vez de quedarse con la ya cubierta.
+  useEffect(() => {
+    if (lineaPedido && lineaPedido.restante > 0) {
+      setCantidad(String(lineaPedido.restante))
+      setPrecio(lineaPedido.precio_unitario ?? '')
+    }
+  }, [lineaPedido?.id, lineaPedido?.restante])
 
   useEffect(() => {
     async function cargarLotes() {
@@ -551,12 +568,19 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   )
 }
 
-function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran }) {
+function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran, lineaPedido }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
-  const [cantidad, setCantidad] = useState('')
-  const [precio, setPrecio] = useState('')
+  const [cantidad, setCantidad] = useState(lineaPedido?.restante > 0 ? String(lineaPedido.restante) : '')
+  const [precio, setPrecio] = useState(lineaPedido?.restante > 0 ? lineaPedido.precio_unitario : '')
+
+  useEffect(() => {
+    if (lineaPedido && lineaPedido.restante > 0) {
+      setCantidad(String(lineaPedido.restante))
+      setPrecio(lineaPedido.precio_unitario ?? '')
+    }
+  }, [lineaPedido?.id, lineaPedido?.restante])
 
   useEffect(() => {
     async function cargarLotes() {
