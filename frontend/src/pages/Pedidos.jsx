@@ -5,7 +5,7 @@ import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
-const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', cantidad: '', precio_unitario: '' }
+const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', descripcion: '', cantidad: '', precio_unitario: '' }
 
 const GRUPO_ESTADO = { pendiente: 0, en_produccion: 0, servido: 1, cancelado: 1 }
 
@@ -67,7 +67,7 @@ function Pedidos() {
           *,
           clientes(nombre),
           lineas_pedido_venta(
-            id, producto_final_id, articulo_id, cantidad, precio_unitario,
+            id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario,
             productos_finales(nombre),
             articulos_compra(nombre, unidad),
             lineas_albaran_venta(cantidad)
@@ -105,6 +105,10 @@ function Pedidos() {
       if (campo === 'tipo') {
         copia[index].producto_final_id = ''
         copia[index].articulo_id = ''
+        copia[index].descripcion = ''
+        if (valor === 'libre' && !copia[index].cantidad) {
+          copia[index].cantidad = '1'
+        }
       }
       return copia
     })
@@ -159,9 +163,10 @@ function Pedidos() {
     setLineas(
       pedido.lineas_pedido_venta.map((l) => ({
         id: l.id,
-        tipo: l.producto_final_id ? 'producto' : 'mercaderia',
+        tipo: l.producto_final_id ? 'producto' : l.articulo_id ? 'mercaderia' : 'libre',
         producto_final_id: l.producto_final_id ? String(l.producto_final_id) : '',
         articulo_id: l.articulo_id ? String(l.articulo_id) : '',
+        descripcion: l.descripcion ?? '',
         cantidad: String(l.cantidad),
         precio_unitario: l.precio_unitario != null ? String(l.precio_unitario) : '',
       }))
@@ -180,10 +185,10 @@ function Pedidos() {
     }
 
     const lineasValidas = lineas.filter(
-      (l) => l.cantidad && (l.producto_final_id || l.articulo_id)
+      (l) => l.cantidad && (l.producto_final_id || l.articulo_id || l.descripcion)
     )
     if (lineasValidas.length === 0) {
-      alert('Añade al menos una línea con producto/mercadería y cantidad')
+      alert('Añade al menos una línea con producto/mercadería/descripción y cantidad')
       return
     }
 
@@ -191,6 +196,7 @@ function Pedidos() {
       return {
         producto_final_id: l.tipo === 'producto' ? parseInt(l.producto_final_id) : null,
         articulo_id: l.tipo === 'mercaderia' ? parseInt(l.articulo_id) : null,
+        descripcion: l.tipo === 'libre' ? l.descripcion : null,
         cantidad: parseFloat(l.cantidad),
         precio_unitario: l.precio_unitario ? parseFloat(l.precio_unitario) : null,
       }
@@ -342,6 +348,11 @@ function Pedidos() {
                           onChange={() => handleLineaChange(index, 'tipo', 'mercaderia')} />
                         Mercadería
                       </label>
+                      <label className="flex items-center gap-1.5">
+                        <input type="radio" checked={linea.tipo === 'libre'}
+                          onChange={() => handleLineaChange(index, 'tipo', 'libre')} />
+                        Otro / servicio
+                      </label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
@@ -354,7 +365,7 @@ function Pedidos() {
                             <option key={p.id} value={p.id}>{p.nombre}</option>
                           ))}
                         </Select>
-                      ) : (
+                      ) : linea.tipo === 'mercaderia' ? (
                         <Select value={linea.articulo_id}
                           onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                           required>
@@ -363,6 +374,11 @@ function Pedidos() {
                             <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
                           ))}
                         </Select>
+                      ) : (
+                        <Input type="text" placeholder="Descripción (ej. Pan, Horas de showcooking extra...)"
+                          value={linea.descripcion}
+                          onChange={(e) => handleLineaChange(index, 'descripcion', e.target.value)}
+                          required />
                       )}
                       <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
                         onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
@@ -441,18 +457,22 @@ function Pedidos() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {p.lineas_pedido_venta.map((linea) => {
-                    const esProducto = !!linea.producto_final_id
-                    const nombre = esProducto ? linea.productos_finales?.nombre : linea.articulos_compra?.nombre
-                    const unidad = esProducto ? '' : linea.articulos_compra?.unidad
+                    const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
+                    const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
+                    const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
                     return (
                       <tr key={linea.id}>
-                        <td className="py-1.5">{nombre} {!esProducto && <span className="text-gray-400 text-xs">(mercadería)</span>}</td>
+                        <td className="py-1.5">
+                          {nombre}
+                          {tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
+                          {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
+                        </td>
                         <td className="py-1.5">{linea.cantidad} {unidad}</td>
                         <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
                         <td className="py-1.5 text-right">
-                          {esProducto && !completa && p.estado !== 'servido' && p.estado !== 'cancelado' && (
+                          {tipo === 'producto' && !completa && p.estado !== 'servido' && p.estado !== 'cancelado' && (
                             <LinkAction
                               tone="blue"
                               className="text-xs"
