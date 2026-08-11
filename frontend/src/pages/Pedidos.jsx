@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', cantidad: '', precio_unitario: '' }
 
@@ -312,10 +312,10 @@ function Pedidos() {
                 </Select>
               </Field>
               <Field label="Fecha">
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <DateInput value={fecha} onChange={setFecha} required />
               </Field>
               <Field label="Fecha de entrega prevista (opcional)">
-                <Input type="date" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} />
+                <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
                 {fechaEntrega && fechaEntrega < fecha && (
                   <p className="text-red-600 text-xs mt-1">No puede ser anterior a la fecha del pedido</p>
                 )}

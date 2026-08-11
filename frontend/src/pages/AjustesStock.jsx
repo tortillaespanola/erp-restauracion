@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 const MOTIVO_CATEGORIA_LABEL = {
   caducado: 'Caducado',
@@ -241,7 +241,7 @@ function AjustesStock() {
                   required title="Se redondeará a 3 decimales" />
               </Field>
               <Field label="Fecha">
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <DateInput value={fecha} onChange={setFecha} required />
               </Field>
               {tipo === 'producto_final' ? (
                 <Field label="Motivo">

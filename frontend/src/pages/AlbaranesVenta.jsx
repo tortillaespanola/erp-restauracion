@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 import { IconTrash } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 function nombreLineaVenta(linea) {
   return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre
@@ -311,7 +311,7 @@ function AlbaranesVenta() {
                 <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
               </Field>
               <Field label="Fecha">
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
             <Field label="Notas (opcional)">

@@ -1,6 +1,12 @@
 // Sistema de componentes compartido — lenguaje visual SAP Fiori
 // Referencia: mockups/mockup-articulos.html
 
+import DatePicker, { registerLocale } from 'react-datepicker'
+import { es } from 'date-fns/locale'
+import 'react-datepicker/dist/react-datepicker.css'
+
+registerLocale('es', es)
+
 export function PageHeader({ title, subtitle }) {
   return (
     <div className="mb-6">
@@ -90,6 +96,36 @@ export function Select({ className = '', ...props }) {
 
 export function Textarea({ className = '', ...props }) {
   return <textarea className={`${controlClass} ${className}`} {...props} />
+}
+
+function isoToDate(iso) {
+  if (!iso) return null
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function dateToIso(date) {
+  if (!date) return ''
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// value/onChange trabajan con fecha ISO ('yyyy-mm-dd', igual que <input type="date">)
+// para no cambiar el estado de cada pantalla — solo cambia el control de entrada.
+export function DateInput({ value, onChange, className = '', ...props }) {
+  return (
+    <DatePicker
+      selected={isoToDate(value)}
+      onChange={(date) => onChange(dateToIso(date))}
+      dateFormat="dd/MM/yyyy"
+      locale="es"
+      className={`${controlClass} ${className}`}
+      wrapperClassName="w-full"
+      {...props}
+    />
+  )
 }
 
 const badgeColors = {

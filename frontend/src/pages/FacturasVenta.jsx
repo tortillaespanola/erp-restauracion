@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 function FacturasVenta() {
   const [facturas, setFacturas] = useState([])
@@ -194,7 +194,7 @@ function FacturasVenta() {
                 <Input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} />
               </Field>
               <Field label="Fecha">
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
 
@@ -388,7 +388,7 @@ function AlbaranesCompra() {
                 <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
               </Field>
               <Field label="Fecha">
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+                <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
 
@@ -415,8 +415,8 @@ function AlbaranesCompra() {
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
-                          <Input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
-                            onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
+                          <DateInput placeholderText="Caducidad" value={linea.fecha_caducidad}
+                            onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
                             title="Fecha de caducidad (opcional)" />
                           <Input type="text" placeholder="Notas" value={linea.notas}
                             onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
@@ -445,8 +445,8 @@ function AlbaranesCompra() {
                           required title="Se redondeará a 3 decimales" />
                         <Input type="number" step="0.01" placeholder="Precio" value={linea.precio}
                           onChange={(e) => handleLineaChange(index, 'precio', e.target.value)} />
-                        <Input type="date" placeholder="Caducidad" value={linea.fecha_caducidad}
-                          onChange={(e) => handleLineaChange(index, 'fecha_caducidad', e.target.value)}
+                        <DateInput placeholderText="Caducidad" value={linea.fecha_caducidad}
+                          onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
                           title="Fecha de caducidad (opcional)" />
                         <button type="button" onClick={() => removeLinea(index)}
                           className="text-gray-400 hover:text-red-600 justify-self-center">

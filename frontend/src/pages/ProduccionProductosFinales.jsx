@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { IconTrash } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 async function cargarIngredientesConLotes(productoFinalId) {
   const { data: receta } = await supabase
@@ -185,7 +185,7 @@ function ProduccionProductosFinales() {
               </Select>
             </Field>
             <Field label="Fecha">
-              <Input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} required />
+              <DateInput value={fechaInicio} onChange={setFechaInicio} required />
             </Field>
             <Button type="submit">Iniciar</Button>
           </form>
@@ -581,7 +581,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Field label="Fecha">
-          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+          <DateInput value={fecha} onChange={setFecha} required />
         </Field>
         <Field label="Cantidad producida (unidades)">
           <Input type="number" step="0.001" value={cantidadProducida}
@@ -591,7 +591,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
           <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
         </Field>
         <Field label="Fecha de caducidad (opcional)">
-          <Input type="date" value={fechaCaducidad} onChange={(e) => setFechaCaducidad(e.target.value)} />
+          <DateInput value={fechaCaducidad} onChange={setFechaCaducidad} />
         </Field>
       </div>
 
