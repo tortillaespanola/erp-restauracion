@@ -318,3 +318,11 @@ No implementado — solo el diagnóstico, para cuando se aborde.
 **Tamaño mayor que #8** — capa de diseño adicional (la incidencia esperada) más el trabajo de edición que en compras ya estaba resuelto de antemano.
 
 No implementado — solo el diagnóstico, para cuando se aborde.
+
+## 21. Categoría de artículo como relación N:M en vez de N:1
+
+Hoy `articulos_compra.categoria_id` es una única categoría por artículo. Caso a explorar: un artículo podría necesitar pertenecer a más de una categoría a la vez, o el filtro de sustitución excepcional (#9) podría necesitar mirar "categorías compatibles entre sí" en vez de coincidencia exacta de `categoria_id`.
+
+Sin caso real todavía que precise cuál de las dos necesidades es la correcta — aclarar con el propietario cuando surja una situación concreta antes de diseñar (mismo criterio que `articulo_ingrediente`, que resultó ser N:M por un motivo específico, no por generalidad especulativa).
+
+No implementado — solo la idea recogida, para cuando se aborde.
