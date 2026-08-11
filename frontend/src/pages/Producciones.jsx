@@ -4,50 +4,39 @@ import { formatFecha } from '../lib/formatFecha'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
+// Trae TODOS los lotes disponibles de cada tipo (artículo/semielaborado),
+// sin filtrar por receta — entrada #9: se permite elegir cualquiera,
+// marcando cada lote como esDeReceta o no, para poder destacar el normal
+// y detectar una sustitución excepcional al confirmar.
 async function cargarIngredientesConLotes(semielaboradoId) {
-  const { data: receta } = await supabase
-    .from('receta_semielaborado')
-    .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
-    .eq('semielaborado_id', semielaboradoId)
+  const [{ data: receta }, { data: todosLotesArticulo }, { data: todosLotesSemi }] = await Promise.all([
+    supabase
+      .from('receta_semielaborado')
+      .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+      .eq('semielaborado_id', semielaboradoId),
+    supabase.from('stock_lotes_articulo').select('*').gt('stock_disponible', 0).order('fecha_caducidad', { ascending: true, nullsFirst: false }),
+    supabase.from('stock_lotes_semielaborado').select('*').gt('stock_disponible', 0).order('fecha', { ascending: true }),
+  ])
 
   return Promise.all(
     (receta || []).map(async (linea) => {
       const esArticuloDirecto = !!linea.articulo_id
       const esIngrediente = !!linea.ingrediente_id
       const esArticulo = esArticuloDirecto || esIngrediente
-      let lotes = []
+      let lotes
 
-      if (esArticuloDirecto) {
-        const { data } = await supabase
-          .from('stock_lotes_articulo')
-          .select('*')
-          .eq('articulo_id', linea.articulo_id)
-          .gt('stock_disponible', 0)
-          .order('fecha_caducidad', { ascending: true, nullsFirst: false })
-        lotes = data || []
-      } else if (esIngrediente) {
-        const { data: vinculos } = await supabase
-          .from('articulo_ingrediente')
-          .select('articulo_id')
-          .eq('ingrediente_id', linea.ingrediente_id)
-        const articuloIds = (vinculos || []).map((v) => v.articulo_id)
-        if (articuloIds.length > 0) {
-          const { data } = await supabase
-            .from('stock_lotes_articulo')
-            .select('*')
-            .in('articulo_id', articuloIds)
-            .gt('stock_disponible', 0)
-            .order('fecha_caducidad', { ascending: true, nullsFirst: false })
-          lotes = data || []
+      if (esArticulo) {
+        let articuloIdsDeReceta = [linea.articulo_id]
+        if (esIngrediente) {
+          const { data: vinculos } = await supabase
+            .from('articulo_ingrediente')
+            .select('articulo_id')
+            .eq('ingrediente_id', linea.ingrediente_id)
+          articuloIdsDeReceta = (vinculos || []).map((v) => v.articulo_id)
         }
+        lotes = (todosLotesArticulo || []).map((l) => ({ ...l, esDeReceta: articuloIdsDeReceta.includes(l.articulo_id) }))
       } else {
-        const { data } = await supabase
-          .from('stock_lotes_semielaborado')
-          .select('*')
-          .eq('semielaborado_id', linea.ingrediente_semielaborado_id)
-          .gt('stock_disponible', 0)
-          .order('fecha', { ascending: true })
-        lotes = data || []
+        lotes = (todosLotesSemi || []).map((l) => ({ ...l, esDeReceta: l.semielaborado_id === linea.ingrediente_semielaborado_id }))
       }
 
       return {
@@ -305,12 +294,19 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
     setConfirmando(true)
 
-    const filas = completas.map(({ ing, fila }) => ({
-      produccion_id: produccion.id,
-      entrada_material_id: ing.esArticulo ? parseInt(fila.loteId) : null,
-      produccion_origen_id: ing.esArticulo ? null : parseInt(fila.loteId),
-      cantidad: parseFloat(fila.cantidad),
-    }))
+    const filas = completas.map(({ ing, fila }) => {
+      const loteId = parseInt(fila.loteId)
+      const lote = ing.lotes.find((l) => (ing.esArticulo ? l.entrada_material_id : l.produccion_id) === loteId)
+      const esSustitucion = !!lote && !lote.esDeReceta
+      return {
+        produccion_id: produccion.id,
+        entrada_material_id: ing.esArticulo ? loteId : null,
+        produccion_origen_id: ing.esArticulo ? null : loteId,
+        cantidad: parseFloat(fila.cantidad),
+        motivo: esSustitucion ? 'sustitucion_excepcional' : null,
+        nota: esSustitucion ? (fila.nota || null) : null,
+      }
+    })
 
     const { error } = await supabase.from('consumo_produccion').insert(filas)
 
@@ -435,7 +431,20 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 // Fila controlada (lote + cantidad): el padre decide qué hacer con las
 // líneas rellenas (confirmar en bloque, añadir a una edición, etc.) —
 // este componente no tiene acción ni estado propios.
+function labelLote(ingrediente, l, fechaDestino) {
+  const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
+  return ingrediente.esArticulo
+    ? `${l.nombre} · ${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)}${l.fecha_caducidad ? ` · cad. ${formatFecha(l.fecha_caducidad)}` : ''} · ${l.stock_disponible.toFixed(3)} ${l.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+    : `${l.nombre} · ${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${l.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+}
+
 function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
+  const idDeLote = (l) => (ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id)
+  const deReceta = ingrediente.lotes.filter((l) => l.esDeReceta)
+  const otros = ingrediente.lotes.filter((l) => !l.esDeReceta)
+  const loteSeleccionado = ingrediente.lotes.find((l) => value.loteId && idDeLote(l) === parseInt(value.loteId))
+  const esSustitucion = !!loteSeleccionado && !loteSeleccionado.esDeReceta
+
   return (
     <div className="border border-gray-200 rounded-md p-3">
       <p className="text-sm font-medium text-gray-700">
@@ -446,22 +455,31 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
       {ingrediente.lotes.length === 0 ? (
         <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
-          <Select value={value.loteId} onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
-            <option value="">Selecciona lote</option>
-            {ingrediente.lotes.map((l) => {
-              const id = ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id
-              const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
-              const label = ingrediente.esArticulo
-                ? `${ingrediente.esIngrediente ? `${l.nombre} · ` : ''}${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)}${l.fecha_caducidad ? ` · cad. ${formatFecha(l.fecha_caducidad)}` : ''} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
-                : `${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${ingrediente.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
-              return <option key={id} value={id}>{label}</option>
-            })}
-          </Select>
-          <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
-            onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-            className="text-sm" title="Se redondeará a 3 decimales" />
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
+            <Select value={value.loteId} onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
+              <option value="">Selecciona lote</option>
+              {deReceta.length > 0 && (
+                <optgroup label="De receta">
+                  {deReceta.map((l) => <option key={idDeLote(l)} value={idDeLote(l)}>{labelLote(ingrediente, l, fechaDestino)}</option>)}
+                </optgroup>
+              )}
+              {otros.length > 0 && (
+                <optgroup label="Otros artículos disponibles (sustitución excepcional)">
+                  {otros.map((l) => <option key={idDeLote(l)} value={idDeLote(l)}>{labelLote(ingrediente, l, fechaDestino)}</option>)}
+                </optgroup>
+              )}
+            </Select>
+            <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+              onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
+              className="text-sm" title="Se redondeará a 3 decimales" />
+          </div>
+          {esSustitucion && (
+            <Input type="text" placeholder="Motivo de la sustitución (opcional)" value={value.nota ?? ''}
+              onChange={(e) => onChange({ ...value, nota: e.target.value })}
+              className="text-sm mt-2 w-full" />
+          )}
+        </>
       )}
     </div>
   )
@@ -575,15 +593,22 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
 
     setLineas((prev) => [
       ...prev,
-      ...completas.map(({ ing, fila }) => ({
-        id: null,
-        entrada_material_id: ing.esArticulo ? parseInt(fila.loteId) : null,
-        produccion_origen_id: ing.esArticulo ? null : parseInt(fila.loteId),
-        cantidad: String(parseFloat(fila.cantidad)),
-        _deleted: false,
-        _nombre: ing.nombre,
-        _unidad: ing.unidad,
-      })),
+      ...completas.map(({ ing, fila }) => {
+        const loteId = parseInt(fila.loteId)
+        const lote = ing.lotes.find((l) => (ing.esArticulo ? l.entrada_material_id : l.produccion_id) === loteId)
+        const esSustitucion = !!lote && !lote.esDeReceta
+        return {
+          id: null,
+          entrada_material_id: ing.esArticulo ? loteId : null,
+          produccion_origen_id: ing.esArticulo ? null : loteId,
+          cantidad: String(parseFloat(fila.cantidad)),
+          motivo: esSustitucion ? 'sustitucion_excepcional' : null,
+          nota: esSustitucion ? (fila.nota || null) : null,
+          _deleted: false,
+          _nombre: ing.nombre,
+          _unidad: ing.unidad,
+        }
+      }),
     ])
     setFilasNuevas({})
   }
@@ -601,6 +626,8 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
       entrada_material_id: l.entrada_material_id,
       produccion_origen_id: l.produccion_origen_id,
       cantidad: parseFloat(l.cantidad),
+      motivo: l.motivo ?? null,
+      nota: l.nota ?? null,
       _deleted: l._deleted,
     }))
 
