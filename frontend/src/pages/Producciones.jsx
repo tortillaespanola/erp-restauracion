@@ -9,14 +9,17 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Sele
 // marcando cada lote como esDeReceta o no, para poder destacar el normal
 // y detectar una sustitución excepcional al confirmar.
 async function cargarIngredientesConLotes(semielaboradoId) {
-  const [{ data: receta }, { data: todosLotesArticulo }, { data: todosLotesSemi }] = await Promise.all([
+  const [{ data: receta }, { data: todosLotesArticulo }, { data: todosLotesSemi }, { data: todosArticulos }] = await Promise.all([
     supabase
       .from('receta_semielaborado')
-      .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+      .select('id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad, categoria_id), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
       .eq('semielaborado_id', semielaboradoId),
     supabase.from('stock_lotes_articulo').select('*').gt('stock_disponible', 0).order('fecha_caducidad', { ascending: true, nullsFirst: false }),
     supabase.from('stock_lotes_semielaborado').select('*').gt('stock_disponible', 0).order('fecha', { ascending: true }),
+    supabase.from('articulos_compra').select('id, categoria_id'),
   ])
+
+  const categoriaPorArticulo = new Map((todosArticulos || []).map((a) => [a.id, a.categoria_id]))
 
   return Promise.all(
     (receta || []).map(async (linea) => {
@@ -34,7 +37,13 @@ async function cargarIngredientesConLotes(semielaboradoId) {
             .eq('ingrediente_id', linea.ingrediente_id)
           articuloIdsDeReceta = (vinculos || []).map((v) => v.articulo_id)
         }
-        lotes = (todosLotesArticulo || []).map((l) => ({ ...l, esDeReceta: articuloIdsDeReceta.includes(l.articulo_id) }))
+        // "Otros artículos disponibles" (#9) solo dentro de la misma categoría
+        // que pide la receta — un packaging nunca debe ofrecerse como
+        // sustituto de una materia prima, aunque ambos tengan stock.
+        const categoriaDeReceta = categoriaPorArticulo.get(articuloIdsDeReceta[0])
+        lotes = (todosLotesArticulo || [])
+          .filter((l) => categoriaPorArticulo.get(l.articulo_id) === categoriaDeReceta)
+          .map((l) => ({ ...l, esDeReceta: articuloIdsDeReceta.includes(l.articulo_id) }))
       } else {
         lotes = (todosLotesSemi || []).map((l) => ({ ...l, esDeReceta: l.semielaborado_id === linea.ingrediente_semielaborado_id }))
       }
