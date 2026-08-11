@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { PageHeader, Card, CardHeader, CardBody, Button, Field, DateInput, Badge, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, DateInput, Badge, EmptyState, LoadingState } from '../components/ui'
 import { formatFecha } from '../lib/formatFecha'
 
 const SIN_FECHA = '__sin_fecha__'
 
 function PedidosDelDia() {
+  const navigate = useNavigate()
   const [pedidosRaw, setPedidosRaw] = useState([])
   const [tandaIdsConSemi, setTandaIdsConSemi] = useState(new Set())
   const [tandaIdsConPF, setTandaIdsConPF] = useState(new Set())
@@ -305,6 +307,11 @@ function PedidosDelDia() {
                           <span className="text-xs text-amber-600">
                             ⚠ Esta tanda ya tiene producción registrada — añadir pedidos generará un déficit a repartir en el cierre.
                           </span>
+                        )}
+                        {g.tandaId && (
+                          <LinkAction tone="green" onClick={() => navigate(`/producciones?tanda_id=${g.tandaId}`)} className="text-xs">
+                            Producir semielaborado →
+                          </LinkAction>
                         )}
                       </div>
                     </div>

@@ -117,9 +117,19 @@ Esto no obliga a rediseñar el bloqueo de arriba — ya está alineado con esa i
 - El label de cada lote debe marcar "⚠ caducado, revisar antes de usar" cuando `fecha_caducidad < fecha de la producción` — mismo cálculo (`caducado`) y misma redacción que ya usan `Producciones.jsx`/`ProduccionProductosFinales.jsx`.
 - El registro de consumo debe seguir el patrón batch ya implementado (`MEJORAS_UI_PENDIENTES.md` #14): formulario controlado, líneas acumuladas en estado local, confirmación con un único insert multi-fila — no uno-a-uno. Este patrón ya coincide con la propia idea de "precarga automática" de esta pantalla, así que no hay tensión de diseño entre ambos.
 
-**Qué falta hoy:**
-- Nada a nivel de esquema — `producciones_semielaborado.tanda_id` ya existe (ver arriba). Falta la pantalla y los tres patrones heredados descritos justo arriba.
-- No hay forma de distinguir "esto es lo que pedí producir" de "esto es lo que decidí hacer de más" si el usuario sube la cantidad sugerida a propósito (colchón de seguridad) — no bloquea nada, solo se pierde ese matiz para reporting futuro.
+✅ **Implementado — integrado en `Producciones.jsx` (`?tanda_id=`), no una pantalla nueva.** Decisión tomada al comparar ambas vías: crear una pantalla aparte habría obligado a extraer `cargarIngredientesConLotes`/`IngredienteConsumo`/el patrón de confirmación en batch a un módulo compartido o a duplicarlos — más riesgo que extender la pantalla que ya hace exactamente esto, mismo precedente ya usado por `ProduccionProductosFinales.jsx` con `?pedido_id=`. Entrada nueva desde la Pantalla 1: enlace "Producir semielaborado →" en cada grupo con tanda ya confirmada, navegando a `/producciones?tanda_id=X`.
+
+`Producciones.jsx` gana: preselección del semielaborado en el formulario de inicio si la tanda solo necesita uno (`necesidadesSemielaboradoDeTanda`, recalculado en vivo contra el conjunto *actual* de pedidos de la tanda, no memorizado desde la Pantalla 1 — sigue siendo correcto si se añaden pedidos después); `tanda_id` guardado al iniciar; un bloque nuevo "Cantidad a producir — sugerida por la tanda" (editable) en `ProduccionAbierta`, con precarga automática de los 4 consumos (`receta_semielaborado.cantidad × cantidad_objetivo`, tal como fija el contrato) la primera vez que hay dato suficiente, y un enlace "Recalcular consumos sugeridos" para reaplicar tras editar la cantidad a mano.
+
+Probado en runtime real, login real, con el catálogo real (receta de Mezcla, 4 ingredientes vía `ingrediente_id`) y una tanda de prueba construida desde la Pantalla 1 real:
+- Cantidad sugerida precargada correctamente (1 kg, coincidente con `receta_producto_final.cantidad × cantidad pedida`) y los 4 consumos precalculados (0.800/0.350/0.400/0.150) sin tocar el nivel `articulo` ya sumado.
+- Caso de aviso de caducidad: lote real ya caducado (`fecha_caducidad` anterior a la fecha de producción) marcado "⚠ caducado" en su label, seleccionado y confirmado sin bloqueo.
+- Caso de sustitución excepcional: ingrediente sin stock suficiente de receta, sustituido por otro de la misma `categoria_id` vía "Buscar sustituto" — `consumo_produccion.motivo`/`nota` verificados directamente contra la base de datos.
+- Confirmación en batch (4 líneas, un solo insert) verificada.
+- La producción real preexistente (no vinculada a ninguna tanda) quedó intacta durante toda la prueba — verificado explícitamente antes y después.
+- 0 errores de consola. Producción, consumos, pedido y tanda de prueba borrados al terminar — el borrado de la producción revirtió el stock de los lotes reales consumidos a sus valores exactos anteriores (verificado antes/después).
+
+No hay forma de distinguir "esto es lo que pedí producir" de "esto es lo que decidí hacer de más" si el usuario sube la cantidad sugerida a propósito (colchón de seguridad) — no bloquea nada, solo se pierde ese matiz para reporting futuro. Sigue sin implementar, sin caso real que lo exija todavía.
 
 ---
 

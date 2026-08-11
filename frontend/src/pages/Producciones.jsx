@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+
+// Nivel 'semielaborado' de necesidades_pedidos() sobre los pedidos de una tanda — usado tanto para
+// preseleccionar qué semielaborado producir (si solo hace falta uno) como para sugerir cuánto, en
+// ambos casos recalculado en vivo contra el conjunto ACTUAL de pedidos de la tanda (no memorizado
+// desde la Pantalla 1), para que siga siendo correcto si luego se añaden pedidos a la tanda.
+async function necesidadesSemielaboradoDeTanda(tandaId) {
+  const { data: pedidos } = await supabase.from('pedidos_venta').select('id').eq('tanda_id', tandaId)
+  const pedidoIds = (pedidos || []).map((p) => p.id)
+  if (pedidoIds.length === 0) return []
+
+  const { data: necesidades, error } = await supabase.rpc('necesidades_pedidos', { p_pedido_ids: pedidoIds })
+  if (error) {
+    console.error('Error calculando necesidades de la tanda:', error)
+    return []
+  }
+  return (necesidades || []).filter((n) => n.nivel === 'semielaborado')
+}
 
 // Trae TODOS los lotes disponibles de cada tipo (artículo/semielaborado),
 // sin filtrar por receta — entrada #9: se permite elegir cualquiera,
@@ -73,6 +91,9 @@ function claveIngrediente(ing) {
 }
 
 function Producciones() {
+  const [searchParams] = useSearchParams()
+  const tandaId = searchParams.get('tanda_id')
+
   const [semielaborados, setSemielaborados] = useState([])
   const [abiertas, setAbiertas] = useState([])
   const [cerradas, setCerradas] = useState([])
@@ -81,6 +102,15 @@ function Producciones() {
 
   const [semielaboradoId, setSemielaboradoId] = useState('')
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10))
+
+  // Si solo hace falta un semielaborado para esta tanda, se preselecciona — si hiciera falta más de
+  // uno (hoy no hay caso real), se deja sin preseleccionar para que el operador elija con criterio.
+  useEffect(() => {
+    if (!tandaId) return
+    necesidadesSemielaboradoDeTanda(tandaId).then((semis) => {
+      if (semis.length === 1) setSemielaboradoId(String(semis[0].item_id))
+    })
+  }, [tandaId])
 
   async function cargarDatos() {
     setCargando(true)
@@ -132,6 +162,7 @@ function Producciones() {
         semielaborado_id: parseInt(semielaboradoId),
         estado: 'abierta',
         fecha: fechaInicio,
+        tanda_id: tandaId || null,
       })
 
     if (error) {
@@ -182,7 +213,14 @@ function Producciones() {
 
   return (
     <div>
-      <PageHeader title="Producciones" subtitle="Inicia una producción, ve registrando consumos de los lotes que uses, y ciérrala cuando tengas el peso neto final." />
+      <PageHeader
+        title="Producciones"
+        subtitle={
+          tandaId
+            ? 'Iniciando producción para una tanda de "Pedidos del día" — la cantidad y los consumos se sugieren según los pedidos de esa tanda.'
+            : 'Inicia una producción, ve registrando consumos de los lotes que uses, y ciérrala cuando tengas el peso neto final.'
+        }
+      />
 
       <Card className="mb-6">
         <CardBody>
@@ -270,6 +308,9 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [notas, setNotas] = useState(produccion.notas ?? '')
   const [cerrando, setCerrando] = useState(false)
 
+  const [cantidadObjetivo, setCantidadObjetivo] = useState('')
+  const [cantidadSugerida, setCantidadSugerida] = useState(null)
+
   async function cargarIngredientes() {
     setCargandoIngredientes(true)
     setIngredientes(await cargarIngredientesConLotes(produccion.semielaborado_id))
@@ -279,6 +320,42 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   useEffect(() => {
     cargarIngredientes()
   }, [])
+
+  // Recalculado en vivo contra el conjunto actual de pedidos de la tanda, no memorizado desde la
+  // Pantalla 1 — sigue siendo correcto si se añaden pedidos a la tanda después de abrir esta producción.
+  useEffect(() => {
+    if (!produccion.tanda_id) return
+    necesidadesSemielaboradoDeTanda(produccion.tanda_id).then((semis) => {
+      const fila = semis.find((s) => s.item_id === produccion.semielaborado_id)
+      if (fila) setCantidadSugerida(Number(fila.cantidad_necesaria))
+    })
+  }, [])
+
+  // Precarga automática, solo la primera vez que hay dato suficiente (cantidadObjetivo vacío evita
+  // repetirla en recargas posteriores de `ingredientes`, ej. tras confirmar consumo) — el usuario
+  // puede editar cantidadObjetivo y volver a precargar explícitamente con "Recalcular consumos".
+  useEffect(() => {
+    if (cantidadSugerida == null || ingredientes.length === 0 || cantidadObjetivo) return
+    setCantidadObjetivo(String(cantidadSugerida))
+    const precarga = {}
+    for (const ing of ingredientes) {
+      precarga[claveIngrediente(ing)] = { loteId: '', cantidad: (ing.cantidadOrientativa * cantidadSugerida).toFixed(3) }
+    }
+    setFilasConsumo(precarga)
+  }, [cantidadSugerida, ingredientes])
+
+  function recalcularConsumosSugeridos() {
+    const objetivo = parseFloat(cantidadObjetivo)
+    if (!objetivo || objetivo <= 0) return
+    setFilasConsumo((prev) => {
+      const next = {}
+      for (const ing of ingredientes) {
+        const clave = claveIngrediente(ing)
+        next[clave] = { ...(prev[clave] ?? { loteId: '' }), cantidad: (ing.cantidadOrientativa * objetivo).toFixed(3) }
+      }
+      return next
+    })
+  }
 
   function filaDe(ing) {
     return filasConsumo[claveIngrediente(ing)] ?? { loteId: '', cantidad: '' }
@@ -381,6 +458,23 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         </div>
         <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
       </div>
+
+      {produccion.tanda_id && (
+        <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">
+          <Field label={`Cantidad a producir (${produccion.semielaborados?.unidad}) — sugerida por la tanda`} className="w-64">
+            <Input
+              type="number"
+              step="0.001"
+              value={cantidadObjetivo}
+              onChange={(e) => setCantidadObjetivo(e.target.value)}
+              placeholder={cantidadSugerida != null ? String(cantidadSugerida) : 'Calculando...'}
+            />
+          </Field>
+          <LinkAction tone="blue" onClick={recalcularConsumosSugeridos} className="text-xs">
+            Recalcular consumos sugeridos
+          </LinkAction>
+        </div>
+      )}
 
       {produccion.consumo_produccion.length > 0 && (
         <table className="w-full mt-3 text-sm">
