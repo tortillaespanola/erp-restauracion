@@ -46,7 +46,11 @@ No implementado — solo la idea recogida, para cuando se aborde.
 
 Mismo patrón ya aplicado a `pedidos_compra.fecha_entrega_prevista`: capturada, no usada en ningún sitio (ver `FLUJO_TORTILLA.md`, "Relación FK no aprovechada" del Paso 1). Probablemente conviene resolver ambos casos juntos cuando se aborde, en vez de por separado — son la misma idea (fecha prevista vs. fecha real, aviso de desviación) aplicada a dos flujos distintos.
 
-No implementado — solo la idea recogida, para cuando se aborde.
+✅ **Backend implementado** (commit `7685605`): dos casos nuevos como incidencia en `incidencias_stock_producto_final` (`linea_albaran_venta_id` pasa a nullable, ninguno viene de una línea de venta) — `caducidad_antes_entrega` (fecha de caducidad de la producción anterior a la `fecha_entrega_prevista` del pedido) y `retraso_produccion` (la producción empezó después de la fecha prometida; confirmado con datos reales que es un caso legítimo, no una imposibilidad lógica, a diferencia de `fecha_entrega_prevista < fecha` del propio pedido, que sí se bloquea con `CHECK`). Trigger con guarda anti-duplicados. Revalidación retroactiva incluida en la propia migración: solo generó la incidencia real esperada (producción #50 / pedido `OV-260013`), cero para `caducidad_antes_entrega`.
+
+**Sin UI de lectura todavía** — mismo criterio que el resto de incidencias de caducidad (consumo/venta): el aviso queda registrado en la tabla pero no hay ninguna pantalla que lo muestre. Pendiente de la pantalla de incidencias general (sin entrada propia numerada en este documento todavía).
+
+El caso equivalente en `pedidos_compra.fecha_entrega_prevista` (compras) sigue sin abordar.
 
 ## 4. Referencia del proveedor a nivel de pedido — no existe ningún campo hoy
 
@@ -61,7 +65,7 @@ Cambio pequeño: columna de texto libre nullable en `pedidos_compra`, mismo patr
 
 **Caso real que la motiva** (sube su prioridad relativa frente a otros pendientes menores de este documento): el episodio de `OC-260002`/`OC-260005` (Hogashop, ver commit `9e69efb`) — un pedido duplicado por error que quedó pendiente sin forma de detectarlo hasta revisar manualmente. Con este campo, la referencia de confirmación del proveedor habría permitido detectar el duplicado antes (dos pedidos con la misma referencia del proveedor sería la señal), en vez de descubrirlo al revisar un albarán ya vinculado.
 
-No implementado — solo la idea recogida, para cuando se aborde.
+✅ Implementado (commit `adcded2`, 2026-08-11): columna `pedidos_compra.referencia_proveedor` (migración `20260830_referencia_proveedor_pedido_compra.sql`), input en `PedidosCompra.jsx`, visible en el listado cuando tiene valor, y mostrada en `AlbaranesCompra.jsx` al crear el albarán "desde pedido existente". Probado en runtime real: pedido de prueba con referencia `CONF-TEST-99887`, confirmado que se guarda, aparece en el listado y reaparece al abrir `AlbaranesCompra.jsx` desde ese pedido; datos de prueba borrados tras verificar.
 
 ## 5. `ProduccionProductosFinales.jsx` no reconoce líneas de receta por `ingrediente_id`
 
@@ -167,7 +171,14 @@ No implementado — solo el diseño, para cuando aparezca un caso real.
 
 Esta idea ya se había identificado antes (durante el diagnóstico del filtro estricto de `articulo_id`) pero se perdió al reescribir la entrada #5 para documentar el hueco de `ingrediente_id` — de ahí que quede ahora como entrada propia, separada, para no perderla de nuevo.
 
-No implementado — solo el diseño, para cuando se aborde.
+✅ **Implementado, en tres pasos, cada uno probado en runtime real antes de comitear:**
+- **Paso 1** (commit `3acf1f9`): quitado el filtro estricto de `articulo_id` en `cargarIngredientesConLotes()` (`Producciones.jsx` y `ProduccionProductosFinales.jsx`); columnas `motivo`/`nota` nullable en `consumo_produccion`/`consumo_produccion_pf` (migración `20260831_sustitucion_excepcional_consumo.sql`), rellenadas automáticamente a `'sustitucion_excepcional'` cuando el lote elegido no es el de receta. Diseño inicial: dos `<optgroup>` ("De receta" / "Otros artículos disponibles") en el mismo `<select>`.
+- **Paso 2** (commit `19a5059`, fix urgente sobre el paso 1): el grupo "Otros" mostraba **todos** los artículos con stock del sistema sin ningún filtro — un packaging podía aparecer como sustituto de una materia prima. Acotado a la misma `categoria_id` del artículo/grupo de ingrediente que pide la receta (mapa `articulo_id → categoria_id` cargado una vez; los 6 grupos `ingrediente_id` existentes confirmados con todos sus artículos en la misma categoría, sin excepciones).
+- **Paso 3** (commit `581c3de`, rediseño de interacción): los dos optgroups siempre visibles competían visualmente con el flujo normal en cada consulta. Sustituido por: el `<select>` normal vuelve a mostrar solo los lotes de receta (sin optgroups), y un enlace "Buscar sustituto" —solo presente si hay alternativas reales de la misma `categoria_id`— revela un panel separado (ámbar) con el select de sustitutos. Al elegir uno, la tarjeta pasa a modo ámbar con etiqueta "SUSTITUCIÓN EXCEPCIONAL". El filtro por categoría del paso 2 no cambia, solo el punto de la interfaz donde se aplica.
+
+Probado en runtime real en ambas pantallas con datos reales: caso real de catálogo (Caja Blanca 20x20cm/26x26cm, no fungibles vía `ingrediente_id`), estado normal sin cambios visibles, caso negativo (ingredientes sin alternativa real en su categoría), y flujo completo de sustitución con `motivo`/`nota` guardados correctamente. Datos y producciones de prueba borrados sin residuo en cada paso.
+
+**Nota**: este trabajo motivó directamente la entrada #21 (categoría de artículo N:M) — surgió al implementar el filtro por `categoria_id` del paso 2.
 
 ## 10. Mostrar `referencia_proveedor` en el desplegable de selección de artículo
 
@@ -232,7 +243,11 @@ Registro de consumo en `Producciones.jsx`/`ProduccionProductosFinales.jsx` es un
 
 **Decisión de diseño ya recomendada**: permitir registro parcial (solo líneas completadas), no exigir las 4 líneas rellenas a la vez, mismo patrón que `lineasValidas` ya usado en `Pedidos.jsx`/`PedidosCompra.jsx`.
 
-No implementado — solo el diagnóstico y la estimación, para cuando se aborde.
+✅ **Implementado, en dos pasos, ambos probados en runtime real:**
+- **Paso 1** (commit `7c98548`, solo `Producciones.jsx`): sustituido el flujo uno-a-uno por acumular líneas en estado local ("+ Añadir a la lista") y confirmarlas todas juntas con un único `.insert(array)` multi-fila ("Confirmar consumo (N)") — todo-o-nada real sin necesitar RPC ni migración, aprovechando que los triggers de `consumo_produccion` ya son `CONSTRAINT TRIGGER DEFERRABLE INITIALLY DEFERRED` (una request de PostgREST = una transacción). Registro parcial permitido, según lo recomendado. Aviso añadido al cerrar una producción con líneas pendientes sin confirmar.
+- **Paso 2** (commit `007a289`, rediseño + extendido a `ProduccionProductosFinales.jsx`): sustituido el botón "+ Añadir a la lista" por línea por un formulario totalmente controlado — cada línea es solo Select de lote + Input de cantidad, sin acción propia; un único "Confirmar consumo (N)" recoge las líneas con lote+cantidad rellenos e inserta todas de golpe. `IngredienteConsumo` pasó a soportar dos modos temporalmente (controlado vs. `onAdd`) y el modo `onAdd` se eliminó después por código muerto (commit `56d1ee6`) — `ProduccionCerradaEdicion` no lo necesitaba, sigue acumulando en su propia lista de edición antes de "Guardar cambios".
+
+Probado en runtime real con producciones reales de Mezcla en ambas pantallas: inserción múltiple confirmada en un solo insert, caso de fallo (stock insuficiente en una línea) verificado contra la base de datos con **ninguna** línea guardada (ni siquiera las válidas) — todo o nada real, no solo en el diseño.
 
 ## 15. `AlbaranesVenta.jsx`: permitir "forzar" añadir un producto fuera del pedido ligado
 
@@ -281,9 +296,9 @@ No implementado — no es urgente hoy (volumen bajo), para cuando el número de 
 
 **Riesgo real, no solo fricción de tecleo** (ya señalado en `FLUJO_TORTILLA.md` cuello de botella #8): si el precio pactado en el pedido difiere del `precio_venta` de catálogo (o de lo que se teclee de memoria) y nadie lo nota, el albarán —y la factura que sale de él— puede quedar con un precio distinto al pactado, sin ningún aviso.
 
-**Solución no diseñada todavía, dirección probable**: pasar la línea de `pedidoLineas` que corresponde a cada `producto`/`articulo` mostrado como prop adicional a `ProductoParaVender`/`ArticuloParaVender`, y usar su `cantidad`/`precio_unitario` como valor inicial de los campos (en vez de `''`/`producto.precio_venta`) cuando exista. Sin diseñar todavía: qué pasa si la cantidad pactada supera el stock disponible del lote elegido (¿capar, avisar, dejar tal cual?), y si debe ser prellenado editable (probable) o de solo lectura.
+✅ **Implementado** (commit `a100cce`): `lineaPedidoPara()` ahora devuelve la línea de pedido completa (con `.restante` calculado) en vez de solo el id, reutilizando el mismo criterio de "primera línea no cubierta" que ya se usaba para atribuir la entrega, así precarga y atribución nunca se desincronizan. Se pasa como prop `lineaPedido` a `ProductoParaVender`/`ArticuloParaVender`, que precargan `cantidad`/`precio` pactados (editables) y resincronizan tras cada "+ Añadir" para pasar a la siguiente línea pendiente del mismo producto — cubre el caso real de pedidos con más de una línea del mismo producto a precios distintos (ej. precio normal + muestra).
 
-No implementado — para cuando se aborde.
+Probado en runtime real: pedido sintético con el patrón exacto de 5 pedidos reales de Zum Kuss (1 ud a 25€ + 1 ud a 10€ de muestra) — la tarjeta precargó 25€, tras confirmarla pasó a precargar 10€ automáticamente, y el precio se editó a mano (12€) y se guardó así, confirmando que sigue siendo editable. Datos de prueba borrados sin residuo.
 
 ## 18. `AjustesStock.jsx`: solo permite ajuste relativo, no "cantidad final medida"
 

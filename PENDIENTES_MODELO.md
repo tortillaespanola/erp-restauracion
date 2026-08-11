@@ -77,17 +77,23 @@ La capa de interfaz (textos de botones/menús/mensajes) sí puede ser la última
 
 **Cuándo retomarlo**: antes de asumir que "idiomas" es solo una tarea de UI final, si algún día hay un cliente multi-idioma real — revisar entonces qué mecanismo de traducción (o de convivencia de idiomas) hace falta para el contenido ya introducido por usuarios, no solo para los textos fijos de la interfaz.
 
-## 8. Ninguna validación compara fecha de consumo/producción contra `fecha_caducidad` del lote origen
+## 8. ✅ Resuelto — aviso (no bloqueo) al consumir/vender con `fecha_caducidad` ya pasada
 
-**Prioridad: alta — riesgo real, no cosmético.** Verificado con certeza (grep exhaustivo en migraciones y frontend, ver diagnóstico previo): se puede consumir o producir con materia prima ya caducada sin ningún aviso, en ningún nivel — ni trigger de backend, ni validación de frontend. El único chequeo de fecha que existe en `check_consumo_produccion()`/`check_consumo_produccion_pf()` compara la fecha de recepción del lote (`albaranes_compra.fecha`) contra la fecha de la producción destino, no la `fecha_caducidad`.
+**Decisión de diseño confirmada y aplicada**: aviso, no bloqueo — mismo criterio que `evento_directo` (permitir la operación con una señal visible, no impedirla), porque usar algo justo caducado puede ser una decisión operativa legítima que corresponde a un humano, no al sistema.
 
-Esto es un riesgo de **seguridad alimentaria**, no solo de integridad de datos — un negocio de restauración puede estar sirviendo producto elaborado con materia prima caducada sin que el sistema lo detecte ni lo registre en ningún sitio.
+**Implementado** (migración `20260826_incidencias_caducidad_consumo_venta.sql`): 3 triggers (`AFTER`, `CONSTRAINT TRIGGER`, `DEFERRABLE INITIALLY DEFERRED`, mismo punto de enganche que los triggers hermanos de stock negativo) que cubren los 4 puntos de consumo/venta pedidos, mapeados a 6 ramas concretas:
 
-**Pendiente de diseñar**: ¿aviso (banner/`confirm`) o bloqueo duro? Probablemente aviso, no bloqueo — mismo criterio ya aplicado en `evento_directo` (permitir la operación con una señal visible, no impedirla), porque usar algo justo caducado hoy puede ser una decisión operativa legítima que corresponde a un humano, no al sistema. Pero **sin el aviso, hoy ni siquiera se sabe que está pasando** — ese es el problema real a resolver, independientemente de si al final se decide avisar o bloquear.
+- `registrar_incidencia_caducidad_consumo` (tabla `consumo_produccion`) — artículo→semielaborado (rama `entrada_material_id`) y semi→semi (rama `produccion_origen_id`).
+- `registrar_incidencia_caducidad_consumo_pf` (tabla `consumo_produccion_pf`) — artículo→producto final y semielaborado→producto final.
+- `registrar_incidencia_caducidad_venta` (tabla `lineas_albaran_venta`) — producto final→venta y mercadería→venta directa.
 
-**Por qué no se resolvió ahora**: detectado como parte de un diagnóstico solicitado explícitamente (edición de `fecha_caducidad` en `entrada_material` ya consumido), no como trabajo en curso — hace falta decidir el mecanismo (aviso vs. bloqueo) antes de implementar nada.
+Cada rama, si `fecha_caducidad` del lote origen es anterior a la fecha destino, inserta una fila con `motivo='caducidad'` en `incidencias_stock_articulo`/`_semielaborado`/`_producto_final` (las tres ya ampliadas con esa columna en la migración previa `20260825_incidencias_stock_motivo_caducidad.sql`). Sin condición de `tipo_produccion`/`tipo_venta` — la incoherencia se avisa siempre, a diferencia de los triggers de stock negativo que sí se limitan a `evento_directo`.
 
-**Cuándo retomarlo**: pronto, dado el riesgo — no requiere un caso real adicional para justificarse, a diferencia de otras entradas de este documento. Al abordarlo, decidir también en qué punto(s) exactos se compara la fecha: en `check_consumo_produccion(_pf)` (consumo de artículo/semielaborado) y, si aplica, en el cierre de producción de producto final.
+**Verificado con certeza contra la base de datos real hoy** (2026-08-11, consulta directa a `pg_trigger`/`pg_proc`): los 3 triggers existen, están activos (`tgenabled = 'O'`) y apuntan a sus funciones correctas. La incidencia real que motivó el trabajo sigue en la tabla: `incidencias_stock_articulo` id `14`, `entrada_material_id=83`, `consumo_produccion_id=273`, `motivo='caducidad'` (la Huevina caducada consumida en producción real, `estado='ignorado'` — ya revisada por el usuario).
+
+**Aviso visual en frontend** (no solo backend): `Producciones.jsx`/`ProduccionProductosFinales.jsx` marcan el lote con "⚠ caducado, revisar antes de usar" en el label del desplegable cuando `fecha_caducidad < fechaDestino`; `AlbaranesVenta.jsx` tiene el mismo cálculo `caducado` en sus dos desplegables de venta.
+
+**Sin UI de lectura de las incidencias todavía** — se registran en la tabla pero no hay pantalla dedicada para revisarlas en bloque (mismo hueco ya señalado en `MEJORAS_UI_PENDIENTES.md` #19 sobre `evento_directo`, que comparte la misma laguna de "sin pantalla de incidencias").
 
 ## 9. Caducidad desconectada entre los tres niveles (artículo, semielaborado, producto final)
 
