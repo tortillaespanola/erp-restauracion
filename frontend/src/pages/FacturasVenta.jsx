@@ -144,7 +144,7 @@ function FacturasVenta() {
 
     const { data: lineasAlbaranes, error } = await supabase
       .from('lineas_albaran_venta')
-      .select('cantidad, precio_unitario, productos_finales(nombre), articulos_compra(nombre), albaran_venta_id')
+      .select('cantidad, precio_unitario, productos_finales(nombre), articulos_compra(nombre), descripcion, albaran_venta_id')
       .in('albaran_venta_id', albaranIds)
 
     if (error) {
@@ -152,7 +152,7 @@ function FacturasVenta() {
     }
 
     const lineas = (lineasAlbaranes || []).map((l) => ({
-      concepto: l.productos_finales?.nombre ?? l.articulos_compra?.nombre,
+      concepto: l.productos_finales?.nombre ?? l.articulos_compra?.nombre ?? l.descripcion,
       cantidad: l.cantidad,
       precioUnitario: l.precio_unitario,
     }))
