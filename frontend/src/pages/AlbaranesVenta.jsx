@@ -7,7 +7,7 @@ import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 function nombreLineaVenta(linea) {
-  return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre
+  return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre ?? linea.descripcion
 }
 
 function AlbaranesVenta() {
@@ -34,7 +34,7 @@ function AlbaranesVenta() {
     const [resAlbaranes, resClientes, resProductos, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_venta')
-        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, productos_finales(nombre), articulos_compra(nombre))')
+        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre), articulos_compra(nombre))')
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
@@ -187,6 +187,27 @@ function AlbaranesVenta() {
     ])
   }
 
+  function addLineaLibre(descripcion, cantidad, precio) {
+    const cant = parseFloat(cantidad)
+
+    if (!descripcion.trim() || !cant || cant <= 0) {
+      alert('Escribe una descripción e introduce una cantidad válida')
+      return
+    }
+
+    setLineas((prev) => [
+      ...prev,
+      {
+        tipo: 'libre',
+        display: descripcion.trim(),
+        descripcion: descripcion.trim(),
+        cantidad: cant,
+        precio_unitario: precio ? parseFloat(precio) : null,
+        linea_pedido_id: null,
+      },
+    ])
+  }
+
   function removeLinea(index) {
     setLineas((prev) => prev.filter((_, i) => i !== index))
   }
@@ -221,6 +242,7 @@ function AlbaranesVenta() {
       produccion_pf_id: l.tipo === 'producto' ? l.produccion_pf_id : null,
       articulo_id: l.tipo === 'mercaderia' ? l.articulo_id : null,
       entrada_material_id: l.tipo === 'mercaderia' ? l.entrada_material_id : null,
+      descripcion: l.tipo === 'libre' ? l.descripcion : null,
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
       linea_pedido_id: l.linea_pedido_id,
@@ -353,6 +375,11 @@ function AlbaranesVenta() {
               </div>
             )}
 
+            <div>
+              <SectionLabel>Añadir otro / servicio</SectionLabel>
+              <LineaLibreParaVender onAdd={addLineaLibre} />
+            </div>
+
             {lineas.length > 0 && (
               <div>
                 <SectionLabel>Líneas del albarán</SectionLabel>
@@ -361,7 +388,9 @@ function AlbaranesVenta() {
                     {lineas.map((l, index) => (
                       <tr key={index}>
                         <td className="py-1.5">
-                          {l.display} {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs">(mercadería)</span>}
+                          {l.display}
+                          {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
+                          {l.tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
                         </td>
                         <td className="py-1.5">{l.cantidad} uds.</td>
                         <td className="py-1.5">{l.precio_unitario != null ? `${l.precio_unitario} €/ud` : '-'}</td>
@@ -550,6 +579,38 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
             )
           })}
         </Select>
+        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+          className="text-sm" title="Se redondeará a 3 decimales" />
+        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          onChange={(e) => setPrecio(e.target.value)}
+          className="text-sm" />
+        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+      </div>
+    </div>
+  )
+}
+
+// Sin selector de lote: no hay stock ni catálogo que comprobar — solo
+// descripción de texto libre + cantidad + precio.
+function LineaLibreParaVender({ onAdd }) {
+  const [descripcion, setDescripcion] = useState('')
+  const [cantidad, setCantidad] = useState('1')
+  const [precio, setPrecio] = useState('')
+
+  function handleAdd() {
+    onAdd(descripcion, cantidad, precio)
+    setDescripcion('')
+    setCantidad('1')
+    setPrecio('')
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-md p-3">
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
+        <Input type="text" placeholder="Descripción (ej. Pan, Horas de showcooking extra...)" value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+          className="text-sm" />
         <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
           className="text-sm" title="Se redondeará a 3 decimales" />
