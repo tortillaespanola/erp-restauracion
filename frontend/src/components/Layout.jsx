@@ -3,7 +3,7 @@ import {
   IconToolsKitchen2, IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
-  IconCarrot,
+  IconCarrot, IconStack2,
 } from '@tabler/icons-react'
 
 const NAV_SECTIONS = [
@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
   {
     titulo: 'Producción',
     items: [
+      { to: '/pedidos-del-dia', label: 'Pedidos del día', icon: IconStack2 },
       { to: '/ingredientes', label: 'Ingredientes', icon: IconCarrot },
       { to: '/semielaborados', label: 'Semielaborados', icon: IconChefHat },
       { to: '/producciones', label: 'Producciones', icon: IconSoup },
@@ -45,6 +46,7 @@ const TITULOS = {
   '/articulos': ['Artículos de compra', 'Compras · Artículos'],
   '/albaranes-compra': ['Albaranes de compra', 'Compras · Albaranes compra'],
   '/facturas-compra': ['Facturas de compra', 'Compras · Facturas compra'],
+  '/pedidos-del-dia': ['Pedidos del día', 'Producción · Pedidos del día'],
   '/ingredientes': ['Ingredientes', 'Producción · Ingredientes'],
   '/semielaborados': ['Semielaborados', 'Producción · Semielaborados'],
   '/producciones': ['Producciones', 'Producción · Producciones'],

@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Articulos from './pages/Articulos'
 import Ingredientes from './pages/Ingredientes'
 import Semielaborados from './pages/Semielaborados'
+import PedidosDelDia from './pages/PedidosDelDia'
 import Producciones from './pages/Producciones'
 import AjustesStock from './pages/AjustesStock'
 import ProductosFinales from './pages/ProductosFinales'
@@ -27,6 +28,7 @@ function App({ session, onLogout }) {
 
           <Route path="/ingredientes" element={<Ingredientes />} />
           <Route path="/semielaborados" element={<Semielaborados />} />
+          <Route path="/pedidos-del-dia" element={<PedidosDelDia />} />
           <Route path="/producciones" element={<Producciones />} />
           <Route path="/ajustes-stock" element={<AjustesStock />} />
           <Route path="/productos" element={<ProductosFinales />} />
