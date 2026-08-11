@@ -261,6 +261,8 @@ function Producciones() {
 function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
+  const [lineasNuevas, setLineasNuevas] = useState([])
+  const [confirmando, setConfirmando] = useState(false)
 
   const [cantidadProducida, setCantidadProducida] = useState('')
   const [notas, setNotas] = useState(produccion.notas ?? '')
@@ -276,25 +278,48 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     cargarIngredientes()
   }, [])
 
-  async function registrarConsumo(ingrediente, loteId, cantidad) {
+  function anadirLineaNueva(ingrediente, loteId, cantidad) {
     const cant = parseFloat(cantidad)
     if (!loteId || !cant || cant <= 0) {
       alert('Selecciona un lote e introduce una cantidad válida')
       return
     }
+    setLineasNuevas((prev) => [
+      ...prev,
+      {
+        entrada_material_id: ingrediente.esArticulo ? parseInt(loteId) : null,
+        produccion_origen_id: ingrediente.esArticulo ? null : parseInt(loteId),
+        cantidad: cant,
+        _nombre: ingrediente.nombre,
+        _unidad: ingrediente.unidad,
+      },
+    ])
+  }
 
-    const { error } = await supabase.from('consumo_produccion').insert({
+  function quitarLineaNueva(index) {
+    setLineasNuevas((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  async function confirmarConsumo() {
+    setConfirmando(true)
+
+    const filas = lineasNuevas.map((l) => ({
       produccion_id: produccion.id,
-      entrada_material_id: ingrediente.esArticulo ? parseInt(loteId) : null,
-      produccion_origen_id: ingrediente.esArticulo ? null : parseInt(loteId),
-      cantidad: cant,
-    })
+      entrada_material_id: l.entrada_material_id,
+      produccion_origen_id: l.produccion_origen_id,
+      cantidad: l.cantidad,
+    }))
+
+    const { error } = await supabase.from('consumo_produccion').insert(filas)
+
+    setConfirmando(false)
 
     if (error) {
-      alert('Error al registrar el consumo: ' + error.message)
+      alert('Ninguna línea se ha guardado — revisa el error y vuelve a confirmar:\n\n' + error.message)
       return
     }
 
+    setLineasNuevas([])
     await cargarIngredientes()
     onCambio()
   }
@@ -313,6 +338,13 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     if (!cantidadProducida || parseFloat(cantidadProducida) <= 0) {
       alert('Indica el peso/cantidad neta producida')
       return
+    }
+
+    if (lineasNuevas.length > 0) {
+      const continuar = confirm(
+        `Tienes ${lineasNuevas.length} línea(s) de consumo añadidas a la lista pero sin confirmar — se perderán si cierras ahora sin confirmarlas antes. ¿Cerrar de todas formas?`
+      )
+      if (!continuar) return
     }
 
     const { error } = await supabase
@@ -361,6 +393,26 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         </table>
       )}
 
+      {lineasNuevas.length > 0 && (
+        <div className="mt-3">
+          <h3 className="text-sm font-semibold text-gray-600 mb-2">Pendientes de confirmar</h3>
+          <div className="flex flex-col gap-2">
+            {lineasNuevas.map((l, index) => (
+              <div key={index} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-center border border-amber-200 bg-amber-50/60 rounded-md p-2">
+                <span className="text-sm text-gray-700">{l._nombre}</span>
+                <span className="text-sm text-gray-700">{l.cantidad} {l._unidad}</span>
+                <button type="button" onClick={() => quitarLineaNueva(index)} className="text-gray-400 hover:text-red-600 justify-self-center">
+                  <IconTrash size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <Button variant="success" size="sm" className="mt-2" onClick={confirmarConsumo} disabled={confirmando}>
+            {confirmando ? 'Confirmando...' : `Confirmar consumo (${lineasNuevas.length})`}
+          </Button>
+        </div>
+      )}
+
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
@@ -368,7 +420,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
             <IngredienteConsumo key={`${ing.esArticulo ? 'art' : 'semi'}-${ing.articulo_id ?? ing.ingrediente_id ?? ing.ingrediente_semielaborado_id}`}
               ingrediente={ing}
               fechaDestino={produccion.fecha}
-              onAdd={(loteId, cantidad) => registrarConsumo(ing, loteId, cantidad)} />
+              onAdd={(loteId, cantidad) => anadirLineaNueva(ing, loteId, cantidad)} />
           ))}
         </div>
       )}
@@ -428,7 +480,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, onAdd }) {
           <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
             className="text-sm" title="Se redondeará a 3 decimales" />
-          <LinkAction tone="blue" onClick={handleAdd}>+ Registrar consumo</LinkAction>
+          <LinkAction tone="blue" onClick={handleAdd}>+ Añadir a la lista</LinkAction>
         </div>
       )}
     </div>
