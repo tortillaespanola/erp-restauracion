@@ -81,6 +81,51 @@ async function cargarIngredientesConLotes(semielaboradoId) {
   )
 }
 
+// Validación previa de stock (CONTRATO_VISTA_DINAMICA_PRODUCCION.md, Vista 2): explota un único
+// nivel de receta_semielaborado -- no hace falta recursividad manual más allá de eso, el disponible
+// de stock_lotes_semielaborado ya solo cuenta producciones 'cerradas', así que la disponibilidad de
+// niveles más profundos ya está resuelta por construcción. Devuelve las líneas que no cubren, vacío
+// si todo cubre.
+async function validarStockReceta(semielaboradoId, cantidad) {
+  const { data: receta } = await supabase
+    .from('receta_semielaborado')
+    .select('cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+    .eq('semielaborado_id', semielaboradoId)
+
+  const resultados = await Promise.all(
+    (receta || []).map(async (linea) => {
+      const necesario = Number(linea.cantidad) * cantidad
+      let disponible = 0
+      let nombre, unidad
+
+      if (linea.articulo_id) {
+        nombre = linea.articulos_compra?.nombre
+        unidad = linea.articulos_compra?.unidad
+        const { data } = await supabase.from('stock_lotes_articulo').select('stock_disponible').eq('articulo_id', linea.articulo_id)
+        disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
+      } else if (linea.ingrediente_id) {
+        nombre = linea.ingredientes?.nombre
+        unidad = linea.ingredientes?.unidad
+        const { data: vinculos } = await supabase.from('articulo_ingrediente').select('articulo_id').eq('ingrediente_id', linea.ingrediente_id)
+        const articuloIds = (vinculos || []).map((v) => v.articulo_id)
+        if (articuloIds.length > 0) {
+          const { data } = await supabase.from('stock_lotes_articulo').select('stock_disponible').in('articulo_id', articuloIds)
+          disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
+        }
+      } else {
+        nombre = linea.semielaborados?.nombre
+        unidad = linea.semielaborados?.unidad
+        const { data } = await supabase.from('stock_lotes_semielaborado').select('stock_disponible').eq('semielaborado_id', linea.ingrediente_semielaborado_id)
+        disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
+      }
+
+      return { nombre, unidad, necesario, disponible }
+    })
+  )
+
+  return resultados.filter((r) => r.necesario > r.disponible + 0.0001)
+}
+
 function nombreIngredienteDeLinea(c) {
   const ing = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
   return { nombre: ing?.nombre, unidad: ing?.unidad }
@@ -100,8 +145,14 @@ function Producciones() {
   const [stockTotal, setStockTotal] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  const [semielaboradoId, setSemielaboradoId] = useState('')
+  // Precarga desde Vista 1 (CONTRATO_VISTA_DINAMICA_PRODUCCION.md): PedidosDelDia.jsx navega aquí
+  // con semielaborado_id y cantidad ya calculados -- ambos quedan como valor por defecto editable,
+  // no bloqueado.
+  const [semielaboradoId, setSemielaboradoId] = useState(searchParams.get('semielaborado_id') || '')
+  const [cantidadPlan, setCantidadPlan] = useState(searchParams.get('cantidad') || '')
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10))
+  const [faltantes, setFaltantes] = useState([])
+  const [validandoStock, setValidandoStock] = useState(false)
 
   // Si solo hace falta un semielaborado para esta tanda, se preselecciona — si hiciera falta más de
   // uno (hoy no hay caso real), se deja sin preseleccionar para que el operador elija con criterio.
@@ -111,6 +162,26 @@ function Producciones() {
       if (semis.length === 1) setSemielaboradoId(String(semis[0].item_id))
     })
   }, [tandaId])
+
+  // Validación previa de stock (Vista 2 del contrato): solo se recalcula cuando hay semielaborado y
+  // cantidad a producir, los dos datos que hacen falta para comparar necesidad contra disponible. Sin
+  // cantidad no hay nada que validar -- el flujo manual (sin venir de Vista 1) sigue sin bloquearse.
+  useEffect(() => {
+    const cantidad = parseFloat(cantidadPlan)
+    if (!semielaboradoId || !cantidad || cantidad <= 0) {
+      setFaltantes([])
+      return
+    }
+    let cancelado = false
+    setValidandoStock(true)
+    validarStockReceta(parseInt(semielaboradoId), cantidad).then((resultado) => {
+      if (!cancelado) {
+        setFaltantes(resultado)
+        setValidandoStock(false)
+      }
+    })
+    return () => { cancelado = true }
+  }, [semielaboradoId, cantidadPlan])
 
   async function cargarDatos() {
     setCargando(true)
@@ -171,6 +242,7 @@ function Producciones() {
     }
 
     setSemielaboradoId('')
+    setCantidadPlan('')
     setFechaInicio(new Date().toISOString().slice(0, 10))
     cargarDatos()
   }
@@ -224,7 +296,7 @@ function Producciones() {
 
       <Card className="mb-6">
         <CardBody>
-          <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-3 items-end">
+          <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
             <Field label="Iniciar nueva producción">
               <Select value={semielaboradoId} onChange={(e) => setSemielaboradoId(e.target.value)} required>
                 <option value="">Selecciona qué vas a producir</option>
@@ -236,8 +308,30 @@ function Producciones() {
             <Field label="Fecha">
               <DateInput value={fechaInicio} onChange={setFechaInicio} required />
             </Field>
+            <Field label="Cantidad a producir (opcional, valida stock)">
+              <Input type="number" step="0.001" value={cantidadPlan} onChange={(e) => setCantidadPlan(e.target.value)}
+                placeholder="Sin validar" title="Se redondeará a 3 decimales" />
+            </Field>
             <Button type="submit">Iniciar</Button>
           </form>
+
+          {validandoStock && <p className="text-xs text-gray-400 mt-2">Comprobando stock disponible…</p>}
+
+          {!validandoStock && faltantes.length > 0 && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-md p-3">
+              <p className="text-sm font-semibold text-amber-700 mb-1">
+                Aviso: stock insuficiente en receta — puedes iniciar igualmente:
+              </p>
+              <ul className="text-sm text-amber-700 list-disc list-inside">
+                {faltantes.map((f, i) => (
+                  <li key={i}>
+                    Falta {(f.necesario - f.disponible).toFixed(3)} {f.unidad} de {f.nombre}
+                    {' '}(disponible: {f.disponible.toFixed(3)} {f.unidad})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardBody>
       </Card>
 
