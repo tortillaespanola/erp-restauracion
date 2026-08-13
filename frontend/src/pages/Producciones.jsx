@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { validarStockReceta } from '../lib/validarStockReceta'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -81,51 +82,6 @@ async function cargarIngredientesConLotes(semielaboradoId) {
   )
 }
 
-// Validación previa de stock (CONTRATO_VISTA_DINAMICA_PRODUCCION.md, Vista 2): explota un único
-// nivel de receta_semielaborado -- no hace falta recursividad manual más allá de eso, el disponible
-// de stock_lotes_semielaborado ya solo cuenta producciones 'cerradas', así que la disponibilidad de
-// niveles más profundos ya está resuelta por construcción. Devuelve las líneas que no cubren, vacío
-// si todo cubre.
-async function validarStockReceta(semielaboradoId, cantidad) {
-  const { data: receta } = await supabase
-    .from('receta_semielaborado')
-    .select('cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
-    .eq('semielaborado_id', semielaboradoId)
-
-  const resultados = await Promise.all(
-    (receta || []).map(async (linea) => {
-      const necesario = Number(linea.cantidad) * cantidad
-      let disponible = 0
-      let nombre, unidad
-
-      if (linea.articulo_id) {
-        nombre = linea.articulos_compra?.nombre
-        unidad = linea.articulos_compra?.unidad
-        const { data } = await supabase.from('stock_lotes_articulo').select('stock_disponible').eq('articulo_id', linea.articulo_id)
-        disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
-      } else if (linea.ingrediente_id) {
-        nombre = linea.ingredientes?.nombre
-        unidad = linea.ingredientes?.unidad
-        const { data: vinculos } = await supabase.from('articulo_ingrediente').select('articulo_id').eq('ingrediente_id', linea.ingrediente_id)
-        const articuloIds = (vinculos || []).map((v) => v.articulo_id)
-        if (articuloIds.length > 0) {
-          const { data } = await supabase.from('stock_lotes_articulo').select('stock_disponible').in('articulo_id', articuloIds)
-          disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
-        }
-      } else {
-        nombre = linea.semielaborados?.nombre
-        unidad = linea.semielaborados?.unidad
-        const { data } = await supabase.from('stock_lotes_semielaborado').select('stock_disponible').eq('semielaborado_id', linea.ingrediente_semielaborado_id)
-        disponible = (data || []).reduce((s, l) => s + Number(l.stock_disponible), 0)
-      }
-
-      return { nombre, unidad, necesario, disponible }
-    })
-  )
-
-  return resultados.filter((r) => r.necesario > r.disponible + 0.0001)
-}
-
 function nombreIngredienteDeLinea(c) {
   const ing = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
   return { nombre: ing?.nombre, unidad: ing?.unidad }
@@ -174,7 +130,7 @@ function Producciones() {
     }
     let cancelado = false
     setValidandoStock(true)
-    validarStockReceta(parseInt(semielaboradoId), cantidad).then((resultado) => {
+    validarStockReceta('semielaborado', parseInt(semielaboradoId), cantidad).then((resultado) => {
       if (!cancelado) {
         setFaltantes(resultado)
         setValidandoStock(false)
