@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
@@ -82,6 +82,108 @@ async function cargarIngredientesConLotes(semielaboradoId) {
   )
 }
 
+// CONTRATO_VISTA_DINAMICA_PRODUCCION.md, addenda "Rediseño de tablas informativas — Vista 2
+// semielaborado": cadena transitiva COMPLETA de un semielaborado (semielaborados intermedios +
+// ingredientes/artículos hoja), a diferencia de calcularOrdenJerarquico() en PedidosDelDia.jsx que
+// solo resuelve relaciones semielaborado->semielaborado dentro de un conjunto ya conocido de
+// antemano. Aquí el conjunto no se conoce hasta explorarlo, así que se recorre nivel a nivel (BFS)
+// hasta agotar la cadena -- el propio Set de semielaborados visitados evita releer un nodo dos veces
+// y protege de un ciclo indirecto no cubierto por el CHECK no_auto_referencia de la base de datos.
+async function cargarCadenaCompleta(semielaboradoId) {
+  const semisVisitados = new Set()
+  const articulosVisitados = new Map() // articulo_id -> {nombre, unidad}
+  const ingredientesVisitados = new Map() // ingrediente_id -> {nombre, unidad}
+  let frontera = [semielaboradoId]
+
+  while (frontera.length > 0) {
+    const { data } = await supabase
+      .from('receta_semielaborado')
+      .select('semielaborado_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+      .in('semielaborado_id', frontera)
+
+    const siguienteFrontera = []
+    for (const fila of data || []) {
+      if (fila.ingrediente_semielaborado_id) {
+        if (!semisVisitados.has(fila.ingrediente_semielaborado_id)) {
+          semisVisitados.add(fila.ingrediente_semielaborado_id)
+          siguienteFrontera.push(fila.ingrediente_semielaborado_id)
+        }
+      } else if (fila.articulo_id) {
+        articulosVisitados.set(fila.articulo_id, { nombre: fila.articulos_compra?.nombre, unidad: fila.articulos_compra?.unidad })
+      } else if (fila.ingrediente_id) {
+        ingredientesVisitados.set(fila.ingrediente_id, { nombre: fila.ingredientes?.nombre, unidad: fila.ingredientes?.unidad })
+      }
+    }
+    frontera = siguienteFrontera
+  }
+
+  const idsSemis = [...semisVisitados]
+  const idsIngredientes = [...ingredientesVisitados.keys()]
+
+  // Los ingredientes genéricos (tabla `ingredientes`) no tienen stock propio -- se resuelven a través
+  // de los artículos vinculados (articulo_ingrediente), igual criterio que validarStockReceta.js.
+  const [resStockSemis, resVinculos] = await Promise.all([
+    idsSemis.length > 0
+      ? supabase.from('stock_semielaborados').select('semielaborado_id, nombre, unidad, stock').in('semielaborado_id', idsSemis)
+      : Promise.resolve({ data: [] }),
+    idsIngredientes.length > 0
+      ? supabase.from('articulo_ingrediente').select('articulo_id, ingrediente_id').in('ingrediente_id', idsIngredientes)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const articuloIdsPorIngrediente = new Map()
+  for (const v of resVinculos.data || []) {
+    const lista = articuloIdsPorIngrediente.get(v.ingrediente_id) || []
+    lista.push(v.articulo_id)
+    articuloIdsPorIngrediente.set(v.ingrediente_id, lista)
+  }
+
+  // Dos líneas de receta distintas pueden acabar tirando del MISMO artículo -- una referenciándolo
+  // directo (articulo_id) y otra vía un ingrediente genérico (ingrediente_id) que solo mapea a ese
+  // artículo. Es el mismo stock físico, así que deben fundirse en una sola fila hoja, no duplicarse
+  // (verificado con datos reales: un artículo aparecía dos veces con el mismo stock disponible cada
+  // vez). Se agrupa por el conjunto (ordenado) de articulo_id que resuelve cada línea -- si coincide
+  // exactamente, es la misma fila.
+  const gruposHoja = new Map() // clave canónica "a:id1,id2" -> {nombre, unidad, articuloIds}
+  for (const [id, info] of articulosVisitados) {
+    gruposHoja.set(`a:${id}`, { nombre: info.nombre, unidad: info.unidad, articuloIds: [id] })
+  }
+  for (const [id, info] of ingredientesVisitados) {
+    const articuloIds = [...(articuloIdsPorIngrediente.get(id) || [])].sort((a, b) => a - b)
+    const clave = articuloIds.length > 0 ? `a:${articuloIds.join(',')}` : `i:${id}`
+    if (!gruposHoja.has(clave)) gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds })
+  }
+
+  const idsArticulosRelevantes = [...new Set([...gruposHoja.values()].flatMap((g) => g.articuloIds))]
+  const resStockArticulos = idsArticulosRelevantes.length > 0
+    ? await supabase.from('stock_lotes_articulo').select('articulo_id, stock_disponible').in('articulo_id', idsArticulosRelevantes)
+    : { data: [] }
+
+  const stockPorArticulo = new Map()
+  for (const l of resStockArticulos.data || []) {
+    stockPorArticulo.set(l.articulo_id, (stockPorArticulo.get(l.articulo_id) || 0) + Number(l.stock_disponible))
+  }
+
+  const filasSemis = (resStockSemis.data || []).map((s) => ({
+    tipo: 'semielaborado',
+    nombre: s.nombre,
+    unidad: s.unidad,
+    stock: Number(s.stock),
+  }))
+
+  const filasHoja = [...gruposHoja.values()].map((g) => ({
+    tipo: 'ingrediente',
+    nombre: g.nombre,
+    unidad: g.unidad,
+    stock: g.articuloIds.reduce((s, aId) => s + (stockPorArticulo.get(aId) || 0), 0),
+  }))
+
+  return [...filasSemis, ...filasHoja].sort((a, b) => {
+    if (a.tipo !== b.tipo) return a.tipo === 'semielaborado' ? -1 : 1
+    return a.nombre.localeCompare(b.nombre)
+  })
+}
+
 function nombreIngredienteDeLinea(c) {
   const ing = c.entrada_material?.articulos_compra ?? c.producciones_semielaborado?.semielaborados
   return { nombre: ing?.nombre, unidad: ing?.unidad }
@@ -98,8 +200,13 @@ function Producciones() {
   const [semielaborados, setSemielaborados] = useState([])
   const [abiertas, setAbiertas] = useState([])
   const [cerradas, setCerradas] = useState([])
-  const [stockTotal, setStockTotal] = useState([])
   const [cargando, setCargando] = useState(true)
+
+  // Vista 2 (addenda "Rediseño de tablas informativas"): stock de la cadena transitiva completa del
+  // semielaborado seleccionado en "Iniciar nueva producción" -- reactivo al cambio de selección, sin
+  // botón adicional (punto 3 del contrato).
+  const [cadenaStock, setCadenaStock] = useState([])
+  const [cadenaCargando, setCadenaCargando] = useState(false)
 
   // Precarga desde Vista 1 (CONTRATO_VISTA_DINAMICA_PRODUCCION.md): PedidosDelDia.jsx navega aquí
   // con semielaborado_id y cantidad ya calculados -- ambos quedan como valor por defecto editable,
@@ -139,6 +246,26 @@ function Producciones() {
     return () => { cancelado = true }
   }, [semielaboradoId, cantidadPlan])
 
+  // Reactividad de la Vista 2 (punto 3 del contrato): se recalcula solo con cambiar la selección, sin
+  // esperar a "Iniciar". Si se llega vía ?semielaborado_id= ya viene precargado desde el estado
+  // inicial (arriba), así que este efecto arranca en el primer render sin parpadeo de estado vacío
+  // (punto 4) -- el "cargando" que se ve es el spinner, no el mensaje de "sin selección".
+  useEffect(() => {
+    if (!semielaboradoId) {
+      setCadenaStock([])
+      return
+    }
+    let cancelado = false
+    setCadenaCargando(true)
+    cargarCadenaCompleta(parseInt(semielaboradoId)).then((filas) => {
+      if (!cancelado) {
+        setCadenaStock(filas)
+        setCadenaCargando(false)
+      }
+    })
+    return () => { cancelado = true }
+  }, [semielaboradoId])
+
   async function cargarDatos() {
     setCargando(true)
 
@@ -153,11 +280,10 @@ function Producciones() {
       )
     `
 
-    const [resSemi, resAbiertas, resCerradas, resStock] = await Promise.all([
+    const [resSemi, resAbiertas, resCerradas] = await Promise.all([
       supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
       supabase.from('producciones_semielaborado').select(selectCompleto).eq('estado', 'abierta').order('fecha', { ascending: false }),
       supabase.from('producciones_semielaborado').select(selectCompleto).eq('estado', 'cerrada').order('fecha', { ascending: false }),
-      supabase.from('stock_semielaborados').select('*'),
     ])
 
     if (resSemi.error) console.error(resSemi.error)
@@ -168,9 +294,6 @@ function Producciones() {
 
     if (resCerradas.error) console.error(resCerradas.error)
     else setCerradas(resCerradas.data)
-
-    if (resStock.error) console.error(resStock.error)
-    else setStockTotal(resStock.data)
 
     setCargando(false)
   }
@@ -239,6 +362,15 @@ function Producciones() {
     cargarDatos()
   }
 
+  const semielaboradoSeleccionado = semielaborados.find((s) => String(s.id) === semielaboradoId)
+
+  // Historial acotado al semielaborado seleccionado (punto 2 del contrato) -- derivado sin consulta
+  // adicional, `cerradas` ya trae `semielaborado_id` de la carga inicial.
+  const cerradasDelSeleccionado = useMemo(() => {
+    if (!semielaboradoId) return []
+    return cerradas.filter((p) => p.semielaborado_id === parseInt(semielaboradoId))
+  }, [cerradas, semielaboradoId])
+
   return (
     <div>
       <PageHeader
@@ -254,7 +386,11 @@ function Producciones() {
         <CardBody>
           <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
             <Field label="Iniciar nueva producción">
-              <Select value={semielaboradoId} onChange={(e) => setSemielaboradoId(e.target.value)} required>
+              <Select
+                value={semielaboradoId}
+                onChange={(e) => { setSemielaboradoId(e.target.value); setCantidadPlan('') }}
+                required
+              >
                 <option value="">Selecciona qué vas a producir</option>
                 {semielaborados.map((s) => (
                   <option key={s.id} value={s.id}>{s.nombre} ({s.unidad})</option>
@@ -307,21 +443,29 @@ function Producciones() {
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Stock actual de semielaborados</h2>
-      {cargando ? (
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+        {semielaboradoSeleccionado ? `Stock disponible para ${semielaboradoSeleccionado.nombre}` : 'Stock disponible'}
+      </h2>
+      {cargando || (semielaboradoId && cadenaCargando) ? (
         <LoadingState />
+      ) : !semielaboradoId ? (
+        <Card className="mb-8"><EmptyState>Selecciona un semielaborado para ver su stock e historial.</EmptyState></Card>
+      ) : cadenaStock.length === 0 ? (
+        <Card className="mb-8"><EmptyState>Este semielaborado no tiene semielaborados ni ingredientes en su receta.</EmptyState></Card>
       ) : (
         <Card className="overflow-hidden mb-8">
           <Table>
             <Thead>
-              <Th>Semielaborado</Th>
-              <Th>Stock</Th>
+              <Th>Nombre</Th>
+              <Th>Tipo</Th>
+              <Th>Stock disponible</Th>
             </Thead>
             <tbody className="divide-y divide-gray-100">
-              {stockTotal.map((s) => (
-                <tr key={s.semielaborado_id} className="hover:bg-blue-50/40">
-                  <Td className="font-medium">{s.nombre}</Td>
-                  <Td>{Number(s.stock).toFixed(3)} {s.unidad}</Td>
+              {cadenaStock.map((f) => (
+                <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-blue-50/40">
+                  <Td className="font-medium">{f.nombre}</Td>
+                  <Td className="text-gray-500">{f.tipo === 'semielaborado' ? 'Semielaborado' : 'Ingrediente'}</Td>
+                  <Td>{f.stock.toFixed(3)} {f.unidad}</Td>
                 </tr>
               ))}
             </tbody>
@@ -329,12 +473,18 @@ function Producciones() {
         </Card>
       )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Historial de producciones cerradas</h2>
-      {cerradas.length === 0 ? (
-        <Card><EmptyState>Todavía no hay producciones cerradas.</EmptyState></Card>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+        {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
+      </h2>
+      {cargando ? (
+        <LoadingState />
+      ) : !semielaboradoId ? (
+        <Card><EmptyState>Selecciona un semielaborado para ver su stock e historial.</EmptyState></Card>
+      ) : cerradasDelSeleccionado.length === 0 ? (
+        <Card><EmptyState>Todavía no hay producciones cerradas de este semielaborado.</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
-          {cerradas.map((p) => (
+          {cerradasDelSeleccionado.map((p) => (
             <ProduccionCerrada
               key={p.id}
               produccion={p}

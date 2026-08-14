@@ -2,7 +2,7 @@
 
 Rediseño de Pantalla 1 (`PedidosDelDia.jsx`) + conexión con Pantalla de Producción (`Producciones.jsx`). Sustituye la agrupación producto→fecha→cliente por una vista filtrada, orientada a necesidad real de semielaborado.
 
-Estado: Vista 1 completa y reordenada -- tabla de **productos finales arriba** (necesidad, stock, estado de toda la cadena, trazabilidad a pedido, filtro "Producto final") y tabla de **semielaborados abajo** (mismo tratamiento a un nivel, orden jerárquico, selección y botón "Producir" intactos), implementadas y verificadas en runtime contra dataset ZZ -- ver "Addenda: reordenación y estados (2026-08-14)" más abajo para el detalle completo de este segundo contrato, ya cerrado. Pendiente: (a) Vista 2 de ambas pantallas de producción, a diseñar en PDF en sesión aparte -- **no arrancar todavía, sin mockup no hay nada que implementar**; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), se resuelve con el diseño de Vista 2. Fecha: 2026-08-14.
+Estado: Vista 1 completa y reordenada -- tabla de **productos finales arriba** (necesidad, stock, estado de toda la cadena, trazabilidad a pedido, filtro "Producto final") y tabla de **semielaborados abajo** (mismo tratamiento a un nivel, orden jerárquico, selección y botón "Producir" intactos), implementadas y verificadas en runtime contra dataset ZZ -- ver "Addenda: reordenación y estados (2026-08-14)" más abajo para el detalle completo de este segundo contrato, ya cerrado. Vista 2 de **semielaborados** (`Producciones.jsx`) también completa -- tablas informativas de stock e historial reactivas al semielaborado seleccionado, ver "Addenda: rediseño de tablas informativas — Vista 2 semielaborado (2026-08-14)" más abajo. Pendiente: (a) Vista 2 de **productos finales** (`ProduccionProductosFinales.jsx`), a diseñar en PDF en sesión aparte -- **no arrancar todavía, sin mockup no hay nada que implementar**; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), se resuelve con el diseño de esa Vista 2. Fecha: 2026-08-14.
 
 ---
 
@@ -26,6 +26,26 @@ Solo los 3 últimos son bloqueo real y se propagan hacia arriba en la cadena de 
 **3. Filtro "Producto final"** (sustituye al filtro "Semielaborado" original): acota qué filas de la tabla de semielaborados se muestran (cierre transitivo de la cadena del producto elegido), **nunca recalcula sus cantidades** -- siguen siendo la necesidad global agregada de todos los pedidos pendientes, con o sin filtro.
 
 **4. Próximo paso, todavía sin arrancar**: Vista 2 de `Producciones.jsx` y `ProduccionProductosFinales.jsx`, sin mockup/PNG de referencia todavía. No se retoma hasta tenerlo.
+
+---
+
+## Addenda: rediseño de tablas informativas — Vista 2 semielaborado (2026-08-14)
+
+Contrato posterior ("Rediseño de tablas informativas — Producciones (Vista 2 semielaborado)"), implementado y verificado en runtime real contra dataset ZZ. **No es la "Vista 2" de nuevo diseño en PDF referida en el punto 4 de arriba** -- es una mejora puntual de las dos tablas informativas que ya existían en `Producciones.jsx`, reaccionando al semielaborado seleccionado en "Iniciar nueva producción" en vez de mostrar siempre todo el sistema.
+
+**1. "Stock actual de semielaborados" → "Stock disponible para [nombre]".** Ya no lista todos los semielaborados del sistema -- lista la cadena transitiva completa del semielaborado seleccionado (semielaborados intermedios + ingredientes/artículos hoja), bajando recursivamente por `receta_semielaborado` con BFS nivel a nivel (función `cargarCadenaCompleta()`), no solo un nivel como `validarStockReceta()`. Columnas: nombre, tipo (Semielaborado / Ingrediente), stock disponible.
+
+**Hallazgo corregido durante la verificación**: un mismo artículo (ej. AOVE) puede alcanzarse por dos caminos distintos de receta -- una vez referenciado directo (`articulo_id`) y otra vía un ingrediente genérico (`ingrediente_id` → `articulo_ingrediente`) que resuelve al mismo artículo. Sin deduplicar, aparecía dos veces con el mismo stock (y React lo marcaba como key duplicada). Se agrupa por el conjunto de `articulo_id` que resuelve cada línea -- si dos líneas resuelven exactamente al mismo conjunto, es una sola fila.
+
+**2. "Historial de producciones cerradas" → filtrado al semielaborado seleccionado.** Antes mostraba las cerradas de todos los semielaborados; ahora solo las del seleccionado (`cerradasDelSeleccionado`, derivado de `cerradas` sin consulta adicional). Verificado con datos reales: 39 cerradas de "Mezcla Tortilla Espanola con Cebolla" en base de datos, 39 tarjetas mostradas tras seleccionarlo.
+
+**3. Reactividad sin botón.** Ambos bloques se recalculan en cuanto cambia la selección del desplegable "Iniciar nueva producción" (`useEffect` sobre `semielaboradoId`), sin pulsar "Iniciar" ni ningún botón adicional.
+
+**4. Estado sin selección / sin parpadeo.** Si se llega vía `/producciones?semielaborado_id=&cantidad=` (caso habitual desde "Producciones del día"), el desplegable ya viene precargado desde el estado inicial del componente, así que ambos bloques nacen ya poblados -- verificado que no hay parpadeo del mensaje de "sin selección" en ningún momento. Si se entra directo a `/producciones` sin ese parámetro, ambos bloques muestran "Selecciona un semielaborado para ver su stock e historial."
+
+**5. Fix puntual posterior, mismo contrato**: el campo "Cantidad a producir" se estaba conservando al cambiar manualmente el semielaborado en el desplegable, arrastrando una cantidad que era específica del semielaborado anterior (o de la precarga por URL). Corregido: el `onChange` manual del selector limpia `cantidadPlan` a `''`; la precarga por URL (`?cantidad=`) sigue funcionando igual, solo se resetea en el cambio manual posterior. Verificado en runtime: entrada vía URL con cantidad 2 precargada, cambio manual de semielaborado → campo queda vacío.
+
+Fuera de alcance de este contrato (sin tocar): el formulario "Iniciar nueva producción" en sí, `ProduccionProductosFinales.jsx`, y `tanda_id`/`tandas_produccion`.
 
 ---
 
