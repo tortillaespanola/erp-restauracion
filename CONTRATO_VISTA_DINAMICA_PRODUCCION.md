@@ -2,7 +2,30 @@
 
 Rediseño de Pantalla 1 (`PedidosDelDia.jsx`) + conexión con Pantalla de Producción (`Producciones.jsx`). Sustituye la agrupación producto→fecha→cliente por una vista filtrada, orientada a necesidad real de semielaborado.
 
-Estado: Vista 1 completa -- tabla de semielaborados (necesidad, stock, badges de bloqueo, trazabilidad a pedido, orden jerárquico) y tabla de productos finales (mismo tratamiento informativo, sin selección múltiple) implementadas y verificadas en runtime contra dataset ZZ. Pendiente: (a) Vista 2 de ambas pantallas de producción, a diseñar en PDF en sesión aparte -- no implementar nada de Vista 2 hasta recibir ese diseño; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), se resuelve con el diseño de Vista 2; (c) sesión de compactación/UI con capturas reales, si sigue siendo necesaria tras ver el resultado visual actual. Fecha: 2026-08-13.
+Estado: Vista 1 completa y reordenada -- tabla de **productos finales arriba** (necesidad, stock, estado de toda la cadena, trazabilidad a pedido, filtro "Producto final") y tabla de **semielaborados abajo** (mismo tratamiento a un nivel, orden jerárquico, selección y botón "Producir" intactos), implementadas y verificadas en runtime contra dataset ZZ -- ver "Addenda: reordenación y estados (2026-08-14)" más abajo para el detalle completo de este segundo contrato, ya cerrado. Pendiente: (a) Vista 2 de ambas pantallas de producción, a diseñar en PDF en sesión aparte -- **no arrancar todavía, sin mockup no hay nada que implementar**; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), se resuelve con el diseño de Vista 2. Fecha: 2026-08-14.
+
+---
+
+## Addenda: reordenación y estados (2026-08-14)
+
+Contrato posterior ("Reordenación y mejora de estados — Producciones del día"), ya implementado y verificado en runtime real (commit `4e898c2`). Decisiones que no estaban en la versión original de este documento y no deben perderse:
+
+**1. Librería de iconos del proyecto: `@tabler/icons-react`, NO `lucide-react`.** El contrato de reordenación pedía lucide por error -- verificado que no está instalada ni se usa en ningún punto del ERP. `@tabler/icons-react` es la librería real, ya usada en 15 archivos incluido este. **Cualquier contrato futuro que mencione "iconos lucide" debe leerse como `@tabler/icons-react` salvo que se diga explícitamente lo contrario.**
+
+**2. El estado de cada fila son 5 valores, no 4** (el contrato original de reordenación pedía 4; el 5º surgió al probar contra datos reales, ver hallazgo abajo):
+- **OK** (verde, `IconCircleCheck`) -- el stock ya cubre la necesidad.
+- **Pendiente de producir** (azul, `IconClock`) -- la receta es producible con lo que hay en stock, pero todavía no se ha producido. **No cuenta como bloqueo** hacia los productos finales que dependen de este semielaborado.
+- **Falta stock de semielaborados** (ámbar, `IconChefHat`).
+- **Falta stock de ingredientes** (naranja, `IconCarrot`).
+- **Falta stock de ambos** (rojo, `IconAlertTriangle`).
+
+Solo los 3 últimos son bloqueo real y se propagan hacia arriba en la cadena de un producto final (recorrido transitivo vía `receta_producto_final` → `receta_semielaborado`, reutilizando el estado ya resuelto de cada semielaborado, sin consultas nuevas). "Pendiente de producir" es puramente informativo.
+
+**Hallazgo que motivó el 5º estado**: `ZZ_Albondiga frita` (necesidad 4, disponible 0, receta con stock de sobra) mostraba "OK" en verde con el diseño de 4 estados -- un check verde junto a "disponible: 0.000" se lee como "ya resuelto" y el operador se saltaría una producción real pendiente. Confirmado con el propietario antes de implementar: "OK" queda reservado en exclusiva para cuando el stock ya cubre la necesidad.
+
+**3. Filtro "Producto final"** (sustituye al filtro "Semielaborado" original): acota qué filas de la tabla de semielaborados se muestran (cierre transitivo de la cadena del producto elegido), **nunca recalcula sus cantidades** -- siguen siendo la necesidad global agregada de todos los pedidos pendientes, con o sin filtro.
+
+**4. Próximo paso, todavía sin arrancar**: Vista 2 de `Producciones.jsx` y `ProduccionProductosFinales.jsx`, sin mockup/PNG de referencia todavía. No se retoma hasta tenerlo.
 
 ---
 
