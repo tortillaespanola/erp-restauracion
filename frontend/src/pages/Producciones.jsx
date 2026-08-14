@@ -89,28 +89,45 @@ async function cargarIngredientesConLotes(semielaboradoId) {
 // antemano. Aquí el conjunto no se conoce hasta explorarlo, así que se recorre nivel a nivel (BFS)
 // hasta agotar la cadena -- el propio Set de semielaborados visitados evita releer un nodo dos veces
 // y protege de un ciclo indirecto no cubierto por el CHECK no_auto_referencia de la base de datos.
+//
+// `ratioPorUnidad` (addenda "Cantidad objetivo y estimación en Producción en curso"): cantidad de ese
+// ítem necesaria para producir 1 unidad del semielaborado raíz -- se acumula multiplicando la
+// `cantidad` de cada línea de receta por el ratio ya acumulado de su padre, y SUMANDO si un mismo
+// ítem se alcanza por más de una línea dentro del mismo nivel (dos padres del mismo `frontera`
+// consumiendo el mismo hijo). Esto resuelve correctamente el caso realista de "varios padres al mismo
+// nivel" -- no se persigue una topología exacta para el caso raro de un mismo nodo reconvergiendo a
+// través de caminos de profundidad distinta, que no se da en las recetas reales de este ERP.
 async function cargarCadenaCompleta(semielaboradoId) {
   const semisVisitados = new Set()
   const articulosVisitados = new Map() // articulo_id -> {nombre, unidad}
   const ingredientesVisitados = new Map() // ingrediente_id -> {nombre, unidad}
+  const ratioSemi = new Map([[semielaboradoId, 1]])
+  const ratioLeaf = new Map() // 'a:id' | 'i:id' -> ratio acumulado por unidad de la raíz
   let frontera = [semielaboradoId]
 
   while (frontera.length > 0) {
     const { data } = await supabase
       .from('receta_semielaborado')
-      .select('semielaborado_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+      .select('semielaborado_id, cantidad, articulo_id, ingrediente_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
       .in('semielaborado_id', frontera)
 
     const siguienteFrontera = []
     for (const fila of data || []) {
+      const ratioLinea = (ratioSemi.get(fila.semielaborado_id) || 0) * Number(fila.cantidad)
       if (fila.ingrediente_semielaborado_id) {
-        if (!semisVisitados.has(fila.ingrediente_semielaborado_id)) {
-          semisVisitados.add(fila.ingrediente_semielaborado_id)
-          siguienteFrontera.push(fila.ingrediente_semielaborado_id)
+        const id = fila.ingrediente_semielaborado_id
+        ratioSemi.set(id, (ratioSemi.get(id) || 0) + ratioLinea)
+        if (!semisVisitados.has(id)) {
+          semisVisitados.add(id)
+          siguienteFrontera.push(id)
         }
       } else if (fila.articulo_id) {
+        const clave = `a:${fila.articulo_id}`
+        ratioLeaf.set(clave, (ratioLeaf.get(clave) || 0) + ratioLinea)
         articulosVisitados.set(fila.articulo_id, { nombre: fila.articulos_compra?.nombre, unidad: fila.articulos_compra?.unidad })
       } else if (fila.ingrediente_id) {
+        const clave = `i:${fila.ingrediente_id}`
+        ratioLeaf.set(clave, (ratioLeaf.get(clave) || 0) + ratioLinea)
         ingredientesVisitados.set(fila.ingrediente_id, { nombre: fila.ingredientes?.nombre, unidad: fila.ingredientes?.unidad })
       }
     }
@@ -143,15 +160,18 @@ async function cargarCadenaCompleta(semielaboradoId) {
   // artículo. Es el mismo stock físico, así que deben fundirse en una sola fila hoja, no duplicarse
   // (verificado con datos reales: un artículo aparecía dos veces con el mismo stock disponible cada
   // vez). Se agrupa por el conjunto (ordenado) de articulo_id que resuelve cada línea -- si coincide
-  // exactamente, es la misma fila.
-  const gruposHoja = new Map() // clave canónica "a:id1,id2" -> {nombre, unidad, articuloIds}
+  // exactamente, es la misma fila, y sus ratios se suman.
+  const gruposHoja = new Map() // clave canónica "a:id1,id2" -> {nombre, unidad, articuloIds, ratioPorUnidad}
   for (const [id, info] of articulosVisitados) {
-    gruposHoja.set(`a:${id}`, { nombre: info.nombre, unidad: info.unidad, articuloIds: [id] })
+    const clave = `a:${id}`
+    gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds: [id], ratioPorUnidad: ratioLeaf.get(clave) || 0 })
   }
   for (const [id, info] of ingredientesVisitados) {
     const articuloIds = [...(articuloIdsPorIngrediente.get(id) || [])].sort((a, b) => a - b)
     const clave = articuloIds.length > 0 ? `a:${articuloIds.join(',')}` : `i:${id}`
-    if (!gruposHoja.has(clave)) gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds })
+    const ratio = ratioLeaf.get(`i:${id}`) || 0
+    if (gruposHoja.has(clave)) gruposHoja.get(clave).ratioPorUnidad += ratio
+    else gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds, ratioPorUnidad: ratio })
   }
 
   const idsArticulosRelevantes = [...new Set([...gruposHoja.values()].flatMap((g) => g.articuloIds))]
@@ -169,6 +189,7 @@ async function cargarCadenaCompleta(semielaboradoId) {
     nombre: s.nombre,
     unidad: s.unidad,
     stock: Number(s.stock),
+    ratioPorUnidad: ratioSemi.get(s.semielaborado_id) || 0,
   }))
 
   const filasHoja = [...gruposHoja.values()].map((g) => ({
@@ -176,6 +197,7 @@ async function cargarCadenaCompleta(semielaboradoId) {
     nombre: g.nombre,
     unidad: g.unidad,
     stock: g.articuloIds.reduce((s, aId) => s + (stockPorArticulo.get(aId) || 0), 0),
+    ratioPorUnidad: g.ratioPorUnidad,
   }))
 
   return [...filasSemis, ...filasHoja].sort((a, b) => {
@@ -306,6 +328,10 @@ function Producciones() {
     e.preventDefault()
     if (!semielaboradoId) return
 
+    // Addenda "Cantidad objetivo y estimación en Producción en curso": la cantidad indicada aquí (si
+    // la hay) se persiste como cantidad_objetivo, para que la tarjeta de "Producción en curso" pueda
+    // mostrarla y la estimación de la cadena tenga con qué calcular -- antes se perdía al iniciar.
+    const cantidadInicial = parseFloat(cantidadPlan)
     const { error } = await supabase
       .from('producciones_semielaborado')
       .insert({
@@ -313,6 +339,7 @@ function Producciones() {
         estado: 'abierta',
         fecha: fechaInicio,
         tanda_id: tandaId || null,
+        cantidad_objetivo: cantidadInicial > 0 ? cantidadInicial : null,
       })
 
     if (error) {
@@ -371,6 +398,40 @@ function Producciones() {
     return cerradas.filter((p) => p.semielaborado_id === parseInt(semielaboradoId))
   }, [cerradas, semielaboradoId])
 
+  // Fix "filtrado de Producciones en curso": mismo criterio, sin selección se ven todas (sin cambios).
+  const abiertasFiltradas = useMemo(() => {
+    if (!semielaboradoId) return abiertas
+    return abiertas.filter((p) => p.semielaborado_id === parseInt(semielaboradoId))
+  }, [abiertas, semielaboradoId])
+
+  // Extraído por reutilizarse en dos posiciones distintas de la página según haya o no selección
+  // (con selección va entre Stock disponible e Historial; sin selección va justo tras el formulario)
+  // -- es una función que devuelve JSX invocada directamente, no un componente anidado. Sin filtro y
+  // sin ninguna producción en curso no se renderiza nada (comportamiento previo sin cambios); con
+  // filtro se muestra siempre el título, con un estado vacío si no hay ninguna de ese semielaborado.
+  function bloqueProduccionesEnCurso(lista, mensajeVacio) {
+    if (lista.length === 0 && !mensajeVacio) return null
+    return (
+      <div className="mb-8">
+        <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Producciones en curso</h2>
+        {lista.length === 0 ? (
+          <Card><EmptyState>{mensajeVacio}</EmptyState></Card>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {lista.map((p) => (
+              <ProduccionAbierta
+                key={p.id}
+                produccion={p}
+                onCambio={cargarDatos}
+                onCancelar={() => handleCancelar(p.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div>
       <PageHeader
@@ -427,72 +488,65 @@ function Producciones() {
         </CardBody>
       </Card>
 
-      {abiertas.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Producciones en curso</h2>
-          <div className="flex flex-col gap-4">
-            {abiertas.map((p) => (
-              <ProduccionAbierta
-                key={p.id}
-                produccion={p}
-                onCambio={cargarDatos}
-                onCancelar={() => handleCancelar(p.id)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Fix de corrección + fix de filtrado (addenda "Cantidad objetivo y estimación"): Stock
+          disponible / Historial solo tienen sentido con un semielaborado seleccionado arriba -- se
+          ocultan por completo (ni título ni mensaje de "sin selección") si no lo hay. Con selección,
+          el orden es Stock disponible -> Producciones en curso (ya filtradas a ese semielaborado) ->
+          Historial. Sin selección, solo se ve Producciones en curso, sin filtrar. */}
+      {semielaboradoId ? (
+        <>
+          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+            {semielaboradoSeleccionado ? `Stock disponible para ${semielaboradoSeleccionado.nombre}` : 'Stock disponible'}
+          </h2>
+          {cargando || cadenaCargando ? (
+            <LoadingState />
+          ) : cadenaStock.length === 0 ? (
+            <Card className="mb-8"><EmptyState>Este semielaborado no tiene semielaborados ni ingredientes en su receta.</EmptyState></Card>
+          ) : (
+            <Card className="overflow-hidden mb-8">
+              <Table>
+                <Thead>
+                  <Th>Nombre</Th>
+                  <Th>Tipo</Th>
+                  <Th>Stock disponible</Th>
+                </Thead>
+                <tbody className="divide-y divide-gray-100">
+                  {cadenaStock.map((f) => (
+                    <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-blue-50/40">
+                      <Td className="font-medium">{f.nombre}</Td>
+                      <Td className="text-gray-500">{f.tipo === 'semielaborado' ? 'Semielaborado' : 'Ingrediente'}</Td>
+                      <Td>{f.stock.toFixed(3)} {f.unidad}</Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card>
+          )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
-        {semielaboradoSeleccionado ? `Stock disponible para ${semielaboradoSeleccionado.nombre}` : 'Stock disponible'}
-      </h2>
-      {cargando || (semielaboradoId && cadenaCargando) ? (
-        <LoadingState />
-      ) : !semielaboradoId ? (
-        <Card className="mb-8"><EmptyState>Selecciona un semielaborado para ver su stock e historial.</EmptyState></Card>
-      ) : cadenaStock.length === 0 ? (
-        <Card className="mb-8"><EmptyState>Este semielaborado no tiene semielaborados ni ingredientes en su receta.</EmptyState></Card>
-      ) : (
-        <Card className="overflow-hidden mb-8">
-          <Table>
-            <Thead>
-              <Th>Nombre</Th>
-              <Th>Tipo</Th>
-              <Th>Stock disponible</Th>
-            </Thead>
-            <tbody className="divide-y divide-gray-100">
-              {cadenaStock.map((f) => (
-                <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-blue-50/40">
-                  <Td className="font-medium">{f.nombre}</Td>
-                  <Td className="text-gray-500">{f.tipo === 'semielaborado' ? 'Semielaborado' : 'Ingrediente'}</Td>
-                  <Td>{f.stock.toFixed(3)} {f.unidad}</Td>
-                </tr>
+          {bloqueProduccionesEnCurso(abiertasFiltradas, 'No hay ninguna producción en curso de este semielaborado.')}
+
+          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+            {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
+          </h2>
+          {cargando ? (
+            <LoadingState />
+          ) : cerradasDelSeleccionado.length === 0 ? (
+            <Card className="mb-8"><EmptyState>Todavía no hay producciones cerradas de este semielaborado.</EmptyState></Card>
+          ) : (
+            <div className="flex flex-col gap-4 mb-8">
+              {cerradasDelSeleccionado.map((p) => (
+                <ProduccionCerrada
+                  key={p.id}
+                  produccion={p}
+                  onCambio={cargarDatos}
+                  onBorrar={() => handleBorrarCerrada(p.id)}
+                />
               ))}
-            </tbody>
-          </Table>
-        </Card>
-      )}
-
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
-        {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
-      </h2>
-      {cargando ? (
-        <LoadingState />
-      ) : !semielaboradoId ? (
-        <Card><EmptyState>Selecciona un semielaborado para ver su stock e historial.</EmptyState></Card>
-      ) : cerradasDelSeleccionado.length === 0 ? (
-        <Card><EmptyState>Todavía no hay producciones cerradas de este semielaborado.</EmptyState></Card>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="flex flex-col gap-4">
-          {cerradasDelSeleccionado.map((p) => (
-            <ProduccionCerrada
-              key={p.id}
-              produccion={p}
-              onCambio={cargarDatos}
-              onBorrar={() => handleBorrarCerrada(p.id)}
-            />
-          ))}
-        </div>
+        bloqueProduccionesEnCurso(abiertas, null)
       )}
     </div>
   )
@@ -511,6 +565,20 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [cantidadObjetivo, setCantidadObjetivo] = useState('')
   const [cantidadSugerida, setCantidadSugerida] = useState(null)
 
+  // Addenda "Cantidad objetivo y estimación en Producción en curso": `objetivo` es el valor
+  // PERSISTIDO (columna cantidad_objetivo, la que se indicó al pulsar "Iniciar" o la que se ajuste
+  // aquí) -- distinto de `cantidadObjetivo` de arriba, que es solo la precarga ephemeral de consumos
+  // sugeridos del flujo de tanda y no se toca. Se guarda al perder el foco (ajuste de
+  // referencia/planificación puro: no modifica consumo_produccion ni cierra la producción).
+  const [objetivo, setObjetivo] = useState(produccion.cantidad_objetivo != null ? String(produccion.cantidad_objetivo) : '')
+  const [guardandoObjetivo, setGuardandoObjetivo] = useState(false)
+
+  // Cadena transitiva completa (mismo cálculo que "Stock disponible para X" a nivel de página, ver
+  // cargarCadenaCompleta) para la estimación de esta tarjeta -- se carga una sola vez al montar, el
+  // objetivo solo multiplica ratioPorUnidad en el render, sin recargar la cadena en cada tecleo.
+  const [cadenaEstimacion, setCadenaEstimacion] = useState([])
+  const [cadenaEstimacionCargando, setCadenaEstimacionCargando] = useState(true)
+
   async function cargarIngredientes() {
     setCargandoIngredientes(true)
     setIngredientes(await cargarIngredientesConLotes(produccion.semielaborado_id))
@@ -520,6 +588,27 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   useEffect(() => {
     cargarIngredientes()
   }, [])
+
+  useEffect(() => {
+    cargarCadenaCompleta(produccion.semielaborado_id).then((filas) => {
+      setCadenaEstimacion(filas)
+      setCadenaEstimacionCargando(false)
+    })
+  }, [])
+
+  async function guardarObjetivo() {
+    const valor = objetivo === '' ? null : parseFloat(objetivo)
+    if (valor != null && (Number.isNaN(valor) || valor <= 0)) return
+    if (valor === (produccion.cantidad_objetivo ?? null)) return
+    setGuardandoObjetivo(true)
+    const { error } = await supabase.from('producciones_semielaborado').update({ cantidad_objetivo: valor }).eq('id', produccion.id)
+    setGuardandoObjetivo(false)
+    if (error) {
+      alert('Error al guardar la cantidad objetivo: ' + error.message)
+      return
+    }
+    onCambio()
+  }
 
   // Recalculado en vivo contra el conjunto actual de pedidos de la tanda, no memorizado desde la
   // Pantalla 1 — sigue siendo correcto si se añaden pedidos a la tanda después de abrir esta producción.
@@ -658,6 +747,54 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         </div>
         <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
       </div>
+
+      <div className="mt-3 flex items-end gap-3 flex-wrap">
+        <Field label={`Cantidad objetivo (${produccion.semielaborados?.unidad})`} className="w-56">
+          <Input
+            type="number"
+            step="0.001"
+            value={objetivo}
+            onChange={(e) => setObjetivo(e.target.value)}
+            onBlur={guardarObjetivo}
+            placeholder="Sin definir"
+            title="Ajuste de referencia -- no modifica el consumo ya registrado ni cierra la producción"
+          />
+        </Field>
+        {guardandoObjetivo && <span className="text-xs text-gray-400">Guardando...</span>}
+      </div>
+
+      {parseFloat(objetivo) > 0 && (
+        <div className="mt-3">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            Estimación para {objetivo} {produccion.semielaborados?.unidad}
+          </p>
+          {cadenaEstimacionCargando ? (
+            <p className="text-xs text-gray-400">Calculando...</p>
+          ) : cadenaEstimacion.length === 0 ? (
+            <p className="text-xs text-gray-400">Este semielaborado no tiene semielaborados ni ingredientes en su receta.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-gray-100">
+                {cadenaEstimacion.map((f) => {
+                  const necesario = f.ratioPorUnidad * parseFloat(objetivo)
+                  const insuficiente = necesario > f.stock + 0.0001
+                  return (
+                    <tr key={`${f.tipo}-${f.nombre}`}>
+                      <td className="py-1 text-gray-600">{f.nombre}</td>
+                      <td className={`py-1 ${insuficiente ? 'text-red-600 font-medium' : ''}`}>
+                        {necesario.toFixed(3)} {f.unidad}
+                      </td>
+                      <td className={`py-1 text-xs ${insuficiente ? 'text-red-500' : 'text-gray-400'}`}>
+                        disponible: {f.stock.toFixed(3)} {f.unidad}{insuficiente ? ' — insuficiente' : ''}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
 
       {produccion.tanda_id && (
         <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">

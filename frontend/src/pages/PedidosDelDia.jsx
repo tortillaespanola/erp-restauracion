@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock } from '@tabler/icons-react'
+import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck } from '@tabler/icons-react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
@@ -80,6 +80,19 @@ function tooltipFaltantes(faltantes) {
     .join('\n')
 }
 
+// Contrato "Reflejar producciones en curso en los estados de Producciones del día": texto corto junto
+// al estado (nota) y desglose por producción (tooltip) para un semielaborado con producciones
+// 'abierta' propias -- mismo patrón de tooltip que tooltipPedidos()/tooltipFaltantes() de arriba.
+function formatNotaEnCurso(enCurso, unidad) {
+  return `${enCurso.suma.toFixed(3)}${enCurso.todasDefinidas ? '' : '+'} ${unidad} en curso`
+}
+
+function tooltipEnCurso(enCurso, unidad) {
+  return 'Producciones en curso:\n' + enCurso.producciones
+    .map((p) => `• ${p.cantidad != null ? `${p.cantidad.toFixed(3)} ${unidad}` : 'cantidad sin definir'}${p.fecha ? ` · iniciada ${formatFecha(p.fecha)}` : ''}`)
+    .join('\n')
+}
+
 // Agrega las filas de un nivel concreto ('semielaborado' | 'producto_final') a través de los
 // resultados de necesidades_pedidos() ya obtenidos UNA VEZ POR PEDIDO -- ambos niveles vienen en la
 // misma respuesta de cada llamada, así que reutilizar los mismos resultados para las dos tablas no
@@ -111,53 +124,76 @@ function agregarPorNivel(resultadosPorPedido, nivel) {
 // se lee como "ya resuelto" y el operador se saltaría una producción real pendiente. Decisión
 // confirmada explícitamente: nunca usar 'ok' para algo con necesidad sin cubrir, aunque sea
 // perfectamente producible con lo que hay en stock.
-function estadoUnNivel(faltanteSemi, faltanteIngArt) {
+// Contrato "Reflejar producciones en curso en los estados de Producciones del día": `enCurso` es
+// `{ producciones, suma, todasDefinidas }` para este semielaborado (o undefined si no hay ninguna
+// producción 'abierta' de él) -- solo se consulta cuando no hay bloqueo real (semi/ingrediente), igual
+// prioridad que el resto de esta función: un bloqueo real siempre gana sobre "hay algo en marcha".
+function estadoUnNivel(faltanteSemi, faltanteIngArt, enCurso, necesidad) {
   const semi = faltanteSemi.length > 0
   const ing = faltanteIngArt.length > 0
   if (semi && ing) return 'ambos'
   if (semi) return 'semi'
   if (ing) return 'ingrediente'
+  if (enCurso) return enCurso.todasDefinidas && enCurso.suma >= necesidad ? 'en_curso_cubre' : 'en_curso_insuficiente'
   return 'pendiente'
 }
 
-// Estado de toda la cadena (tabla de productos finales, criterio nuevo de este contrato): recorre el
-// cierre transitivo de semielaborados (`cadenaSemis`) reutilizando el ESTADO ya resuelto de cada uno en
-// la tabla de semielaborados (global, sin filtrar) -- no vuelve a consultar la base de datos. Un
-// semielaborado en estado 'ok' no aporta nada (ya cubierto). Uno en 'pendiente' (sin bloqueo, solo
-// falta producirlo) tampoco cuenta como bloqueo para el producto final -- mismo criterio que la hoja:
-// "todavía no producido" no es lo mismo que "bloqueado". Solo 'semi'/'ingrediente'/'ambos' (un bloqueo
-// real más abajo en la cadena) propaga faltaSemi/faltaIngrediente hacia arriba. Los faltantes DIRECTOS
-// del producto final que sean de tipo 'ingrediente_articulo' (ej. packaging, sin cadena propia) sí son
-// bloqueo real siempre. Los de tipo 'semielaborado' de ese mismo listado directo se descartan aquí a
-// propósito -- esa misma información ya llega, correctamente clasificada, a través de `cadenaSemis`
-// (que incluye las dependencias directas), así que no se duplica ni se repite el bug de la hoja un
-// nivel más arriba. Solo se llama cuando el propio producto final no está cubierto.
-function estadoCadenaPF(faltantesDirectos, cadenaSemis, filasSemiPorId) {
-  let faltaSemi = false
-  let faltaIngrediente = false
-  const detalle = []
+// Orden de prioridad del contrato (1 = más urgente/bloqueante) -- el estado final es siempre el peor
+// (menor rango) entre todos los aplicables. "en_curso_insuficiente" es más urgente que "pendiente"
+// (ya hay algo en marcha, aunque no baste); "en_curso_cubre" es menos urgente que "pendiente" (ya hay
+// evidencia concreta de que se está cubriendo, aunque no haya terminado). Usado tanto para el propio
+// nivel de un semielaborado (implícito en estadoUnNivel, misma jerarquía) como para reducir la cadena
+// completa de un producto final a un único estado en estadoCadenaPF.
+const RANGO_ESTADO = { ambos: 1, semi: 2, ingrediente: 3, en_curso_insuficiente: 4, pendiente: 5, en_curso_cubre: 6, ok: 7 }
 
-  for (const f of faltantesDirectos) {
-    if (f.tipo !== 'ingrediente_articulo') continue // el tipo 'semielaborado' se resuelve vía cadenaSemis
-    detalle.push(f)
-    faltaIngrediente = true
-  }
+function peorEstado(a, b) {
+  if (a == null) return b
+  if (b == null) return a
+  return RANGO_ESTADO[a] <= RANGO_ESTADO[b] ? a : b
+}
 
-  for (const semiId of cadenaSemis) {
+// Estado de un producto final (fix "eliminar excepción 'pendiente no bloquea'"): EXACTAMENTE el mismo
+// algoritmo de un nivel (estadoUnNivel) que ya usa correctamente la tabla de semielaborados para sus
+// propios hijos directos -- se mira el STOCK REAL de cada línea directa de receta_producto_final
+// (`faltantesDirectos`, ya trae ambos tipos: 'semielaborado' e 'ingrediente_articulo'), NO el estado
+// calculado/recursivo del semielaborado hijo. Que un semielaborado hijo sea "fácilmente producible"
+// (su propio estado sea 'pendiente') no libera al producto final de estar bloqueado si ese
+// semielaborado no tiene stock disponible ahora mismo para montarlo/empaquetarlo -- ese era el bug:
+// se estaba mirando si el hijo era producible en vez de si estaba disponible. No hace falta bajar más
+// niveles: si la línea directa no cubre, el producto final ya está bloqueado, sin importar la cadena
+// que haya debajo (mismo criterio no-recursivo que ya usa la hoja).
+//
+// Las producciones en curso (contrato "Reflejar producciones en curso") SÍ se siguen mirando, pero
+// solo del semielaborado DIRECTO (`direccionesSemiDirectas` -- relación de receta_producto_final, no
+// el cierre transitivo `cadenaSemisDe` que usa el filtro "Producto final" de la tabla de
+// semielaborados, ese no se toca) -- y solo aporta si no hay bloqueo real de por medio (el peor caso
+// sigue ganando siempre vía RANGO_ESTADO). Etiqueta DISTINTA ('semis_en_curso_*', no 'en_curso_*')
+// para no confundirlo con un futuro estado propio de producción del producto final, que no existe
+// todavía. Solo se llama cuando el propio producto final no está cubierto.
+function estadoCadenaPF(faltantesDirectos, direccionesSemiDirectas, filasSemiPorId) {
+  const faltanteSemi = faltantesDirectos.filter((f) => f.tipo === 'semielaborado')
+  const faltanteIngArt = faltantesDirectos.filter((f) => f.tipo === 'ingrediente_articulo')
+  const detalle = [...faltanteSemi, ...faltanteIngArt]
+
+  let peor = null
+  if (faltanteSemi.length > 0 && faltanteIngArt.length > 0) peor = 'ambos'
+  else if (faltanteSemi.length > 0) peor = 'semi'
+  else if (faltanteIngArt.length > 0) peor = 'ingrediente'
+
+  const semisEnCurso = []
+  for (const semiId of direccionesSemiDirectas) {
     const filaSemi = filasSemiPorId.get(semiId)
-    if (!filaSemi || filaSemi.estado === 'ok' || filaSemi.estado === 'pendiente') continue
-    detalle.push({ nombre: filaSemi.nombre, unidad: filaSemi.unidad, necesario: filaSemi.necesidad, disponible: filaSemi.disponible })
-    if (filaSemi.estado === 'semi' || filaSemi.estado === 'ambos') faltaSemi = true
-    if (filaSemi.estado === 'ingrediente' || filaSemi.estado === 'ambos') {
-      faltaIngrediente = true
-      detalle.push(...filaSemi.faltanteIngArt)
-    }
+    if (!filaSemi || (filaSemi.estado !== 'en_curso_insuficiente' && filaSemi.estado !== 'en_curso_cubre')) continue
+    peor = peorEstado(peor, filaSemi.estado)
+    semisEnCurso.push(`${filaSemi.nombre}: ${filaSemi.nota}`)
   }
 
-  if (faltaSemi && faltaIngrediente) return { estado: 'ambos', detalle }
-  if (faltaSemi) return { estado: 'semi', detalle }
-  if (faltaIngrediente) return { estado: 'ingrediente', detalle }
-  return { estado: 'pendiente', detalle: [] } // nada bloquea -- solo falta producir, igual que la hoja
+  const estadoFinal = peor ?? 'pendiente' // nada bloquea ni hay nada en marcha -- solo falta montar/empaquetar
+  const estado = estadoFinal === 'en_curso_insuficiente' ? 'semis_en_curso_insuficiente'
+    : estadoFinal === 'en_curso_cubre' ? 'semis_en_curso_cubre'
+    : estadoFinal
+  const tooltipExtra = semisEnCurso.length > 0 ? 'Semielaborados en curso:\n' + semisEnCurso.map((l) => `• ${l}`).join('\n') : null
+  return { estado, detalle, tooltipExtra }
 }
 
 const ESTADOS = {
@@ -166,18 +202,34 @@ const ESTADOS = {
   semi: { icon: IconChefHat, color: 'text-amber-600', label: 'Falta stock de semielaborados' },
   ingrediente: { icon: IconCarrot, color: 'text-orange-600', label: 'Falta stock de ingredientes' },
   ambos: { icon: IconAlertTriangle, color: 'text-red-600', label: 'Falta stock de ambos' },
+  // Contrato "Reflejar producciones en curso": pareja para la tabla de semielaborados (estado propio)
+  // y pareja para la tabla de productos finales (propagado desde su cadena) -- mismo icono, etiqueta
+  // distinta a propósito para no confundir "los semielaborados que necesita están en curso" con un
+  // futuro estado propio de producción del producto final (todavía no existe).
+  en_curso_insuficiente: { icon: IconProgress, color: 'text-cyan-600', label: 'En curso' },
+  en_curso_cubre: { icon: IconProgressCheck, color: 'text-teal-600', label: 'En curso — cubre necesidad' },
+  semis_en_curso_insuficiente: { icon: IconProgress, color: 'text-cyan-600', label: 'Semielaborados en curso' },
+  semis_en_curso_cubre: { icon: IconProgressCheck, color: 'text-teal-600', label: 'Semielaborados en curso — cubren necesidad' },
 }
 
 // Celda de estado compartida por las dos tablas -- antes cada una duplicaba su propio bloque de
-// badges/tooltip; con los 4 estados el duplicado pesaba más que extraer esto.
-function EstadoCelda({ estado, detalle }) {
+// badges/tooltip; con 9 estados el duplicado pesaba más que extraer esto. `nota` es un texto corto
+// junto a la etiqueta (ej. cantidad en curso); `tooltipExtra` se añade al tooltip además del
+// desglose de `detalle` (faltantes), usado para el desglose de producciones en curso.
+function EstadoCelda({ estado, detalle, nota, tooltipExtra }) {
   const cfg = ESTADOS[estado]
   const Icon = cfg.icon
-  const titulo = detalle && detalle.length > 0 ? `${cfg.label}:\n${tooltipFaltantes(detalle)}` : cfg.label
+  const partes = []
+  if (detalle && detalle.length > 0) partes.push(tooltipFaltantes(detalle))
+  if (tooltipExtra) partes.push(tooltipExtra)
+  const titulo = partes.length > 0 ? `${cfg.label}:\n${partes.join('\n\n')}` : cfg.label
   return (
     <span title={titulo} className={`inline-flex items-center gap-1.5 ${cfg.color}`}>
       <Icon size={16} />
-      <span className="text-xs font-medium whitespace-nowrap">{cfg.label}</span>
+      <span className="text-xs font-medium whitespace-nowrap">
+        {cfg.label}
+        {nota && <span className="text-gray-400 font-normal"> ({nota})</span>}
+      </span>
     </span>
   )
 }
@@ -197,6 +249,7 @@ function PedidosDelDia() {
   const [faltantesPorSemi, setFaltantesPorSemi] = useState(new Map())
   const [ordenPorSemi, setOrdenPorSemi] = useState(new Map())
   const [dependeDeSemi, setDependeDeSemi] = useState(new Map())
+  const [enCursoPorSemi, setEnCursoPorSemi] = useState(new Map())
   const [cargando, setCargando] = useState(true)
 
   const [necesidadesPF, setNecesidadesPF] = useState([])
@@ -259,6 +312,22 @@ function PedidosDelDia() {
       mapaStock.set(l.semielaborado_id, (mapaStock.get(l.semielaborado_id) || 0) + Number(l.stock_disponible))
     }
     setStockPorSemi(mapaStock)
+
+    // Contrato "Reflejar producciones en curso": producciones_semielaborado 'abierta' (Producciones.jsx),
+    // agregadas por semielaborado_id -- `todasDefinidas` es false si alguna de las producciones en
+    // curso de ese semielaborado no tiene cantidad_objetivo (no se puede confirmar que la suma cubra).
+    const resEnCurso = await supabase.from('producciones_semielaborado').select('semielaborado_id, cantidad_objetivo, fecha').eq('estado', 'abierta')
+    if (resEnCurso.error) console.error('Error cargando producciones en curso:', resEnCurso.error)
+    const mapaEnCurso = new Map()
+    for (const p of resEnCurso.data || []) {
+      const acc = mapaEnCurso.get(p.semielaborado_id) ?? { producciones: [], suma: 0, todasDefinidas: true }
+      const cantidad = p.cantidad_objetivo != null ? Number(p.cantidad_objetivo) : null
+      acc.producciones.push({ cantidad, fecha: p.fecha })
+      if (cantidad != null) acc.suma += cantidad
+      else acc.todasDefinidas = false
+      mapaEnCurso.set(p.semielaborado_id, acc)
+    }
+    setEnCursoPorSemi(mapaEnCurso)
 
     // Mismo patrón de agregación, para stock de producto final.
     const resLotesPF = await supabase.from('stock_lotes_producto_final').select('producto_final_id, stock_disponible')
@@ -342,6 +411,9 @@ function PedidosDelDia() {
         const faltanteSemi = faltantes.filter((f) => f.tipo === 'semielaborado')
         const faltanteIngArt = faltantes.filter((f) => f.tipo === 'ingrediente_articulo')
         const cubierto = disponible >= necesidad
+        const enCurso = enCursoPorSemi.get(n.item_id)
+        const estado = cubierto ? 'ok' : estadoUnNivel(faltanteSemi, faltanteIngArt, enCurso, necesidad)
+        const enCursoActivo = (estado === 'en_curso_insuficiente' || estado === 'en_curso_cubre') && enCurso
         return {
           id: n.item_id,
           nombre: n.nombre,
@@ -349,9 +421,11 @@ function PedidosDelDia() {
           necesidad,
           disponible,
           cubierto,
-          estado: cubierto ? 'ok' : estadoUnNivel(faltanteSemi, faltanteIngArt),
+          estado,
           faltanteSemi,
           faltanteIngArt,
+          nota: enCursoActivo ? formatNotaEnCurso(enCurso, n.unidad) : null,
+          tooltipExtra: enCursoActivo ? tooltipEnCurso(enCurso, n.unidad) : null,
           pedidos: pedidosPorSemi.get(n.item_id) || [],
         }
       })
@@ -361,7 +435,7 @@ function PedidosDelDia() {
         if (da !== db) return da - db
         return a.nombre.localeCompare(b.nombre) // desempate: mismo nivel jerárquico -> alfabético
       })
-  }, [necesidades, stockPorSemi, faltantesPorSemi, pedidosPorSemi, ordenPorSemi])
+  }, [necesidades, stockPorSemi, faltantesPorSemi, pedidosPorSemi, ordenPorSemi, enCursoPorSemi])
 
   // Cierre transitivo de semielaborados de la cadena del producto final filtrado -- null si no hay
   // filtro (sin restringir filas).
@@ -388,9 +462,9 @@ function PedidosDelDia() {
         const disponible = stockPorPF.get(n.item_id) || 0
         const cubierto = disponible >= necesidad
         const faltantesDirectos = faltantesPorPF.get(n.item_id) || []
-        const { estado, detalle } = cubierto
-          ? { estado: 'ok', detalle: [] }
-          : estadoCadenaPF(faltantesDirectos, cadenaSemisDe(n.item_id, dependeDePF, dependeDeSemi), filasSemiPorId)
+        const { estado, detalle, tooltipExtra } = cubierto
+          ? { estado: 'ok', detalle: [], tooltipExtra: null }
+          : estadoCadenaPF(faltantesDirectos, dependeDePF.get(n.item_id) || [], filasSemiPorId)
         return {
           id: n.item_id,
           nombre: n.nombre,
@@ -399,11 +473,12 @@ function PedidosDelDia() {
           cubierto,
           estado,
           detalle,
+          tooltipExtra,
           pedidos: pedidosPorPF.get(n.item_id) || [],
         }
       })
       .sort((a, b) => a.nombre.localeCompare(b.nombre))
-  }, [necesidadesPF, stockPorPF, faltantesPorPF, pedidosPorPF, dependeDePF, dependeDeSemi, filasSemiTodas])
+  }, [necesidadesPF, stockPorPF, faltantesPorPF, pedidosPorPF, dependeDePF, filasSemiTodas])
 
   // Filtrar a un único producto final ya deja, en la práctica, un único semielaborado visible casi
   // siempre -- se autoselecciona para no obligar a un clic extra cuando ya no hay ambigüedad posible.
@@ -466,7 +541,7 @@ function PedidosDelDia() {
                   </Td>
                   <Td>{f.necesidad.toFixed(3)} uds</Td>
                   <Td>{f.disponible.toFixed(3)} uds</Td>
-                  <Td><EstadoCelda estado={f.estado} detalle={f.detalle} /></Td>
+                  <Td><EstadoCelda estado={f.estado} detalle={f.detalle} tooltipExtra={f.tooltipExtra} /></Td>
                 </tr>
               ))}
             </tbody>
@@ -505,7 +580,7 @@ function PedidosDelDia() {
                   </Td>
                   <Td>{f.necesidad.toFixed(3)} {f.unidad}</Td>
                   <Td>{f.disponible.toFixed(3)} {f.unidad}</Td>
-                  <Td><EstadoCelda estado={f.estado} detalle={[...f.faltanteSemi, ...f.faltanteIngArt]} /></Td>
+                  <Td><EstadoCelda estado={f.estado} detalle={[...f.faltanteSemi, ...f.faltanteIngArt]} nota={f.nota} tooltipExtra={f.tooltipExtra} /></Td>
                 </tr>
               ))}
             </tbody>

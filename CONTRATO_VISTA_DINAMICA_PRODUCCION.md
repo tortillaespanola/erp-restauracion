@@ -2,7 +2,7 @@
 
 Rediseño de Pantalla 1 (`PedidosDelDia.jsx`) + conexión con Pantalla de Producción (`Producciones.jsx`). Sustituye la agrupación producto→fecha→cliente por una vista filtrada, orientada a necesidad real de semielaborado.
 
-Estado: Vista 1 completa y reordenada -- tabla de **productos finales arriba** (necesidad, stock, estado de toda la cadena, trazabilidad a pedido, filtro "Producto final") y tabla de **semielaborados abajo** (mismo tratamiento a un nivel, orden jerárquico, selección y botón "Producir" intactos), implementadas y verificadas en runtime contra dataset ZZ -- ver "Addenda: reordenación y estados (2026-08-14)" más abajo para el detalle completo de este segundo contrato, ya cerrado. Vista 2 de **semielaborados** (`Producciones.jsx`) también completa -- tablas informativas de stock e historial reactivas al semielaborado seleccionado, ver "Addenda: rediseño de tablas informativas — Vista 2 semielaborado (2026-08-14)" más abajo. Pendiente: (a) Vista 2 de **productos finales** (`ProduccionProductosFinales.jsx`), a diseñar en PDF en sesión aparte -- **no arrancar todavía, sin mockup no hay nada que implementar**; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), se resuelve con el diseño de esa Vista 2. Fecha: 2026-08-14.
+Estado: Vista 1 completa y reordenada -- tabla de **productos finales arriba** (necesidad, stock, estado de toda la cadena, trazabilidad a pedido, filtro "Producto final") y tabla de **semielaborados abajo** (mismo tratamiento a un nivel, orden jerárquico, selección y botón "Producir" intactos), implementadas y verificadas en runtime contra dataset ZZ -- ver "Addenda: reordenación y estados (2026-08-14)" más abajo para el detalle completo de este segundo contrato, ya cerrado. Vista 2 de **semielaborados** (`Producciones.jsx`) también completa -- tablas informativas de stock e historial reactivas al semielaborado seleccionado, cantidad_objetivo persistida y editable con estimación por fila, y layout final reordenado -- ver "Addenda: rediseño de tablas informativas — Vista 2 semielaborado (2026-08-14)" y "Addenda: sistema de estados final, cantidad_objetivo y layout — cierre de sesión (2026-08-14)" más abajo. El sistema de estados de "Producciones del día" quedó cerrado en **7 estados** con un algoritmo de **un solo nivel** (nunca se propaga el estado calculado de un hijo, siempre se mira su stock real) -- ver esa misma addenda final para el detalle completo, es la referencia autoritativa por encima de la addenda de 5 estados de más arriba (superada en este punto). Pendiente: (a) Vista 2 de **productos finales** (`ProduccionProductosFinales.jsx`), pantalla conceptualmente distinta y más compleja (producción en firme para clientes concretos, después albaraneada) -- a diseñar en PDF en sesión aparte, **no arrancar todavía, sin mockup no hay nada que implementar**; (b) tanda_id sigue huérfano (PENDIENTES_MODELO.md #12), sin cambios en ninguna sesión hasta ahora. Fecha: 2026-08-14.
 
 ---
 
@@ -46,6 +46,45 @@ Contrato posterior ("Rediseño de tablas informativas — Producciones (Vista 2 
 **5. Fix puntual posterior, mismo contrato**: el campo "Cantidad a producir" se estaba conservando al cambiar manualmente el semielaborado en el desplegable, arrastrando una cantidad que era específica del semielaborado anterior (o de la precarga por URL). Corregido: el `onChange` manual del selector limpia `cantidadPlan` a `''`; la precarga por URL (`?cantidad=`) sigue funcionando igual, solo se resetea en el cambio manual posterior. Verificado en runtime: entrada vía URL con cantidad 2 precargada, cambio manual de semielaborado → campo queda vacío.
 
 Fuera de alcance de este contrato (sin tocar): el formulario "Iniciar nueva producción" en sí, `ProduccionProductosFinales.jsx`, y `tanda_id`/`tandas_produccion`.
+
+---
+
+## Addenda: sistema de estados final, cantidad_objetivo y layout — cierre de sesión (2026-08-14)
+
+Cierre de la sesión que implementó `cantidad_objetivo`, los estados "en curso" y el fix del algoritmo de bloqueo. Puntos que no estaban en ningún contrato anterior y no deben perderse:
+
+**1. Sistema de estados final -- 7 estados, con prioridad de más a menos bloqueante** (sustituye a los 5 estados de la addenda "reordenación y estados" de más arriba, que queda superada en este punto -- esos 5 siguen siendo válidos como base, pero ya no son la lista completa):
+1. Falta stock de ambos
+2. Falta stock de semielaborados
+3. Falta stock de ingredientes
+4. En curso (insuficiente)
+5. Pendiente de producir
+6. En curso — cubre necesidad
+7. OK
+
+El estado mostrado es siempre el peor (más bloqueante) de los aplicables. "En curso (insuficiente)" es más urgente que "Pendiente de producir" (ya hay algo en marcha, aunque no baste); "En curso — cubre necesidad" es menos urgente que "Pendiente de producir" (ya hay evidencia concreta de que se está cubriendo, aunque no haya terminado). Iconos `@tabler/icons-react` (`IconProgress` / `IconProgressCheck` para los dos nuevos) -- **sigue sin usarse `lucide-react`, no está instalada en el proyecto** (ver punto 1 de la addenda "reordenación y estados").
+
+**2. Algoritmo de cálculo -- UN SOLO NIVEL, nunca propagación de estado calculado.** Tanto la tabla de Semielaborados como la de Productos finales calculan su estado de la misma forma: necesidad propia vs. stock propio: si cubre, OK; si no, se mira el **stock real** (no el estado calculado) de los componentes **directos** de receta. Nunca se propaga el estado calculado de un hijo hacia el padre.
+
+Esto fue un **bug real corregido en esta sesión**: `estadoCadenaPF()` (tabla de productos finales) empezó propagando el estado *calculado* del semielaborado hijo -- si ese hijo estaba en "Pendiente de producir" (fácilmente producible pero sin stock), el producto final heredaba ese mismo estado no-bloqueante, aunque no hubiera stock real disponible para montarlo. Corregido para usar exactamente el mismo algoritmo de un nivel que ya usaba (correctamente) `estadoUnNivel()` para los semielaborados -- ya no desciende por `cadenaSemisDe` (cierre transitivo) para el cálculo de bloqueo; esa función se mantiene solo para el filtro "Producto final" de la tabla de semielaborados, que es un uso puramente de visualización, no de cálculo de estado.
+
+Razón de negocio: si el semielaborado directo no está hecho -- aunque sea trivial de producir, ej. simplemente empaquetar hamburguesas ya fabricadas -- el producto final NO se puede tocar todavía. Debe marcar "Falta stock de semielaborados", no "Pendiente de producir". Verificado en runtime: `ZZ_Hamburguesas`, `ZZ_TORTILLACONCEBOLLAGRANDE` y `ZZ_TORTILLASINCEBOLLAGRANDE` pasaron de estados no-bloqueantes a "Falta stock de semielaborados"; subiendo el stock real del semielaborado directo por encima de la necesidad, la fila vuelve a "Pendiente de producir" (no a "OK", porque el producto final en sí sigue sin producir).
+
+**3. `cantidad_objetivo` en `producciones_semielaborado`** (migración `20260902_cantidad_objetivo_produccion_semielaborado.sql`, columna `numeric` nullable, sin CHECK de positividad a nivel de base de datos -- mismo criterio que `cantidad_producida`): editable in-line dentro de cada tarjeta de "Producción en curso" en `Producciones.jsx`, independiente del formulario "Iniciar nueva producción". Alimenta dos cosas:
+- La tabla "Estimación para [X] [unidad]" dentro de cada tarjeta: una fila por ingrediente/semielaborado de la cadena transitiva completa (mismo BFS que "Stock disponible para X"), con alerta simple suficiente/insuficiente por fila -- puramente informativa, no precarga los selectores de lote de "Registrar consumo".
+- Los estados "En curso" / "En curso — cubre necesidad" de "Producciones del día" (punto 1 de esta addenda): se agregan `cantidad_objetivo` de todas las producciones `abierta` de un semielaborado; si alguna no tiene valor definido, o la suma no alcanza la necesidad, es "insuficiente"; si todas están definidas y la suma cubre, es "cubre necesidad".
+
+**4. Layout final de `Producciones.jsx` (semielaborado) con un semielaborado seleccionado en el desplegable superior**, de arriba a abajo:
+1. Formulario "Iniciar nueva producción"
+2. Stock disponible para [X]
+3. Producciones en curso (filtradas a [X] -- si no hay ninguna de ese semielaborado, se muestra el título con un estado vacío breve, no se oculta la sección)
+4. Historial de producciones cerradas de [X]
+
+**Sin nada seleccionado**: "Stock disponible" e "Historial" se ocultan por completo (ni título ni mensaje de "sin selección" -- desaparecen del DOM, distinto del punto 4 de la addenda "Vista 2 semielaborado" de más arriba, que sigue vigente solo para el caso "hay selección pero sin datos"). "Producciones en curso" muestra todas las producciones activas sin filtrar.
+
+**5. Próximo paso, todavía sin arrancar -- `ProduccionProductosFinales.jsx`**: pantalla conceptualmente distinta y **más compleja** que `Producciones.jsx` de semielaborado, no una simple repetición un nivel arriba. Aquí se produce en firme para uno o varios clientes concretos, y después se albaranea. Ejemplo de referencia dado por el propietario: para hamburguesas, la "producción" del producto final puede limitarse a empaquetar unidades ya hechas del semielaborado (coherente con el punto 2 de esta addenda: sin stock real del semielaborado, no hay nada que empaquetar). Sin mockup/PNG todavía -- se retoma en otra sesión cuando llegue.
+
+**6. `tanda_id` sigue huérfano** (`PENDIENTES_MODELO.md` #12), sin cambios en ninguna sesión hasta ahora.
 
 ---
 
