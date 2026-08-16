@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
@@ -526,6 +526,7 @@ function Producciones() {
 }
 
 function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
+  const navigate = useNavigate()
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
   const [filasConsumo, setFilasConsumo] = useState({})
@@ -708,7 +709,12 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       return
     }
 
-    onCambio()
+    // Addenda "Navegación tras cerrar producción — vuelve a Producciones del día": a diferencia del
+    // resto de acciones de esta tarjeta (que se quedan en /producciones y refrescan con onCambio()),
+    // cerrar es el final natural del flujo -- el operador vuelve al panel de "qué producir hoy",
+    // origen habitual de esta pantalla, en vez de quedarse en una tarjeta que ya no tiene nada que
+    // registrar.
+    navigate('/pedidos-del-dia')
   }
 
   return (
