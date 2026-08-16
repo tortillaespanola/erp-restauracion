@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
-import { IconTrash } from '@tabler/icons-react'
+import { IconTrash, IconWand, IconCircleCheck } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 // Nivel 'semielaborado' de necesidades_pedidos() sobre los pedidos de una tanda — usado tanto para
@@ -46,9 +46,10 @@ async function cargarIngredientesConLotes(semielaboradoId) {
       const esIngrediente = !!linea.ingrediente_id
       const esArticulo = esArticuloDirecto || esIngrediente
       let lotes
+      let articuloIdsDeReceta
 
       if (esArticulo) {
-        let articuloIdsDeReceta = [linea.articulo_id]
+        articuloIdsDeReceta = [linea.articulo_id]
         if (esIngrediente) {
           const { data: vinculos } = await supabase
             .from('articulo_ingrediente')
@@ -73,6 +74,13 @@ async function cargarIngredientesConLotes(semielaboradoId) {
         articulo_id: linea.articulo_id,
         ingrediente_id: linea.ingrediente_id,
         ingrediente_semielaborado_id: linea.ingrediente_semielaborado_id,
+        // Addenda "consumo registrado por ingrediente": TODOS los articulo_id que resuelven esta línea
+        // de receta (uno solo si es directa, varios si es ingrediente genérico vía articulo_ingrediente)
+        // -- antes se calculaba pero no se exponía, solo hacía falta para filtrar lotes. Permite
+        // reconstruir cuánto se ha consumido YA de esta línea sin depender de que el nombre del lote
+        // específico coincida con el nombre genérico de receta (no coinciden: ej. receta "Aceite de
+        // oliva" vs lote "AOVE Hacendado 1L").
+        articuloIdsDeReceta,
         nombre: esArticuloDirecto ? linea.articulos_compra?.nombre : esIngrediente ? linea.ingredientes?.nombre : linea.semielaborados?.nombre,
         unidad: esArticuloDirecto ? linea.articulos_compra?.unidad : esIngrediente ? linea.ingredientes?.unidad : linea.semielaborados?.unidad,
         cantidadOrientativa: linea.cantidad,
@@ -264,14 +272,18 @@ function Producciones() {
   async function cargarDatos() {
     setCargando(true)
 
+    // `articulo_id` en entrada_material y `semielaborado_id` en producciones_semielaborado (addenda
+    // "consumo registrado por ingrediente"): antes no se pedían -- necesarios para saber a qué línea
+    // de receta pertenece cada consumo YA confirmado (una línea de ingrediente genérico puede resolver
+    // a varios articulo_id distintos vía articulo_ingrediente, así que no basta con comparar nombres).
     const selectCompleto = `
       *,
       semielaborados(nombre, unidad),
       consumo_produccion!consumo_produccion_produccion_id_fkey(
         id, cantidad,
         entrada_material_id, produccion_origen_id,
-        entrada_material(articulos_compra(nombre, unidad)),
-        producciones_semielaborado!consumo_produccion_produccion_origen_id_fkey(semielaborados(nombre, unidad))
+        entrada_material(articulo_id, articulos_compra(nombre, unidad)),
+        producciones_semielaborado!consumo_produccion_produccion_origen_id_fkey(semielaborado_id, semielaborados(nombre, unidad))
       )
     `
 
@@ -628,6 +640,88 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     setFilasConsumo((prev) => ({ ...prev, [claveIngrediente(ing)]: valor }))
   }
 
+  // Addenda "reorganización del bloque de registro de consumo": Map nombre -> fila de cadenaEstimacion,
+  // para fusionar estimación/disponible dentro de cada línea de "Registrar consumo" (antes vivían en un
+  // bloque aparte arriba). Mismo emparejamiento por nombre que ya usaba ese bloque -- ambas fuentes
+  // vienen de una consulta de un solo nivel sobre la misma receta_semielaborado.semielaborado_id.
+  const estimacionPorNombre = useMemo(() => new Map(cadenaEstimacion.map((f) => [f.nombre, f])), [cadenaEstimacion])
+
+  // Addenda "consumo registrado por ingrediente": cuánto se ha CONFIRMADO ya (consumo_produccion, no el
+  // borrador filasConsumo) de cada línea de receta -- cruza cada consumo por su articulo_id/
+  // semielaborado_id real (ver selectCompleto y cargarIngredientesConLotes) en vez de por nombre, que no
+  // coincide para un ingrediente genérico resuelto a un artículo comprado con otro nombre comercial.
+  const consumoRegistradoPorIngrediente = useMemo(() => {
+    const mapa = new Map()
+    for (const c of produccion.consumo_produccion) {
+      const ing = ingredientes.find((i) =>
+        i.esArticulo
+          ? c.entrada_material?.articulo_id != null && i.articuloIdsDeReceta?.includes(c.entrada_material.articulo_id)
+          : c.producciones_semielaborado?.semielaborado_id === i.ingrediente_semielaborado_id
+      )
+      if (!ing) continue
+      const clave = claveIngrediente(ing)
+      mapa.set(clave, (mapa.get(clave) || 0) + Number(c.cantidad))
+    }
+    return mapa
+  }, [produccion.consumo_produccion, ingredientes])
+
+  const objetivoNum = parseFloat(objetivo)
+  const hayObjetivo = objetivoNum > 0
+
+  function precargarConEstimacion(ing, estimacion) {
+    actualizarFila(ing, { ...filaDe(ing), cantidad: estimacion.necesario.toFixed(3) })
+  }
+
+  // Estimación completa de cada línea (necesario/disponible/insuficiente/registrado/cubierto) -- null
+  // sin cantidad objetivo definida o si esa línea no tiene fila en cadenaEstimacion (mismo umbral que
+  // ya usaba el bloque de estimación separado: antes ocultaba TODO el bloque sin objetivo, aquí oculta
+  // solo la parte de estimación de cada línea, manteniendo "orientativo"). `cubierto` (addenda
+  // "reordenamiento por consumo registrado" y "listo para cerrar"): consumo YA confirmado >= lo
+  // estimado para el objetivo actual -- mismo criterio para ambos puntos, no se duplica. En línea
+  // dentro del useMemo (no una función aparte) para que exhaustive-deps pueda listar sus dependencias
+  // reales sin que la identidad de una función redefinida cada render invalide la memoización.
+  const filasConEstimacion = useMemo(
+    () =>
+      ingredientes.map((ing) => {
+        if (!hayObjetivo) return { ing, estimacion: null }
+        const fila = estimacionPorNombre.get(ing.nombre)
+        if (!fila) return { ing, estimacion: null }
+        const necesario = fila.ratioPorUnidad * objetivoNum
+        const disponible = fila.stock
+        const registrado = consumoRegistradoPorIngrediente.get(claveIngrediente(ing)) || 0
+        return {
+          ing,
+          estimacion: {
+            necesario,
+            disponible,
+            insuficiente: necesario > disponible + 0.0001,
+            registrado,
+            cubierto: registrado >= necesario - 0.0001,
+          },
+        }
+      }),
+    [ingredientes, hayObjetivo, estimacionPorNombre, consumoRegistradoPorIngrediente, objetivoNum]
+  )
+
+  // Addenda "reordenamiento por consumo registrado": mismo criterio de reordenamiento que Producciones
+  // del día (Bloque 3a, punto 2) -- lo pendiente arriba, lo ya cubierto abajo. Sin objetivo definido no
+  // hay estimación contra la que comparar (`estimacion` es null para todas), así que no se reordena --
+  // sort estable, se queda en el orden de receta de siempre.
+  const filasOrdenadas = useMemo(() => {
+    return [...filasConEstimacion].sort((a, b) => {
+      const cubiertoA = a.estimacion?.cubierto ?? false
+      const cubiertoB = b.estimacion?.cubierto ?? false
+      if (cubiertoA !== cubiertoB) return cubiertoA ? 1 : -1
+      return 0
+    })
+  }, [filasConEstimacion])
+
+  // Addenda "indicador listo para cerrar": todas las líneas con estimación cubierta por su consumo
+  // registrado -- puramente informativo, nunca deshabilita "Cerrar producción" (decisión explícita:
+  // cerrar con más o menos de lo estimado es una decisión operativa del operador, no un requisito del
+  // sistema). Sin objetivo definido no hay nada que evaluar -- no se muestra el indicador.
+  const listoParaCerrar = hayObjetivo && ingredientes.length > 0 && filasConEstimacion.every(({ estimacion }) => estimacion?.cubierto)
+
   function filasCompletas() {
     return ingredientes
       .map((ing) => ({ ing, fila: filaDe(ing) }))
@@ -742,39 +836,6 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         {guardandoObjetivo && <span className="text-xs text-gray-400">Guardando...</span>}
       </div>
 
-      {parseFloat(objetivo) > 0 && (
-        <div className="mt-3">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-            Estimación para {objetivo} {produccion.semielaborados?.unidad}
-          </p>
-          {cadenaEstimacionCargando ? (
-            <p className="text-xs text-gray-400">Calculando...</p>
-          ) : cadenaEstimacion.length === 0 ? (
-            <p className="text-xs text-gray-400">Este semielaborado no tiene semielaborados ni ingredientes en su receta.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-100">
-                {cadenaEstimacion.map((f) => {
-                  const necesario = f.ratioPorUnidad * parseFloat(objetivo)
-                  const insuficiente = necesario > f.stock + 0.0001
-                  return (
-                    <tr key={`${f.tipo}-${f.nombre}`}>
-                      <td className="py-1 text-gray-600">{f.nombre}</td>
-                      <td className={`py-1 ${insuficiente ? 'text-red-600 font-medium' : ''}`}>
-                        {necesario.toFixed(3)} {f.unidad}
-                      </td>
-                      <td className={`py-1 text-xs ${insuficiente ? 'text-red-500' : 'text-gray-400'}`}>
-                        disponible: {f.stock.toFixed(3)} {f.unidad}{insuficiente ? ' — insuficiente' : ''}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
       {produccion.tanda_id && (
         <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">
           <Field label={`Cantidad a producir (${produccion.semielaborados?.unidad}) — sugerida por la tanda`} className="w-64">
@@ -789,6 +850,40 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
           <LinkAction tone="blue" onClick={recalcularConsumosSugeridos} className="text-xs">
             Recalcular consumos sugeridos
           </LinkAction>
+        </div>
+      )}
+
+      {/* Addenda "reorganización del bloque de registro de consumo": botones de acción movidos aquí,
+          por encima de "Consumo ya registrado" y "Registrar consumo" -- visibles sin scroll aunque la
+          lista de ingredientes sea larga (antes quedaban al final de la tarjeta). */}
+      <div className="border-t border-gray-100 mt-4 pt-4 flex items-center gap-3 flex-wrap">
+        {!cargandoIngredientes && (
+          <Button variant="success" size="sm" onClick={confirmarConsumo} disabled={confirmando}>
+            {confirmando ? 'Confirmando...' : `Confirmar consumo${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
+          </Button>
+        )}
+        {!cerrando && (
+          <Button variant="success" size="sm" onClick={() => setCerrando(true)}>
+            Cerrar producción (indicar cantidad neta)
+          </Button>
+        )}
+        {/* Addenda "indicador listo para cerrar": puramente informativo, no deshabilita ni sustituye al
+            botón de arriba -- cerrar con más o menos de lo estimado sigue siendo decisión del operador. */}
+        {listoParaCerrar && (
+          <span className="text-xs text-green-700 font-medium inline-flex items-center gap-1">
+            <IconCircleCheck size={14} /> Consumo suficiente para cerrar
+          </span>
+        )}
+      </div>
+
+      {cerrando && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+          <Input type="number" step="0.001" placeholder={`Cantidad producida (${produccion.semielaborados?.unidad})`}
+            value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
+            autoFocus title="Se redondeará a 3 decimales" />
+          <Input type="text" placeholder="Notas (mermas, incidencias...)"
+            value={notas} onChange={(e) => setNotas(e.target.value)} />
+          <Button variant="success" onClick={cerrarProduccion}>Confirmar cierre</Button>
         </div>
       )}
 
@@ -814,35 +909,18 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
-          {ingredientes.map((ing) => (
+          {filasOrdenadas.map(({ ing, estimacion }) => (
             <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
               fechaDestino={produccion.fecha}
               value={filaDe(ing)}
-              onChange={(valor) => actualizarFila(ing, valor)} />
+              onChange={(valor) => actualizarFila(ing, valor)}
+              estimacion={estimacion}
+              cargandoEstimacion={hayObjetivo && cadenaEstimacionCargando}
+              onPrecargar={estimacion ? () => precargarConEstimacion(ing, estimacion) : null} />
           ))}
-          <Button variant="success" size="sm" onClick={confirmarConsumo} disabled={confirmando}>
-            {confirmando ? 'Confirmando...' : `Confirmar consumo${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
-          </Button>
         </div>
       )}
-
-      <div className="border-t border-gray-100 mt-4 pt-4">
-        {!cerrando ? (
-          <Button variant="success" size="sm" onClick={() => setCerrando(true)}>
-            Cerrar producción (indicar cantidad neta)
-          </Button>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Input type="number" step="0.001" placeholder={`Cantidad producida (${produccion.semielaborados?.unidad})`}
-              value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
-              autoFocus title="Se redondeará a 3 decimales" />
-            <Input type="text" placeholder="Notas (mermas, incidencias...)"
-              value={notas} onChange={(e) => setNotas(e.target.value)} />
-            <Button variant="success" onClick={cerrarProduccion}>Confirmar cierre</Button>
-          </div>
-        )}
-      </div>
     </Card>
   )
 }
@@ -857,7 +935,11 @@ function labelLote(ingrediente, l, fechaDestino) {
     : `${l.nombre} · ${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${l.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
 }
 
-function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
+// Addenda "reorganización del bloque de registro de consumo": `estimacion` ({necesario, disponible,
+// insuficiente, registrado, cubierto} | null -- null sin cantidad objetivo o mientras se calcula) y
+// `onPrecargar` (null si no hay estimación con la que precargar) fusionan aquí lo que antes vivía en un
+// bloque de tabla aparte arriba de la tarjeta -- mismo dato, junto a "orientativo" de cada línea.
+function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estimacion, cargandoEstimacion, onPrecargar }) {
   const [mostrarSustituto, setMostrarSustituto] = useState(false)
   const idDeLote = (l) => (ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id)
   const deReceta = ingrediente.lotes.filter((l) => l.esDeReceta)
@@ -871,11 +953,28 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange }) {
   }
 
   return (
-    <div className={`border rounded-md p-3 ${esSustitucion ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
-      <p className="text-sm font-medium text-gray-700">
-        {ingrediente.nombre}
-        <span className="text-gray-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
-        {esSustitucion && <span className="ml-2 text-xs font-semibold text-amber-600">SUSTITUCIÓN EXCEPCIONAL</span>}
+    <div className={`border rounded-md p-3 ${estimacion?.cubierto ? 'opacity-70' : ''} ${esSustitucion ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+      <p className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-wrap">
+        <span>
+          {ingrediente.nombre}
+          <span className="text-gray-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
+          {cargandoEstimacion && <span className="text-gray-400 font-normal"> · calculando estimación...</span>}
+          {estimacion && (
+            <span className={`font-normal ${estimacion.insuficiente ? 'text-red-600' : 'text-gray-400'}`}>
+              {' '}· estimación: {estimacion.necesario.toFixed(3)} {ingrediente.unidad} · disponible: {estimacion.disponible.toFixed(3)} {ingrediente.unidad}
+              {estimacion.insuficiente ? ' — insuficiente' : ''}
+              {estimacion.registrado > 0 && ` · registrado: ${estimacion.registrado.toFixed(3)} ${ingrediente.unidad}${estimacion.cubierto ? ' (cubre estimación)' : ''}`}
+            </span>
+          )}
+        </span>
+        {onPrecargar && (
+          <button type="button" onClick={onPrecargar}
+            className="text-[#0854A0] hover:text-[#0A3D62] inline-flex items-center gap-1 text-xs shrink-0"
+            title="Precargar la cantidad con la estimación">
+            <IconWand size={14} /> Usar estimación
+          </button>
+        )}
+        {esSustitucion && <span className="text-xs font-semibold text-amber-600">SUSTITUCIÓN EXCEPCIONAL</span>}
       </p>
 
       {deReceta.length > 0 && (
