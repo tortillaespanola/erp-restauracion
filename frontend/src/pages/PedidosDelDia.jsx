@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck } from '@tabler/icons-react'
+import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck, IconChevronRight, IconChevronDown, IconPlayerPlay } from '@tabler/icons-react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
-import { PageHeader, Card, CardBody, Field, Select, DateInput, Button, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardBody, Field, Select, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 // Jerarquía hoja→raíz (CONTRATO_VISTA_DINAMICA_PRODUCCION.md): dado el conjunto pequeño de
 // semielaborados ya presentes en el resultado, resuelve solo las relaciones semielaborado→
@@ -152,6 +152,16 @@ function peorEstado(a, b) {
   return RANGO_ESTADO[a] <= RANGO_ESTADO[b] ? a : b
 }
 
+// Addenda "reordenamiento por estado": mismo RANGO_ESTADO de arriba como criterio de ordenación de
+// filas, no uno nuevo. La tabla de productos finales usa etiquetas renombradas para el estado "semis
+// en curso" (`semis_en_curso_insuficiente`/`semis_en_curso_cubre`, ver estadoCadenaPF) que no existen
+// como claves en RANGO_ESTADO -- este helper las remite a su rango base antes de comparar.
+function rangoDeEstado(estado) {
+  if (estado === 'semis_en_curso_insuficiente') return RANGO_ESTADO.en_curso_insuficiente
+  if (estado === 'semis_en_curso_cubre') return RANGO_ESTADO.en_curso_cubre
+  return RANGO_ESTADO[estado]
+}
+
 // Estado de un producto final (fix "eliminar excepción 'pendiente no bloquea'"): EXACTAMENTE el mismo
 // algoritmo de un nivel (estadoUnNivel) que ya usa correctamente la tabla de semielaborados para sus
 // propios hijos directos -- se mira el STOCK REAL de cada línea directa de receta_producto_final
@@ -234,6 +244,66 @@ function EstadoCelda({ estado, detalle, nota, tooltipExtra }) {
   )
 }
 
+// Addenda "desglose por componente en Producciones del día": construye una fila de desglose a partir
+// de una línea de `validarStockReceta(tipo, id, necesidadPadre, false)` (nivel directo de receta, sin
+// filtrar a solo faltantes). Para un componente semielaborado, reutiliza su propia fila YA calculada
+// en la tabla de Semielaborados (misma necesidad agregada global y mismo estado de los 7 -- "su propio
+// estado", tal cual se pidió, cero consultas nuevas); si no tiene fila propia es que su necesidad
+// agregada es 0 (la cascada por déficit ya no le atribuye nada pendiente, ver esa addenda), se muestra
+// como 'ok' con su stock actual. Para un ingrediente/artículo hoja (sin tabla propia en esta pantalla),
+// reutiliza los mismos 2 estados que ya existen ('ok' / 'ingrediente' -- "Falta stock de ingredientes")
+// en vez de inventar uno nuevo, comparando el `necesario` de esta línea (cantidad de receta × necesidad
+// del padre) contra el stock disponible total.
+function construirFilaDesglose(linea, filasSemiPorId, stockPorSemi) {
+  if (linea.tipo === 'semielaborado') {
+    const filaSemi = filasSemiPorId.get(linea.id)
+    if (filaSemi) {
+      return { tipo: 'semielaborado', nombre: filaSemi.nombre, unidad: filaSemi.unidad, necesidad: filaSemi.necesidad, disponible: filaSemi.disponible, estado: filaSemi.estado }
+    }
+    return { tipo: 'semielaborado', nombre: linea.nombre, unidad: linea.unidad, necesidad: 0, disponible: stockPorSemi.get(linea.id) || 0, estado: 'ok' }
+  }
+  return {
+    tipo: 'ingrediente',
+    nombre: linea.nombre,
+    unidad: linea.unidad,
+    necesidad: linea.necesario,
+    disponible: linea.disponible,
+    estado: linea.disponible >= linea.necesario ? 'ok' : 'ingrediente',
+  }
+}
+
+// Sub-tabla de desglose, misma tarjeta visual de "Estimación para X" en Producciones.jsx (tabla ligera
+// sin Thead, no la envoltura Card/Table completa) -- `cargando === true` mientras se resuelve la
+// consulta bajo demanda del primer expand; `filas` queda cacheada por id en el componente padre, no se
+// vuelve a pedir en expands posteriores de la misma sesión de la pantalla.
+function DesgloseComponentes({ filas, colSpan }) {
+  return (
+    <tr>
+      <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
+        {filas === 'cargando' ? (
+          <p className="text-xs text-gray-400 px-2 py-1">Cargando desglose…</p>
+        ) : filas.length === 0 ? (
+          <p className="text-xs text-gray-400 px-2 py-1">Este ítem no tiene semielaborados ni ingredientes en su receta.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-gray-100">
+              {filas.map((f) => (
+                <tr key={`${f.tipo}-${f.nombre}`}>
+                  <td className="pl-8 pr-2 py-1 text-gray-600">{f.nombre}</td>
+                  <td className="px-2 py-1 text-gray-500">{f.tipo === 'semielaborado' ? 'Semielaborado' : 'Ingrediente'}</td>
+                  <td className="px-2 py-1">{f.necesidad.toFixed(3)} {f.unidad}</td>
+                  <td className="px-2 py-1 text-gray-500">disponible: {f.disponible.toFixed(3)} {f.unidad}</td>
+                  <td className="px-2 py-1"><EstadoCelda estado={f.estado} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Td>
+    </tr>
+  )
+}
+
 // Vista 1 de CONTRATO_VISTA_DINAMICA_PRODUCCION.md, reordenada por el contrato "Reordenación y
 // mejora de estados": tabla de productos finales arriba (trazabilidad descendente, filtro de entrada),
 // tabla de semielaborados abajo (con la selección y el botón "Producir", sin cambios de comportamiento
@@ -260,11 +330,22 @@ function PedidosDelDia() {
 
   const [productoFinalFiltro, setProductoFinalFiltro] = useState('')
   const [fechaMaxima, setFechaMaxima] = useState('')
-  const [seleccionId, setSeleccionId] = useState('')
+
+  // Addenda "desglose por componente en Producciones del día": qué filas están expandidas (Set de
+  // ids) y el desglose ya resuelto por id ('cargando' mientras se pide, filas[] cuando llega) -- cache
+  // por pantalla, se reinicia en cada cargarDatos() para no arrastrar un desglose calculado contra
+  // datos de antes de un cambio de filtro de fecha.
+  const [expandidosSemi, setExpandidosSemi] = useState(new Set())
+  const [expandidosPF, setExpandidosPF] = useState(new Set())
+  const [desgloseSemiPorId, setDesgloseSemiPorId] = useState(new Map())
+  const [desglosePFPorId, setDesglosePFPorId] = useState(new Map())
 
   async function cargarDatos() {
     setCargando(true)
-    setSeleccionId('')
+    setExpandidosSemi(new Set())
+    setExpandidosPF(new Set())
+    setDesgloseSemiPorId(new Map())
+    setDesglosePFPorId(new Map())
 
     const resProductos = await supabase.from('productos_finales').select('id, nombre').order('nombre')
     if (resProductos.error) console.error('Error cargando productos finales:', resProductos.error)
@@ -454,12 +535,24 @@ function PedidosDelDia() {
         }
       })
       .sort((a, b) => {
+        // Addenda "reordenamiento por estado": criterio primario, empuja los "OK" al final de la
+        // tabla y mantiene arriba lo que requiere acción -- el orden jerárquico (hoja->raíz) que ya
+        // existía pasa a ser el desempate DENTRO de un mismo estado, sigue siendo el orden correcto
+        // para decidir por cuál empezar entre varios semielaborados igual de urgentes.
+        const ra = rangoDeEstado(a.estado)
+        const rb = rangoDeEstado(b.estado)
+        if (ra !== rb) return ra - rb
         const da = ordenPorSemi.get(a.id) ?? 0
         const db = ordenPorSemi.get(b.id) ?? 0
         if (da !== db) return da - db
-        return a.nombre.localeCompare(b.nombre) // desempate: mismo nivel jerárquico -> alfabético
+        return a.nombre.localeCompare(b.nombre) // desempate final: alfabético
       })
   }, [necesidades, stockPorSemi, faltantesPorSemi, pedidosPorSemi, ordenPorSemi, enCursoPorSemi])
+
+  // Índice por id de filasSemiTodas -- usado tanto por el estado agregado de productos finales
+  // (estadoCadenaPF, sin cambios) como por el desglose por componente (construirFilaDesglose, addenda
+  // "desglose por componente"), hoisted para no calcularlo dos veces.
+  const filasSemiPorId = useMemo(() => new Map(filasSemiTodas.map((f) => [f.id, f])), [filasSemiTodas])
 
   // Cierre transitivo de semielaborados de la cadena del producto final filtrado -- null si no hay
   // filtro (sin restringir filas).
@@ -479,7 +572,6 @@ function PedidosDelDia() {
   // ya resuelto de la tabla de semielaborados (global, sin filtrar) para no repetir consultas. Sin
   // jerarquía entre productos finales -- orden alfabético simple.
   const filasPF = useMemo(() => {
-    const filasSemiPorId = new Map(filasSemiTodas.map((f) => [f.id, f]))
     return necesidadesPF
       .map((n) => {
         const necesidad = Number(n.cantidad_necesaria)
@@ -501,20 +593,53 @@ function PedidosDelDia() {
           pedidos: pedidosPorPF.get(n.item_id) || [],
         }
       })
-      .sort((a, b) => a.nombre.localeCompare(b.nombre))
-  }, [necesidadesPF, stockPorPF, faltantesPorPF, pedidosPorPF, dependeDePF, filasSemiTodas])
+      .sort((a, b) => {
+        // Addenda "reordenamiento por estado": mismo criterio que la tabla de semielaborados --
+        // antes ordenaba solo alfabético, que ahora pasa a ser el desempate.
+        const ra = rangoDeEstado(a.estado)
+        const rb = rangoDeEstado(b.estado)
+        if (ra !== rb) return ra - rb
+        return a.nombre.localeCompare(b.nombre)
+      })
+  }, [necesidadesPF, stockPorPF, faltantesPorPF, pedidosPorPF, dependeDePF, filasSemiPorId])
 
-  // Filtrar a un único producto final ya deja, en la práctica, un único semielaborado visible casi
-  // siempre -- se autoselecciona para no obligar a un clic extra cuando ya no hay ambigüedad posible.
-  useEffect(() => {
-    if (filasSemi.length === 1) setSeleccionId(String(filasSemi[0].id))
-  }, [filasSemi])
+  // Addenda "botón play por fila": inicia producción directa de un semielaborado, sin selección
+  // previa -- sustituye por completo al radio + botón "Producir" general (decisión confirmada: hoy no
+  // existe ningún flujo real de producir varios semielaborados a la vez, Producciones.jsx solo acepta
+  // un semielaborado_id por navegación, así que mantener ambos caminos sería funcionalidad duplicada).
+  function handleProducir(fila) {
+    navigate(`/producciones?semielaborado_id=${fila.id}&cantidad=${fila.necesidad}`)
+  }
 
-  const seleccionado = filasSemi.find((f) => String(f.id) === seleccionId)
+  // Addenda "desglose por componente en Producciones del día": expande/contrae una fila y, si es la
+  // primera vez que se expande, pide su desglose bajo demanda (una sola vez, cacheado por id en
+  // desgloseSemiPorId/desglosePFPorId -- expands posteriores de la misma fila no repiten la consulta).
+  async function toggleExpandSemi(fila) {
+    setExpandidosSemi((prev) => {
+      const next = new Set(prev)
+      if (next.has(fila.id)) next.delete(fila.id)
+      else next.add(fila.id)
+      return next
+    })
+    if (desgloseSemiPorId.has(fila.id)) return
+    setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
+    const lineas = await validarStockReceta('semielaborado', fila.id, fila.necesidad, false)
+    const filas = lineas.map((l) => construirFilaDesglose(l, filasSemiPorId, stockPorSemi))
+    setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, filas))
+  }
 
-  function handleProducir() {
-    if (!seleccionado) return
-    navigate(`/producciones?semielaborado_id=${seleccionado.id}&cantidad=${seleccionado.necesidad}`)
+  async function toggleExpandPF(fila) {
+    setExpandidosPF((prev) => {
+      const next = new Set(prev)
+      if (next.has(fila.id)) next.delete(fila.id)
+      else next.add(fila.id)
+      return next
+    })
+    if (desglosePFPorId.has(fila.id)) return
+    setDesglosePFPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
+    const lineas = await validarStockReceta('producto_final', fila.id, fila.necesidad, false)
+    const filas = lineas.map((l) => construirFilaDesglose(l, filasSemiPorId, stockPorSemi))
+    setDesglosePFPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
   return (
@@ -529,7 +654,7 @@ function PedidosDelDia() {
           <Field label="Producto final" className="w-64">
             <Select
               value={productoFinalFiltro}
-              onChange={(e) => { setProductoFinalFiltro(e.target.value); setSeleccionId('') }}
+              onChange={(e) => setProductoFinalFiltro(e.target.value)}
             >
               <option value="">Todos</option>
               {productosFinales.map((p) => (
@@ -552,22 +677,34 @@ function PedidosDelDia() {
         <Card className="overflow-hidden mb-8">
           <Table>
             <Thead>
+              <Th></Th>
               <Th>Producto final</Th>
               <Th>Necesidad agregada</Th>
               <Th>Stock disponible</Th>
               <Th>Estado</Th>
             </Thead>
             <tbody className="divide-y divide-gray-100">
-              {filasPF.map((f) => (
-                <tr key={f.id} className="hover:bg-blue-50/40">
-                  <Td className="font-medium">
-                    <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
-                  </Td>
-                  <Td>{f.necesidad.toFixed(3)} uds</Td>
-                  <Td>{f.disponible.toFixed(3)} uds</Td>
-                  <Td><EstadoCelda estado={f.estado} detalle={f.detalle} tooltipExtra={f.tooltipExtra} /></Td>
-                </tr>
-              ))}
+              {filasPF.map((f) => {
+                const expandido = expandidosPF.has(f.id)
+                return (
+                  <Fragment key={f.id}>
+                    <tr className="hover:bg-blue-50/40">
+                      <Td>
+                        <button type="button" onClick={() => toggleExpandPF(f)} className="text-gray-400 hover:text-gray-600" title="Ver desglose por componente">
+                          {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                        </button>
+                      </Td>
+                      <Td className="font-medium">
+                        <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
+                      </Td>
+                      <Td>{f.necesidad.toFixed(3)} uds</Td>
+                      <Td>{f.disponible.toFixed(3)} uds</Td>
+                      <Td><EstadoCelda estado={f.estado} detalle={f.detalle} tooltipExtra={f.tooltipExtra} /></Td>
+                    </tr>
+                    {expandido && <DesgloseComponentes filas={desglosePFPorId.get(f.id) ?? 'cargando'} colSpan={5} />}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </Table>
         </Card>
@@ -583,38 +720,43 @@ function PedidosDelDia() {
           <Table>
             <Thead>
               <Th></Th>
+              <Th></Th>
               <Th>Semielaborado</Th>
               <Th>Necesidad agregada</Th>
               <Th>Stock disponible</Th>
               <Th>Estado</Th>
             </Thead>
             <tbody className="divide-y divide-gray-100">
-              {filasSemi.map((f) => (
-                <tr key={f.id} className="hover:bg-blue-50/40">
-                  <Td>
-                    <input
-                      type="radio"
-                      name="semielaborado-seleccionado"
-                      checked={seleccionId === String(f.id)}
-                      onChange={() => setSeleccionId(String(f.id))}
-                    />
-                  </Td>
-                  <Td className="font-medium">
-                    <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
-                  </Td>
-                  <Td>{f.necesidad.toFixed(3)} {f.unidad}</Td>
-                  <Td>{f.disponible.toFixed(3)} {f.unidad}</Td>
-                  <Td><EstadoCelda estado={f.estado} detalle={[...f.faltanteSemi, ...f.faltanteIngArt]} nota={f.nota} tooltipExtra={f.tooltipExtra} /></Td>
-                </tr>
-              ))}
+              {filasSemi.map((f) => {
+                const expandido = expandidosSemi.has(f.id)
+                return (
+                  <Fragment key={f.id}>
+                    <tr className="hover:bg-blue-50/40">
+                      <Td>
+                        <button type="button" onClick={() => toggleExpandSemi(f)} className="text-gray-400 hover:text-gray-600" title="Ver desglose por componente">
+                          {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                        </button>
+                      </Td>
+                      <Td>
+                        <button type="button" onClick={() => handleProducir(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={`Producir ${f.nombre}`}>
+                          <IconPlayerPlay size={16} />
+                        </button>
+                      </Td>
+                      <Td className="font-medium">
+                        <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
+                      </Td>
+                      <Td>{f.necesidad.toFixed(3)} {f.unidad}</Td>
+                      <Td>{f.disponible.toFixed(3)} {f.unidad}</Td>
+                      <Td><EstadoCelda estado={f.estado} detalle={[...f.faltanteSemi, ...f.faltanteIngArt]} nota={f.nota} tooltipExtra={f.tooltipExtra} /></Td>
+                    </tr>
+                    {expandido && <DesgloseComponentes filas={desgloseSemiPorId.get(f.id) ?? 'cargando'} colSpan={6} />}
+                  </Fragment>
+                )
+              })}
             </tbody>
           </Table>
         </Card>
       )}
-
-      <Button onClick={handleProducir} disabled={!seleccionado}>
-        {seleccionado ? `Producir ${seleccionado.nombre}` : 'Producir'}
-      </Button>
     </div>
   )
 }
