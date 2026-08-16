@@ -271,13 +271,20 @@ function EstadoCelda({ estado, detalle, nota, tooltipExtra }) {
 // si el bloqueo es de sus propios semielaborados/ingredientes, más `enCursoPorSemi` (sin consulta
 // nueva, ya cargado) para la nota "en curso" -- mismo criterio de 1 nivel, mismo cálculo, distinta
 // cantidad de referencia.
-async function construirFilaDesglose(linea, enCursoPorSemi) {
+//
+// `padreOk` (addenda "estado del desglose cuando el padre ya está OK"): con el padre ya cubierto por
+// su propio stock (ej. ZZ_ALBODIGACONTOMATE 4/4), el consumo de sus hijos YA ocurrió -- comparar la
+// contribución contra el stock ACTUAL del hijo (ya vaciado por ese mismo consumo) da un falso
+// "pendiente"/"falta stock". El estado OK del padre certifica que esa necesidad se satisfizo, así que
+// con `padreOk` se fuerza `estado: 'ok'` en TODAS las líneas del desglose sin mirar su stock (ni
+// gastar la consulta adicional de faltantes, ya no hace falta) -- las cifras de necesidad/disponible
+// se siguen mostrando tal cual, solo cambia el badge. Sin `padreOk`, comportamiento idéntico a antes.
+async function construirFilaDesglose(linea, enCursoPorSemi, padreOk) {
   if (linea.tipo === 'semielaborado') {
     const necesidad = linea.necesario
     const disponible = linea.disponible
-    const cubierto = disponible >= necesidad
     let estado = 'ok'
-    if (!cubierto) {
+    if (!padreOk && disponible < necesidad) {
       const faltantes = await validarStockReceta('semielaborado', linea.id, necesidad)
       const faltanteSemi = faltantes.filter((f) => f.tipo === 'semielaborado')
       const faltanteIngArt = faltantes.filter((f) => f.tipo === 'ingrediente_articulo')
@@ -291,7 +298,7 @@ async function construirFilaDesglose(linea, enCursoPorSemi) {
     unidad: linea.unidad,
     necesidad: linea.necesario,
     disponible: linea.disponible,
-    estado: linea.disponible >= linea.necesario ? 'ok' : 'ingrediente',
+    estado: padreOk || linea.disponible >= linea.necesario ? 'ok' : 'ingrediente',
   }
 }
 
@@ -647,7 +654,7 @@ function PedidosDelDia() {
     if (desgloseSemiPorId.has(fila.id)) return
     setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
     const lineas = await validarStockReceta('semielaborado', fila.id, fila.necesidad, false)
-    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi)))
+    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi, fila.estado === 'ok')))
     setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
@@ -661,7 +668,7 @@ function PedidosDelDia() {
     if (desglosePFPorId.has(fila.id)) return
     setDesglosePFPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
     const lineas = await validarStockReceta('producto_final', fila.id, fila.necesidad, false)
-    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi)))
+    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi, fila.estado === 'ok')))
     setDesglosePFPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
