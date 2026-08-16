@@ -279,11 +279,10 @@ function PedidosDelDia() {
 
     // Trazabilidad a pedido/cliente/fecha: una llamada a necesidades_pedidos() POR pedido, no una
     // batch con todos los ids -- la llamada batch agrega y pierde la referencia al pedido de origen
-    // (ver CONTRATO_VISTA_DINAMICA_PRODUCCION.md, Vista 1). El total agregado por ítem se reconstruye
-    // sumando las cantidades de cada llamada individual -- matemáticamente idéntico al resultado de
-    // la llamada batch (la multiplicación de receta se distribuye sobre la suma). Se guardan AMBOS
-    // niveles ('semielaborado' y 'producto_final') de cada llamada, sin filtrar todavía -- los usan
-    // las dos tablas de esta pantalla.
+    // (ver CONTRATO_VISTA_DINAMICA_PRODUCCION.md, Vista 1). Usada SOLO para construir el
+    // `Map<item_id, pedido[]>` del tooltip de trazabilidad -- las CANTIDADES de necesidad mostradas ya
+    // no salen de aquí, ver más abajo. Se guardan AMBOS niveles ('semielaborado' y 'producto_final')
+    // de cada llamada, sin filtrar todavía -- los usan las dos tablas de esta pantalla.
     const resultadosPorPedido = await Promise.all(
       pedidos.map(async (p) => {
         const { data, error } = await supabase.rpc('necesidades_pedidos', { p_pedido_ids: [p.id] })
@@ -295,13 +294,38 @@ function PedidosDelDia() {
       })
     )
 
-    const { necesidades: necesidadesSemi, pedidosPorItem: mapaPedidosSemi } = agregarPorNivel(resultadosPorPedido, 'semielaborado')
-    setNecesidades(necesidadesSemi)
+    const { pedidosPorItem: mapaPedidosSemi } = agregarPorNivel(resultadosPorPedido, 'semielaborado')
     setPedidosPorSemi(mapaPedidosSemi)
 
-    const { necesidades: necesidadesPFCalc, pedidosPorItem: mapaPedidosPF } = agregarPorNivel(resultadosPorPedido, 'producto_final')
-    setNecesidadesPF(necesidadesPFCalc)
+    const { pedidosPorItem: mapaPedidosPF } = agregarPorNivel(resultadosPorPedido, 'producto_final')
     setPedidosPorPF(mapaPedidosPF)
+
+    // Necesidad agregada real (fix "necesidad neta en cascada, no bruta de receta"): a diferencia de
+    // arriba, esta SÍ es una única llamada batch con TODOS los pedidos pendientes a la vez -- el
+    // déficit (`MAX(0, necesidad - stock)`) no es lineal, así que no se puede calcular por pedido
+    // individual y sumar después (el mismo stock físico se descontaría una vez por cada pedido que lo
+    // mirase). `necesidades_pedidos()` no se toca -- sigue sirviendo bruta para la trazabilidad de
+    // arriba y para las otras dos pantallas que la comparten (`Producciones.jsx`,
+    // `ProduccionProductosFinales.jsx`) -- esta es una función nueva y separada,
+    // `necesidades_pedidos_cascada()`, que reparte hacia cada semielaborado/ingrediente/artículo
+    // solo el déficit real de sus padres (si un padre ya está cubierto con su propio stock, no
+    // arrastra ninguna necesidad hacia sus hijos aunque el stock físico de éstos esté en 0). Ver
+    // CONTRATO_VISTA_DINAMICA_PRODUCCION.md, addenda "necesidad neta en cascada".
+    const { data: dataCascada, error: errorCascada } = await supabase.rpc('necesidades_pedidos_cascada', {
+      p_pedido_ids: pedidos.map((p) => p.id),
+    })
+    if (errorCascada) console.error('Error calculando necesidades en cascada:', errorCascada)
+    const filasCascada = dataCascada || []
+
+    const necesidadesSemi = filasCascada
+      .filter((f) => f.nivel === 'semielaborado')
+      .map((f) => ({ item_id: f.item_id, nombre: f.nombre, unidad: f.unidad, cantidad_necesaria: f.cantidad_necesaria }))
+    setNecesidades(necesidadesSemi)
+
+    const necesidadesPFCalc = filasCascada
+      .filter((f) => f.nivel === 'producto_final')
+      .map((f) => ({ item_id: f.item_id, nombre: f.nombre, unidad: f.unidad, cantidad_necesaria: f.cantidad_necesaria }))
+    setNecesidadesPF(necesidadesPFCalc)
 
     // Stock disponible actual, agregado por semielaborado a partir de stock_lotes_semielaborado
     // (suma de todos sus lotes cerrados) -- independiente del filtro de fecha, es el stock de hoy.
