@@ -1,6 +1,6 @@
 # Contrato: Producción de Productos Finales — Capa B (distribución provisional)
 
-Estado: Paso 1 (modelo de datos + función de cálculo) diseñado, probado en transacción `BEGIN...ROLLBACK` y aplicado en firme contra datos reales. Sin UI todavía (Paso 2, siguiente prompt). Fecha: 2026-08-16.
+Estado: Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" más abajo. Fecha: 2026-08-16.
 
 Este contrato es independiente de `CONTRATO_VISTA_DINAMICA_PRODUCCION.md` (Semielaborados + traslado mecánico "Capa A" a Producto final, ya aplicado) — cubre exclusivamente la particularidad real de Producto final que Capa A dejó fuera a propósito: la producción va destinada a pedidos de cliente concretos, y hace falta reflejar de forma provisional qué parte de lo producido hoy se piensa repartir a cada uno, antes de que exista una pantalla de Expediciones real.
 
@@ -119,6 +119,39 @@ Ejecutada contra `ZZ_TORTILLASINCEBOLLAGRANDE` (`producto_final_id = 6`), con su
 
 ## Pendiente
 
-- **Aplicar esta migración en firme** — pendiente de confirmación explícita.
-- **Paso 2 (siguiente prompt)**: UI en Producciones del día — desglose por cliente/pedido en la tabla de "Productos finales", edición de `cantidad_prevista` por línea, indicador de residual libre. Fuera de alcance de este documento todavía.
 - Expediciones, `albaranes_venta`, kanban/pedidos ficticios — no tocar, siguen fuera de alcance.
+
+---
+
+## Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)
+
+Nota de corrección: la fecha de este contrato figuraba inicialmente como "2026-09-12" en el Paso 1 — error de arrastre de contexto (no del reloj del sistema, que siempre ha dado la fecha real), corregido a la fecha real. La migración `20260912_previsiones_distribucion_pf.sql` mantiene su nombre de archivo (numeración secuencial de migraciones, no fecha literal) para no romper el orden respecto a `20260911_...` ya aplicada.
+
+### 1. Desglose de la tabla "Productos finales" — de receta a distribución a cliente
+
+`PedidosDelDia.jsx`: el desglose expandible de cada producto final ya NO muestra la cadena de receta/semielaborados (`construirFilaDesglose`/`validarStockReceta('producto_final', ...)` para ESTE punto de expand) — muestra la distribución provisional vía `distribucion_prevista_pf()`, en un componente nuevo `DesgloseDistribucionPF` (no reemplaza `DesgloseComponentes`, que sigue intacto y en uso exclusivo de la tabla de Semielaborados).
+
+- Cabecera: producido hoy / distribuido / residual libre. Residual negativo en rojo con aviso textual, **sin bloqueo** — mismo criterio de advertencia-no-bloqueo del resto del sistema.
+- Una fila por línea de pedido pendiente: cliente, código de pedido, fecha de entrega prevista, cantidad pedida, y campo editable de `cantidad_prevista`.
+- Orden: el que ya devuelve la función (`fecha_entrega_prevista` ascendente, nulls al final) — no se reordena en el cliente.
+- Edición: patrón onChange-local/onBlur-guarda (mismo que "Cantidad objetivo" de Capa A) — `guardarPrevision()` hace `upsert` contra `previsiones_distribucion_pf` con `onConflict: 'linea_pedido_id'` (la `UNIQUE` del Paso 1 lo garantiza), y **refresca la distribución de ese producto final tras guardar** para que los totales se actualicen al instante.
+
+**Diferencia deliberada de caché respecto al desglose de Semielaborados**: `desgloseSemiPorId` se cachea para siempre (la receta no cambia durante la sesión de pantalla); `desglosePFPorId` se **recarga en cada expand** (no solo la primera vez) porque el propio operador edita datos desde aquí y "producido hoy" puede cambiar mientras la pantalla sigue abierta (otra tanda que cierra).
+
+**Vista de receta retirada de aquí, no destruida**: sigue disponible dentro de "Producción en curso" (`ProduccionProductosFinales.jsx`), que desde Capa A ya fusiona estimación/disponible por línea de ingrediente al fijar la cantidad objetivo — no se ha tocado nada ahí.
+
+### 2. Botón play en la tabla "Productos finales"
+
+`handleProducirPF(fila)` navega a `/produccion-productos?producto_final_id=X&cantidad=Y` (mismos query params ya leídos por `ProduccionProductosFinales.jsx` desde Capa A: `producto_final_id` precarga el selector, `cantidad` precarga la nueva "Cantidad a producir" del formulario de inicio, guardada como `cantidad_objetivo` al insertar). Oculto/deshabilitado en estado `ok`, mismo patrón visual y de tooltip que el botón play de Semielaborados (fix Fricción 1) — sobreproducir sigue siendo posible entrando directo a la pantalla de producción.
+
+### 3. Producto final sin líneas de pedido pendientes
+
+Decisión confirmada antes de implementar: se ajustó `distribucion_prevista_pf()` (migración `20260913_distribucion_prevista_pf_sin_lineas.sql`, probada en `BEGIN...ROLLBACK` contra un caso real sin pedidos y aplicada en firme) para que la función se conduzca desde los totales (`producido`/`distribuido`) con `LEFT JOIN` hacia una CTE de líneas pendientes, en vez de depender de que existan líneas para devolver algo. Efecto: **siempre** devuelve al menos una fila — una por línea pendiente, o una única fila con las columnas de línea en `NULL` si no hay ninguna. El frontend detecta `linea_pedido_id == null` como señal de "sin pedidos pendientes" y muestra ese texto en el cuerpo del desglose, pero con la cabecera de totales visible igualmente (ej. "producido hoy: 5.000 uds" sigue siendo información real y útil aunque nadie lo reclame todavía). Cambio aditivo verificado: con líneas pendientes, resultado idéntico al de antes.
+
+### Fuera de alcance de este Paso 2 (sin tocar)
+
+Expediciones, `albaranes_venta`, kanban/pedidos ficticios; el modelo de datos del Paso 1 más allá del ajuste puntual del punto 3; Semielaborados y su propio desglose (`DesgloseComponentes`, `construirFilaDesglose`, `toggleExpandSemi`) — intactos.
+
+### Verificación
+
+`npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, misma categoría y cantidad que el baseline antes de esta sesión — sin regresión. `npm run build`: compila sin errores. La migración del punto 3 se probó en transacción `BEGIN...ROLLBACK` contra un caso real (`producto_final_id` sin pedidos pendientes) antes de aplicarse en firme. Sin navegador disponible en este entorno para click-through real — no se ha probado la interacción en vivo, solo build/lint/pruebas SQL contra datos reales.

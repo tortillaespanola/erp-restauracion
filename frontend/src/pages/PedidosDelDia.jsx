@@ -4,7 +4,7 @@ import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock,
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
-import { PageHeader, Card, CardBody, Field, Select, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardBody, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
 // Jerarquía hoja→raíz (CONTRATO_VISTA_DINAMICA_PRODUCCION.md): dado el conjunto pequeño de
 // semielaborados ya presentes en el resultado, resuelve solo las relaciones semielaborado→
@@ -334,6 +334,93 @@ function DesgloseComponentes({ filas, colSpan }) {
   )
 }
 
+// Capa B (CONTRATO_VISTA_PRODUCCION_PRODUCTOS_FINALES.md, Paso 2): desglose de PRODUCTOS FINALES --
+// ya no muestra la cadena de receta/semielaborados (eso se retira de aquí, sigue disponible dentro de
+// "Producción en curso" en ProduccionProductosFinales.jsx, que ya fusiona estimación/disponible por
+// línea desde Capa A) -- muestra la distribución PROVISIONAL de lo producido hoy hacia los pedidos de
+// cliente pendientes, vía distribucion_prevista_pf(). `filas` es el array crudo devuelto por la
+// función (siempre al menos una fila desde el ajuste "sin líneas", ver esa migración) -- `linea_pedido_id
+// == null` en la única fila es la señal de "sin pedidos pendientes", con los totales igualmente
+// visibles. `valorDe`/`onCambiar`/`onGuardar` gestionan el borrador editable de cantidad_prevista por
+// línea, igual patrón (onChange local + onBlur guarda) que "Cantidad objetivo" en ProduccionAbierta.
+function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar }) {
+  if (filas === 'cargando') {
+    return (
+      <tr>
+        <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
+          <p className="text-xs text-gray-400 px-2 py-1">Cargando distribución…</p>
+        </Td>
+      </tr>
+    )
+  }
+
+  // filas solo llega vacío si la RPC falló (ver cargarDistribucionPF) -- con la función ya siempre
+  // devolviendo al menos una fila de totales, un array vacío aquí es señal de error, no de "sin datos".
+  if (filas.length === 0) {
+    return (
+      <tr>
+        <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
+          <p className="text-xs text-red-500 px-2 py-1">Error al cargar la distribución -- inténtalo de nuevo.</p>
+        </Td>
+      </tr>
+    )
+  }
+
+  const [resumen] = filas
+  const sinPedidos = filas.length === 1 && filas[0].linea_pedido_id == null
+
+  return (
+    <tr>
+      <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
+        <div className="px-2 py-1 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 border-b border-gray-200 pb-2 mb-2">
+          <span>Producido hoy: <span className="font-medium text-gray-700">{Number(resumen.total_producido_hoy).toFixed(3)} uds</span></span>
+          <span>Distribuido: <span className="font-medium text-gray-700">{Number(resumen.total_distribuido).toFixed(3)} uds</span></span>
+          <span className={Number(resumen.residual_libre) < 0 ? 'text-red-600 font-medium' : ''}>
+            Residual libre: {Number(resumen.residual_libre).toFixed(3)} uds
+            {Number(resumen.residual_libre) < 0 && ' — distribuido supera lo producido hoy'}
+          </span>
+        </div>
+
+        {sinPedidos ? (
+          <p className="text-xs text-gray-400 px-2 py-1">Sin pedidos pendientes para este producto final.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+                <th className="pl-8 pr-2 py-1 font-medium">Cliente</th>
+                <th className="px-2 py-1 font-medium">Pedido</th>
+                <th className="px-2 py-1 font-medium">Entrega prevista</th>
+                <th className="px-2 py-1 font-medium">Pedido</th>
+                <th className="px-2 py-1 font-medium">Previsto</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filas.map((f) => (
+                <tr key={f.linea_pedido_id}>
+                  <td className="pl-8 pr-2 py-1 text-gray-700">{f.cliente_nombre}</td>
+                  <td className="px-2 py-1 text-gray-500 font-mono text-xs">{f.codigo_pedido}</td>
+                  <td className="px-2 py-1 text-gray-500">{f.fecha_entrega_prevista ? formatFecha(f.fecha_entrega_prevista) : 'sin fecha'}</td>
+                  <td className="px-2 py-1">{Number(f.cantidad_pedida).toFixed(3)}</td>
+                  <td className="px-2 py-1">
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={valorDe(f)}
+                      onChange={(e) => onCambiar(f.linea_pedido_id, e.target.value)}
+                      onBlur={() => onGuardar(f)}
+                      className="text-sm w-28 py-1"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Td>
+    </tr>
+  )
+}
+
 // Vista 1 de CONTRATO_VISTA_DINAMICA_PRODUCCION.md, reordenada por el contrato "Reordenación y
 // mejora de estados": tabla de productos finales arriba (trazabilidad descendente, filtro de entrada),
 // tabla de semielaborados abajo (con la selección y el botón "Producir", sin cambios de comportamiento
@@ -368,7 +455,16 @@ function PedidosDelDia() {
   const [expandidosSemi, setExpandidosSemi] = useState(new Set())
   const [expandidosPF, setExpandidosPF] = useState(new Set())
   const [desgloseSemiPorId, setDesgloseSemiPorId] = useState(new Map())
+  // Capa B, Paso 2: desglosePFPorId ahora cachea filas de distribucion_prevista_pf() (cliente/pedido/
+  // previsión), no la cadena de receta -- se REFRESCA en cada expand (no se queda cacheado para
+  // siempre como el de semielaborados) porque el propio operador edita cantidad_prevista desde aquí y
+  // los totales deben reflejar el cambio sin recargar toda la pantalla.
   const [desglosePFPorId, setDesglosePFPorId] = useState(new Map())
+  // Borrador editable de cantidad_prevista por línea de pedido (clave: linea_pedido_id) -- mismo
+  // patrón onChange-local/onBlur-guarda que "Cantidad objetivo" en ProduccionAbierta (Capa A). Se
+  // limpia la entrada de una línea tras guardarla con éxito, para que vuelva a reflejar el valor ya
+  // confirmado por el servidor en el siguiente refresco.
+  const [borradorPrevision, setBorradorPrevision] = useState(new Map())
 
   async function cargarDatos() {
     setCargando(true)
@@ -376,6 +472,7 @@ function PedidosDelDia() {
     setExpandidosPF(new Set())
     setDesgloseSemiPorId(new Map())
     setDesglosePFPorId(new Map())
+    setBorradorPrevision(new Map())
 
     const resProductos = await supabase.from('productos_finales').select('id, nombre').order('nombre')
     if (resProductos.error) console.error('Error cargando productos finales:', resProductos.error)
@@ -641,9 +738,16 @@ function PedidosDelDia() {
     navigate(`/producciones?semielaborado_id=${fila.id}&cantidad=${fila.necesidad}`)
   }
 
+  // Capa B, Paso 2: mismo patrón que handleProducir de semielaborados, hacia ProduccionProductosFinales.jsx
+  // (?producto_final_id=&cantidad=, ya leídos ahí desde Capa A) -- precarga la necesidad agregada total
+  // como cantidad objetivo, editable sin bloqueo, igual criterio confirmado que el resto del sistema.
+  function handleProducirPF(fila) {
+    navigate(`/produccion-productos?producto_final_id=${fila.id}&cantidad=${fila.necesidad}`)
+  }
+
   // Addenda "desglose por componente en Producciones del día": expande/contrae una fila y, si es la
   // primera vez que se expande, pide su desglose bajo demanda (una sola vez, cacheado por id en
-  // desgloseSemiPorId/desglosePFPorId -- expands posteriores de la misma fila no repiten la consulta).
+  // desgloseSemiPorId -- expands posteriores de la misma fila no repiten la consulta).
   async function toggleExpandSemi(fila) {
     setExpandidosSemi((prev) => {
       const next = new Set(prev)
@@ -658,18 +762,73 @@ function PedidosDelDia() {
     setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
+  // Capa B, Paso 2: carga (o recarga) la distribución prevista de un producto final -- extraída de
+  // toggleExpandPF para poder llamarla también tras guardar una previsión (refresco de totales), no
+  // solo al expandir.
+  async function cargarDistribucionPF(productoFinalId) {
+    setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, 'cargando'))
+    const { data, error } = await supabase.rpc('distribucion_prevista_pf', { p_producto_final_id: productoFinalId })
+    if (error) {
+      console.error('Error calculando distribución prevista:', error)
+      setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, []))
+      return
+    }
+    setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, data || []))
+  }
+
+  // A diferencia de toggleExpandSemi, SIEMPRE recarga al expandir (no cachea para siempre) -- la
+  // distribución es editable desde aquí mismo, y "producido hoy" puede cambiar mientras la pantalla
+  // sigue abierta (otra tanda que cierra).
   async function toggleExpandPF(fila) {
+    const estabaExpandido = expandidosPF.has(fila.id)
     setExpandidosPF((prev) => {
       const next = new Set(prev)
       if (next.has(fila.id)) next.delete(fila.id)
       else next.add(fila.id)
       return next
     })
-    if (desglosePFPorId.has(fila.id)) return
-    setDesglosePFPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
-    const lineas = await validarStockReceta('producto_final', fila.id, fila.necesidad, false)
-    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi, fila.estado === 'ok')))
-    setDesglosePFPorId((prev) => new Map(prev).set(fila.id, filas))
+    if (!estabaExpandido) await cargarDistribucionPF(fila.id)
+  }
+
+  function valorPrevision(f) {
+    return borradorPrevision.has(f.linea_pedido_id) ? borradorPrevision.get(f.linea_pedido_id) : String(f.cantidad_prevista)
+  }
+
+  function cambiarBorradorPrevision(lineaPedidoId, valor) {
+    setBorradorPrevision((prev) => new Map(prev).set(lineaPedidoId, valor))
+  }
+
+  // Upsert contra previsiones_distribucion_pf (UNIQUE(linea_pedido_id) ya garantiza que sea upsert, no
+  // insert duplicado) -- sin validación de stock, coherente con el resto de este contrato (advertencia
+  // visual si residual_libre sale negativo, nunca bloqueo). Refresca la distribución de ese producto
+  // final tras guardar, para que los totales reflejen el cambio al instante. `productoFinalId` lo pasa
+  // el llamante (la fila padre ya expandida), no se recalcula por búsqueda inversa.
+  async function guardarPrevision(f, productoFinalId) {
+    const valor = borradorPrevision.get(f.linea_pedido_id)
+    if (valor === undefined) return // sin edición real, no golpear la base de datos
+    const cantidad = parseFloat(valor)
+    if (Number.isNaN(cantidad) || cantidad < 0) return
+    if (cantidad === Number(f.cantidad_prevista)) {
+      setBorradorPrevision((prev) => {
+        const next = new Map(prev)
+        next.delete(f.linea_pedido_id)
+        return next
+      })
+      return
+    }
+    const { error } = await supabase
+      .from('previsiones_distribucion_pf')
+      .upsert({ producto_final_id: productoFinalId, linea_pedido_id: f.linea_pedido_id, cantidad_prevista: cantidad }, { onConflict: 'linea_pedido_id' })
+    if (error) {
+      alert('Error al guardar la previsión: ' + error.message)
+      return
+    }
+    setBorradorPrevision((prev) => {
+      const next = new Map(prev)
+      next.delete(f.linea_pedido_id)
+      return next
+    })
+    await cargarDistribucionPF(productoFinalId)
   }
 
   return (
@@ -708,6 +867,7 @@ function PedidosDelDia() {
           <Table>
             <Thead>
               <Th></Th>
+              <Th></Th>
               <Th>Producto final</Th>
               <Th>Necesidad agregada</Th>
               <Th>Stock disponible</Th>
@@ -724,6 +884,20 @@ function PedidosDelDia() {
                           {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                         </button>
                       </Td>
+                      {/* Capa B, Paso 2: mismo patrón que el botón play de Semielaborados (fix Fricción 1 --
+                          oculto/deshabilitado en OK, sobreproducir sigue siendo posible entrando directo a
+                          Producción de productos finales). */}
+                      <Td>
+                        {f.estado === 'ok' ? (
+                          <span title="Necesidad ya cubierta -- para producir de más, entra directo a Producción de productos finales" className="text-gray-300 inline-flex">
+                            <IconPlayerPlay size={16} />
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => handleProducirPF(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={`Producir ${f.nombre}`}>
+                            <IconPlayerPlay size={16} />
+                          </button>
+                        )}
+                      </Td>
                       <Td className="font-medium">
                         <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
                       </Td>
@@ -731,7 +905,15 @@ function PedidosDelDia() {
                       <Td>{f.disponible.toFixed(3)} uds</Td>
                       <Td><EstadoCelda estado={f.estado} detalle={f.detalle} tooltipExtra={f.tooltipExtra} /></Td>
                     </tr>
-                    {expandido && <DesgloseComponentes filas={desglosePFPorId.get(f.id) ?? 'cargando'} colSpan={5} />}
+                    {expandido && (
+                      <DesgloseDistribucionPF
+                        filas={desglosePFPorId.get(f.id) ?? 'cargando'}
+                        colSpan={6}
+                        valorDe={valorPrevision}
+                        onCambiar={cambiarBorradorPrevision}
+                        onGuardar={(linea) => guardarPrevision(linea, f.id)}
+                      />
+                    )}
                   </Fragment>
                 )
               })}
