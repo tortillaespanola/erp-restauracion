@@ -244,23 +244,46 @@ function EstadoCelda({ estado, detalle, nota, tooltipExtra }) {
   )
 }
 
-// Addenda "desglose por componente en Producciones del día": construye una fila de desglose a partir
-// de una línea de `validarStockReceta(tipo, id, necesidadPadre, false)` (nivel directo de receta, sin
-// filtrar a solo faltantes). Para un componente semielaborado, reutiliza su propia fila YA calculada
-// en la tabla de Semielaborados (misma necesidad agregada global y mismo estado de los 7 -- "su propio
-// estado", tal cual se pidió, cero consultas nuevas); si no tiene fila propia es que su necesidad
-// agregada es 0 (la cascada por déficit ya no le atribuye nada pendiente, ver esa addenda), se muestra
-// como 'ok' con su stock actual. Para un ingrediente/artículo hoja (sin tabla propia en esta pantalla),
-// reutiliza los mismos 2 estados que ya existen ('ok' / 'ingrediente' -- "Falta stock de ingredientes")
-// en vez de inventar uno nuevo, comparando el `necesario` de esta línea (cantidad de receta × necesidad
-// del padre) contra el stock disponible total.
-function construirFilaDesglose(linea, filasSemiPorId, stockPorSemi) {
+// Addenda "contribución por padre en el desglose (fix Fricción 2)": construye una fila de desglose a
+// partir de una línea de `validarStockReceta(tipo, id, necesidadPadre, false)` (nivel directo de
+// receta, sin filtrar a solo faltantes) -- `linea.necesario` ya ES la contribución de ESTE padre
+// concreto (cantidad_por_unidad_receta × necesidad_objetivo del padre, calculado por validarStockReceta
+// con la `cantidad` que se le pasó), NUNCA la necesidad agregada global del hijo. Antes esta función
+// reemplazaba ese número por la fila YA calculada de la tabla de Semielaborados (necesidad GLOBAL,
+// suma de TODOS los padres) -- bug real confirmado con datos reales: ZZ_MEZCLATORTILLAPATATASINCEB,
+// consumido por ZZ_TORTILLACONCEBOLLAGRANDE y ZZ_TORTILLASINCEBOLLAGRANDE, mostraba su necesidad
+// agregada total (8.400 kg) IDÉNTICA en el desglose de ambos padres por separado, dando a entender que
+// cada uno por sí solo necesitaba 8.4 kg completos.
+//
+// `disponible` SÍ sigue siendo el stock global disponible del hijo (no se reparte/prorratea por
+// padre) -- verificado contra `necesidades_pedidos_cascada()` (supabase/migrations/20260903_...sql):
+// el déficit se calcula como `greatest(necesidad_agregada_TOTAL - stock_TOTAL, 0)`, stock como un pool
+// compartido único, nunca reservado por padre -- mismo criterio aquí, cada línea compara su propia
+// contribución contra el stock global completo, independiente de las demás líneas que también tiren
+// de él.
+//
+// `estado`: para un ingrediente/artículo hoja (sin tabla propia en esta pantalla) reutiliza los mismos
+// 2 estados que ya existían ('ok' / 'ingrediente'), sin inventar uno nuevo. Para un semielaborado-hijo,
+// ya NO se reutiliza el estado de su fila global (mismo bug de la Fricción 2, aplicado al estado en vez
+// de a la cifra) -- se recalcula con el mismo `estadoUnNivel()` de la tabla principal, pero contra la
+// contribución de este padre: si el stock global ya cubre la contribución, 'ok' directo; si no, se
+// pide (una consulta adicional, solo en este caso) la propia receta del hijo a esa cantidad para saber
+// si el bloqueo es de sus propios semielaborados/ingredientes, más `enCursoPorSemi` (sin consulta
+// nueva, ya cargado) para la nota "en curso" -- mismo criterio de 1 nivel, mismo cálculo, distinta
+// cantidad de referencia.
+async function construirFilaDesglose(linea, enCursoPorSemi) {
   if (linea.tipo === 'semielaborado') {
-    const filaSemi = filasSemiPorId.get(linea.id)
-    if (filaSemi) {
-      return { tipo: 'semielaborado', nombre: filaSemi.nombre, unidad: filaSemi.unidad, necesidad: filaSemi.necesidad, disponible: filaSemi.disponible, estado: filaSemi.estado }
+    const necesidad = linea.necesario
+    const disponible = linea.disponible
+    const cubierto = disponible >= necesidad
+    let estado = 'ok'
+    if (!cubierto) {
+      const faltantes = await validarStockReceta('semielaborado', linea.id, necesidad)
+      const faltanteSemi = faltantes.filter((f) => f.tipo === 'semielaborado')
+      const faltanteIngArt = faltantes.filter((f) => f.tipo === 'ingrediente_articulo')
+      estado = estadoUnNivel(faltanteSemi, faltanteIngArt, enCursoPorSemi.get(linea.id), necesidad)
     }
-    return { tipo: 'semielaborado', nombre: linea.nombre, unidad: linea.unidad, necesidad: 0, disponible: stockPorSemi.get(linea.id) || 0, estado: 'ok' }
+    return { tipo: 'semielaborado', nombre: linea.nombre, unidad: linea.unidad, necesidad, disponible, estado }
   }
   return {
     tipo: 'ingrediente',
@@ -624,7 +647,7 @@ function PedidosDelDia() {
     if (desgloseSemiPorId.has(fila.id)) return
     setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
     const lineas = await validarStockReceta('semielaborado', fila.id, fila.necesidad, false)
-    const filas = lineas.map((l) => construirFilaDesglose(l, filasSemiPorId, stockPorSemi))
+    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi)))
     setDesgloseSemiPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
@@ -638,7 +661,7 @@ function PedidosDelDia() {
     if (desglosePFPorId.has(fila.id)) return
     setDesglosePFPorId((prev) => new Map(prev).set(fila.id, 'cargando'))
     const lineas = await validarStockReceta('producto_final', fila.id, fila.necesidad, false)
-    const filas = lineas.map((l) => construirFilaDesglose(l, filasSemiPorId, stockPorSemi))
+    const filas = await Promise.all(lineas.map((l) => construirFilaDesglose(l, enCursoPorSemi)))
     setDesglosePFPorId((prev) => new Map(prev).set(fila.id, filas))
   }
 
@@ -737,10 +760,18 @@ function PedidosDelDia() {
                           {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                         </button>
                       </Td>
+                      {/* Addenda "fix Fricción 1: play deshabilitado en OK" -- con necesidad ya cubierta no
+                          tiene sentido este atajo; sobreproducir sigue siendo posible desde Producciones. */}
                       <Td>
-                        <button type="button" onClick={() => handleProducir(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={`Producir ${f.nombre}`}>
-                          <IconPlayerPlay size={16} />
-                        </button>
+                        {f.estado === 'ok' ? (
+                          <span title="Necesidad ya cubierta -- para producir de más, usa Producciones" className="text-gray-300 inline-flex">
+                            <IconPlayerPlay size={16} />
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => handleProducir(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={`Producir ${f.nombre}`}>
+                            <IconPlayerPlay size={16} />
+                          </button>
+                        )}
                       </Td>
                       <Td className="font-medium">
                         <span title={tooltipPedidos(f.pedidos)}>{f.nombre}</span>
