@@ -202,6 +202,8 @@ Cinco mejoras de UI/UX en la tarjeta de producción activa (`ProduccionAbierta` 
 
 **2. Botón de precarga por línea.** Icono `IconWand` ("Usar estimación") junto a cada línea que tiene estimación calculada -- copia el valor de la estimación al campo Cantidad de esa línea (`precargarConEstimacion`), sin bloquear edición manual posterior. No aparece si no hay cantidad objetivo definida (no hay estimación con la que precargar).
 
+**Fix posterior (2026-09-09)**: el botón tampoco aparece si esa línea ya tiene consumo registrado (`estimacion.registrado > 0`, parcial o completo) -- precargar la estimación TOTAL en ese caso machacaría el campo con una cifra que ya no representa lo que falta (caso real que lo confirmó: `ZZ_Albondiga frita` con 3 ud ya registradas de una estimación de 4 seguía ofreciendo precargar "4"). El resto de la lógica del punto 2 no cambia -- mismo `precargarConEstimacion`, mismo criterio de "sin objetivo no hay estimación".
+
 **3. Botones de acción reposicionados.** "Confirmar consumo" y "Cerrar producción" (o su mini-formulario expandido) suben por encima de "Consumo ya registrado" y "Registrar consumo" -- visibles sin scroll aunque la lista de ingredientes sea larga. Layout propuesto y aprobado antes de implementar (ver arriba).
 
 **4. Reordenamiento por consumo registrado.** Mismo criterio de reordenamiento que "Producciones del día" (Bloque 3a, punto 2) -- lo pendiente arriba, lo ya cubierto (consumo confirmado ≥ estimado) al final, con una ligera atenuación visual (`opacity-70`) en las líneas ya cubiertas. Sin cantidad objetivo definida no hay estimación contra la que comparar, así que no se reordena.

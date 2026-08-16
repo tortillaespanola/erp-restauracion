@@ -917,7 +917,10 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
               onChange={(valor) => actualizarFila(ing, valor)}
               estimacion={estimacion}
               cargandoEstimacion={hayObjetivo && cadenaEstimacionCargando}
-              onPrecargar={estimacion ? () => precargarConEstimacion(ing, estimacion) : null} />
+              // Addenda "precarga solo sin consumo previo": con registrado > 0 (parcial o completo),
+              // precargar la estimación TOTAL machacaría lo ya registrado con una cifra que ya no
+              // corresponde a lo que falta -- ver esa addenda para el caso real que lo confirmó.
+              onPrecargar={estimacion && estimacion.registrado === 0 ? () => precargarConEstimacion(ing, estimacion) : null} />
           ))}
         </div>
       )}
