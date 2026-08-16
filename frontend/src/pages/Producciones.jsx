@@ -82,60 +82,28 @@ async function cargarIngredientesConLotes(semielaboradoId) {
   )
 }
 
-// CONTRATO_VISTA_DINAMICA_PRODUCCION.md, addenda "Rediseño de tablas informativas — Vista 2
-// semielaborado": cadena transitiva COMPLETA de un semielaborado (semielaborados intermedios +
-// ingredientes/artículos hoja), a diferencia de calcularOrdenJerarquico() en PedidosDelDia.jsx que
-// solo resuelve relaciones semielaborado->semielaborado dentro de un conjunto ya conocido de
-// antemano. Aquí el conjunto no se conoce hasta explorarlo, así que se recorre nivel a nivel (BFS)
-// hasta agotar la cadena -- el propio Set de semielaborados visitados evita releer un nodo dos veces
-// y protege de un ciclo indirecto no cubierto por el CHECK no_auto_referencia de la base de datos.
+// CONTRATO_VISTA_DINAMICA_PRODUCCION.md, addenda "Nivel directo de receta en Vista 2
+// (2026-09-04)": nivel DIRECTO de `receta_semielaborado` del semielaborado
+// indicado -- mismo criterio de resolución (ingrediente_id -> articulo vía articulo_ingrediente) y
+// mismo alcance de una sola consulta que `validarStockReceta()`, no la explosión recursiva completa
+// hasta materia prima que tenía antes esta función (BFS nivel a nivel vía `frontera`). Bajar más de
+// un nivel hacía aparecer aquí ingredientes de sub-semielaborados (ej. AOVE, Carne Picada) que ya se
+// habían consumido al producir esos sub-semielaborados -- ver esa addenda para el caso real
+// (ZZ_ALBODIGACONTOMATE) que lo confirmó.
 //
-// `ratioPorUnidad` (addenda "Cantidad objetivo y estimación en Producción en curso"): cantidad de ese
-// ítem necesaria para producir 1 unidad del semielaborado raíz -- se acumula multiplicando la
-// `cantidad` de cada línea de receta por el ratio ya acumulado de su padre, y SUMANDO si un mismo
-// ítem se alcanza por más de una línea dentro del mismo nivel (dos padres del mismo `frontera`
-// consumiendo el mismo hijo). Esto resuelve correctamente el caso realista de "varios padres al mismo
-// nivel" -- no se persigue una topología exacta para el caso raro de un mismo nodo reconvergiendo a
-// través de caminos de profundidad distinta, que no se da en las recetas reales de este ERP.
+// `ratioPorUnidad`: cantidad de ese ítem necesaria para producir 1 unidad del semielaborado raíz --
+// al ser un único nivel, es directamente la `cantidad` de la línea de receta (sin acumular ratio de
+// ningún padre), sumando si el mismo artículo se alcanza por más de una línea (ver fusión de hoja
+// más abajo).
 async function cargarCadenaCompleta(semielaboradoId) {
-  const semisVisitados = new Set()
-  const articulosVisitados = new Map() // articulo_id -> {nombre, unidad}
-  const ingredientesVisitados = new Map() // ingrediente_id -> {nombre, unidad}
-  const ratioSemi = new Map([[semielaboradoId, 1]])
-  const ratioLeaf = new Map() // 'a:id' | 'i:id' -> ratio acumulado por unidad de la raíz
-  let frontera = [semielaboradoId]
+  const { data: receta } = await supabase
+    .from('receta_semielaborado')
+    .select('cantidad, articulo_id, ingrediente_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
+    .eq('semielaborado_id', semielaboradoId)
 
-  while (frontera.length > 0) {
-    const { data } = await supabase
-      .from('receta_semielaborado')
-      .select('semielaborado_id, cantidad, articulo_id, ingrediente_id, ingrediente_semielaborado_id, articulos_compra(nombre, unidad), semielaborados!receta_semielaborado_ingrediente_semielaborado_id_fkey(nombre, unidad), ingredientes(nombre, unidad)')
-      .in('semielaborado_id', frontera)
-
-    const siguienteFrontera = []
-    for (const fila of data || []) {
-      const ratioLinea = (ratioSemi.get(fila.semielaborado_id) || 0) * Number(fila.cantidad)
-      if (fila.ingrediente_semielaborado_id) {
-        const id = fila.ingrediente_semielaborado_id
-        ratioSemi.set(id, (ratioSemi.get(id) || 0) + ratioLinea)
-        if (!semisVisitados.has(id)) {
-          semisVisitados.add(id)
-          siguienteFrontera.push(id)
-        }
-      } else if (fila.articulo_id) {
-        const clave = `a:${fila.articulo_id}`
-        ratioLeaf.set(clave, (ratioLeaf.get(clave) || 0) + ratioLinea)
-        articulosVisitados.set(fila.articulo_id, { nombre: fila.articulos_compra?.nombre, unidad: fila.articulos_compra?.unidad })
-      } else if (fila.ingrediente_id) {
-        const clave = `i:${fila.ingrediente_id}`
-        ratioLeaf.set(clave, (ratioLeaf.get(clave) || 0) + ratioLinea)
-        ingredientesVisitados.set(fila.ingrediente_id, { nombre: fila.ingredientes?.nombre, unidad: fila.ingredientes?.unidad })
-      }
-    }
-    frontera = siguienteFrontera
-  }
-
-  const idsSemis = [...semisVisitados]
-  const idsIngredientes = [...ingredientesVisitados.keys()]
+  const lineasSemi = (receta || []).filter((l) => l.ingrediente_semielaborado_id)
+  const idsSemis = lineasSemi.map((l) => l.ingrediente_semielaborado_id)
+  const idsIngredientes = (receta || []).filter((l) => l.ingrediente_id).map((l) => l.ingrediente_id)
 
   // Los ingredientes genéricos (tabla `ingredientes`) no tienen stock propio -- se resuelven a través
   // de los artículos vinculados (articulo_ingrediente), igual criterio que validarStockReceta.js.
@@ -148,12 +116,22 @@ async function cargarCadenaCompleta(semielaboradoId) {
       : Promise.resolve({ data: [] }),
   ])
 
+  const stockPorSemi = new Map((resStockSemis.data || []).map((s) => [s.semielaborado_id, Number(s.stock)]))
+
   const articuloIdsPorIngrediente = new Map()
   for (const v of resVinculos.data || []) {
     const lista = articuloIdsPorIngrediente.get(v.ingrediente_id) || []
     lista.push(v.articulo_id)
     articuloIdsPorIngrediente.set(v.ingrediente_id, lista)
   }
+
+  const filasSemis = lineasSemi.map((l) => ({
+    tipo: 'semielaborado',
+    nombre: l.semielaborados?.nombre,
+    unidad: l.semielaborados?.unidad,
+    stock: stockPorSemi.get(l.ingrediente_semielaborado_id) || 0,
+    ratioPorUnidad: Number(l.cantidad),
+  }))
 
   // Dos líneas de receta distintas pueden acabar tirando del MISMO artículo -- una referenciándolo
   // directo (articulo_id) y otra vía un ingrediente genérico (ingrediente_id) que solo mapea a ese
@@ -162,16 +140,19 @@ async function cargarCadenaCompleta(semielaboradoId) {
   // vez). Se agrupa por el conjunto (ordenado) de articulo_id que resuelve cada línea -- si coincide
   // exactamente, es la misma fila, y sus ratios se suman.
   const gruposHoja = new Map() // clave canónica "a:id1,id2" -> {nombre, unidad, articuloIds, ratioPorUnidad}
-  for (const [id, info] of articulosVisitados) {
-    const clave = `a:${id}`
-    gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds: [id], ratioPorUnidad: ratioLeaf.get(clave) || 0 })
-  }
-  for (const [id, info] of ingredientesVisitados) {
-    const articuloIds = [...(articuloIdsPorIngrediente.get(id) || [])].sort((a, b) => a - b)
-    const clave = articuloIds.length > 0 ? `a:${articuloIds.join(',')}` : `i:${id}`
-    const ratio = ratioLeaf.get(`i:${id}`) || 0
-    if (gruposHoja.has(clave)) gruposHoja.get(clave).ratioPorUnidad += ratio
-    else gruposHoja.set(clave, { nombre: info.nombre, unidad: info.unidad, articuloIds, ratioPorUnidad: ratio })
+  for (const linea of receta || []) {
+    if (linea.articulo_id) {
+      const clave = `a:${linea.articulo_id}`
+      const existente = gruposHoja.get(clave)
+      if (existente) existente.ratioPorUnidad += Number(linea.cantidad)
+      else gruposHoja.set(clave, { nombre: linea.articulos_compra?.nombre, unidad: linea.articulos_compra?.unidad, articuloIds: [linea.articulo_id], ratioPorUnidad: Number(linea.cantidad) })
+    } else if (linea.ingrediente_id) {
+      const articuloIds = [...(articuloIdsPorIngrediente.get(linea.ingrediente_id) || [])].sort((a, b) => a - b)
+      const clave = articuloIds.length > 0 ? `a:${articuloIds.join(',')}` : `i:${linea.ingrediente_id}`
+      const existente = gruposHoja.get(clave)
+      if (existente) existente.ratioPorUnidad += Number(linea.cantidad)
+      else gruposHoja.set(clave, { nombre: linea.ingredientes?.nombre, unidad: linea.ingredientes?.unidad, articuloIds, ratioPorUnidad: Number(linea.cantidad) })
+    }
   }
 
   const idsArticulosRelevantes = [...new Set([...gruposHoja.values()].flatMap((g) => g.articuloIds))]
@@ -183,14 +164,6 @@ async function cargarCadenaCompleta(semielaboradoId) {
   for (const l of resStockArticulos.data || []) {
     stockPorArticulo.set(l.articulo_id, (stockPorArticulo.get(l.articulo_id) || 0) + Number(l.stock_disponible))
   }
-
-  const filasSemis = (resStockSemis.data || []).map((s) => ({
-    tipo: 'semielaborado',
-    nombre: s.nombre,
-    unidad: s.unidad,
-    stock: Number(s.stock),
-    ratioPorUnidad: ratioSemi.get(s.semielaborado_id) || 0,
-  }))
 
   const filasHoja = [...gruposHoja.values()].map((g) => ({
     tipo: 'ingrediente',
