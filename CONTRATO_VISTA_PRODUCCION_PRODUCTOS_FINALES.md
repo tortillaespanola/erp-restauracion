@@ -120,6 +120,7 @@ Ejecutada contra `ZZ_TORTILLASINCEBOLLAGRANDE` (`producto_final_id = 6`), con su
 ## Pendiente
 
 - Expediciones, `albaranes_venta`, kanban/pedidos ficticios — no tocar, siguen fuera de alcance.
+- **Estado vs. distribución (detectado en verificación de frontend, sin resolver)**: el campo ESTADO de la tabla "Productos finales" en Producciones del día solo refleja si hay stock físico suficiente (necesidad vs. producido), pero no si lo producido ya está totalmente distribuido a pedidos vía `previsiones_distribucion_pf`. Un producto puede mostrar OK con residual libre sin repartir — visible solo al expandir el desglose, no en la tabla principal. Pendiente decidir tratamiento (indicador aparte del estado, o sub-estado nuevo) en una próxima sesión de detalles UI.
 
 ---
 
