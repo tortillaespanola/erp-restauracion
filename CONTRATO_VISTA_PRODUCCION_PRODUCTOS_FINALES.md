@@ -1,6 +1,6 @@
 # Contrato: Producción de Productos Finales — Capa B (distribución provisional)
 
-Estado: Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" más abajo. Fecha: 2026-08-16.
+Estado: Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados, con un fix posterior de permisos ya corregido y verificado bajo el rol real. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" y "Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)" más abajo. Fecha: 2026-08-16.
 
 Este contrato es independiente de `CONTRATO_VISTA_DINAMICA_PRODUCCION.md` (Semielaborados + traslado mecánico "Capa A" a Producto final, ya aplicado) — cubre exclusivamente la particularidad real de Producto final que Capa A dejó fuera a propósito: la producción va destinada a pedidos de cliente concretos, y hace falta reflejar de forma provisional qué parte de lo producido hoy se piensa repartir a cada uno, antes de que exista una pantalla de Expediciones real.
 
@@ -154,4 +154,25 @@ Expediciones, `albaranes_venta`, kanban/pedidos ficticios; el modelo de datos de
 
 ### Verificación
 
-`npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, misma categoría y cantidad que el baseline antes de esta sesión — sin regresión. `npm run build`: compila sin errores. La migración del punto 3 se probó en transacción `BEGIN...ROLLBACK` contra un caso real (`producto_final_id` sin pedidos pendientes) antes de aplicarse en firme. Sin navegador disponible en este entorno para click-through real — no se ha probado la interacción en vivo, solo build/lint/pruebas SQL contra datos reales.
+`npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, misma categoría y cantidad que el baseline antes de esta sesión — sin regresión. `npm run build`: compila sin errores. La migración del punto 3 se probó en transacción `BEGIN...ROLLBACK` contra un caso real (`producto_final_id` sin pedidos pendientes) antes de aplicarse en firme. Sin navegador disponible en este entorno para click-through real — no se ha probado la interacción en vivo, solo build/lint/pruebas SQL contra datos reales. **Esta ausencia de prueba real bajo el rol `authenticated` fue precisamente lo que dejó pasar el bug de permisos documentado en la addenda siguiente.**
+
+---
+
+## Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)
+
+**Bug real reportado tras el Paso 2**: al expandir el desglose de "Productos finales" para cualquier producto con líneas de pedido pendientes, el frontend mostraba "Error al cargar la distribución -- inténtalo de nuevo." Reproducido y diagnosticado contra los 4 productos finales reales con pedidos pendientes (`ZZ_AlbondigasconTomate` id 8, `ZZ_Hamburguesas` id 9, `ZZ_TORTILLACONCEBOLLAGRANDE` id 7, `ZZ_TORTILLASINCEBOLLAGRANDE` id 6) — **fallaba en los 4 por igual**, no era específico de ninguno.
+
+**Error real** (código Postgres `42501`, ejecutando la función como el rol `authenticated`, el mismo que usa la app vía PostgREST):
+```
+permission denied for table previsiones_distribucion_pf
+```
+
+**Causa raíz**: la migración del Paso 1 (`20260912_previsiones_distribucion_pf.sql`) activó RLS y creó la política "Acceso total temporal" en `previsiones_distribucion_pf`, pero **nunca concedió los privilegios de tabla** (`GRANT`) al rol `authenticated`. `GRANT` y RLS son dos capas independientes en Postgres: el `GRANT` decide si el rol puede tocar la tabla en absoluto; RLS decide qué filas ve dentro de eso. Comparado contra el resto de tablas que toca la función (`producciones_producto_final`, `lineas_pedido_venta`, `pedidos_venta`, `clientes`, todas con `SELECT, INSERT, UPDATE, DELETE` para `authenticated`), `previsiones_distribucion_pf` solo tenía `REFERENCES, TRIGGER, TRUNCATE` — heredados por defecto, sin ninguno de los privilegios que realmente hacen falta.
+
+**Por qué no se detectó al probar el Paso 1**: todas las pruebas en transacción de esa migración se ejecutaron con la conexión directa de Postgres (rol superusuario), que ignora tanto RLS como `GRANT` de tabla — nunca habría revelado este fallo por esa vía, aunque la prueba fuera exhaustiva en todo lo demás (UNIQUE, CASCADE, ausencia de bloqueo por stock). Lección aplicada: toda verificación de aquí en adelante sobre estas tablas debe simular el rol `authenticated` real, no basta con la conexión de superusuario.
+
+**Fix**: migración nueva `20260914_grant_previsiones_distribucion_pf.sql` (no se editó la migración del Paso 1, ya aplicada y commiteada) — `grant select, insert, update, delete on previsiones_distribucion_pf to authenticated`.
+
+**Verificación bajo el rol real** (no superusuario): primero con `SET LOCAL ROLE authenticated` a secas -- confirmó que el error 42501 desaparecía, pero la función devolvía la fila "sin pedidos pendientes" para los 4 productos aunque SÍ tienen líneas reales, porque `auth.role()` (usado por las políticas RLS) lee el *claim* del JWT, no el rol de Postgres, y sin ese claim las políticas de `lineas_pedido_venta`/`pedidos_venta` seguían filtrando todo. Repetido con `SET LOCAL ROLE authenticated` + `SET LOCAL request.jwt.claim.role = 'authenticated'` (simulación fiel de lo que hace PostgREST con un usuario real) — los 4 productos devolvieron sus datos reales sin error: id 8 → 1 línea (4 uds pedidas), id 9 → 1 línea (5 uds), id 7 → 1 línea (3 uds), id 6 → 2 líneas (2 y 5 uds), coincidiendo exactamente con lo ya visto como superusuario en el diagnóstico.
+
+**Fuera de alcance**: no se ha revisado si el mismo patrón de GRANT faltante existe en alguna otra tabla nueva de sesiones anteriores -- esta addenda corrige únicamente `previsiones_distribucion_pf`, la única tabla nueva creada en este contrato.

@@ -1,0 +1,15 @@
+-- Fix: la migración del Paso 1 (20260912_previsiones_distribucion_pf.sql) activó RLS y creó la
+-- política "Acceso total temporal" en previsiones_distribucion_pf, pero nunca concedió los privilegios
+-- de tabla al rol `authenticated` -- GRANT y RLS son capas independientes: el GRANT decide si el rol
+-- puede tocar la tabla en absoluto, RLS decide qué filas ve dentro de eso. Sin el GRANT, toda llamada a
+-- distribucion_prevista_pf() fallaba con "permission denied for table previsiones_distribucion_pf"
+-- (código 42501) para CUALQUIER producto final con líneas de pedido pendientes -- confirmado
+-- ejecutando la función como el rol authenticated real (no como superusuario, que ignora tanto RLS
+-- como GRANT y por eso no detectó el fallo al probar el Paso 1).
+--
+-- Mismo nivel de privilegios que ya tienen producciones_producto_final, lineas_pedido_venta,
+-- pedidos_venta, clientes para authenticated: SELECT, INSERT, UPDATE, DELETE (sin TRUNCATE, que
+-- tampoco tienen esas tablas explícitamente listado como necesario aquí -- ya lo tenía por REFERENCES/
+-- TRIGGER/TRUNCATE, que sí se concedieron por herencia de algún default; se deja igual, solo se añade
+-- lo que faltaba).
+grant select, insert, update, delete on previsiones_distribucion_pf to authenticated;
