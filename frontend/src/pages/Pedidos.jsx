@@ -62,6 +62,10 @@ function Pedidos() {
 
   const [editandoId, setEditandoId] = useState(null)
   const [lineasABorrar, setLineasABorrar] = useState([])
+  // Aviso "tanda de la previsión sin stock suficiente": stock_disponible real de cada tanda con alguna
+  // previsión asignada, cargado en un único batch (in produccion_id) tras conocer los pedidos -- nunca
+  // una consulta por línea.
+  const [stockPorProduccionId, setStockPorProduccionId] = useState(new Map())
 
   async function cargarDatos() {
     setCargando(true)
@@ -77,7 +81,7 @@ function Pedidos() {
             productos_finales(nombre),
             articulos_compra(nombre, unidad),
             lineas_albaran_venta(cantidad),
-            previsiones_distribucion_pf(cantidad_prevista)
+            previsiones_distribucion_pf(cantidad_prevista, produccion_pf_id)
           )
         `)
         .order('fecha', { ascending: false }),
@@ -87,7 +91,28 @@ function Pedidos() {
     ])
 
     if (resPedidos.error) console.error(resPedidos.error)
-    else setPedidos((resPedidos.data ?? []).sort(compararPedidos))
+    else {
+      const pedidosOrdenados = (resPedidos.data ?? []).sort(compararPedidos)
+      setPedidos(pedidosOrdenados)
+
+      const idsProduccion = new Set()
+      for (const p of pedidosOrdenados) {
+        for (const l of p.lineas_pedido_venta) {
+          const produccionId = l.previsiones_distribucion_pf?.produccion_pf_id
+          if (produccionId != null) idsProduccion.add(produccionId)
+        }
+      }
+      if (idsProduccion.size > 0) {
+        const resStock = await supabase
+          .from('stock_lotes_producto_final')
+          .select('produccion_id, stock_disponible')
+          .in('produccion_id', [...idsProduccion])
+        if (resStock.error) console.error('Error cargando stock de tandas previstas:', resStock.error)
+        setStockPorProduccionId(new Map((resStock.data ?? []).map((l) => [l.produccion_id, Number(l.stock_disponible)])))
+      } else {
+        setStockPorProduccionId(new Map())
+      }
+    }
 
     if (resClientes.error) console.error(resClientes.error)
     else setClientes(resClientes.data)
@@ -483,6 +508,11 @@ function Pedidos() {
                     const previsto = Number(linea.previsiones_distribucion_pf?.cantidad_prevista ?? 0)
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
+                    // Aviso "tanda sin stock suficiente": solo tiene sentido si hay tanda asignada
+                    // (produccion_pf_id no nulo) -- sin tanda, no hay lote real que comprobar todavía.
+                    const produccionPfId = linea.previsiones_distribucion_pf?.produccion_pf_id ?? null
+                    const stockTanda = produccionPfId != null ? stockPorProduccionId.get(produccionPfId) : null
+                    const stockInsuficiente = produccionPfId != null && stockTanda != null && stockTanda < previsto
                     return (
                       <tr key={linea.id}>
                         <td className="py-1.5">
@@ -491,7 +521,16 @@ function Pedidos() {
                           {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
                         </td>
                         <td className="py-1.5">{linea.cantidad} {unidad}</td>
-                        <td className="py-1.5 text-gray-500">{tipo === 'producto' ? `${previsto} ${unidad}` : '-'}</td>
+                        <td className={`py-1.5 ${stockInsuficiente ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                          {tipo === 'producto' ? (
+                            <>
+                              {previsto} {unidad}
+                              {stockInsuficiente && (
+                                <span className="text-xs"> (solo {stockTanda.toFixed(3)} disp. en la tanda asignada)</span>
+                              )}
+                            </>
+                          ) : '-'}
+                        </td>
                         <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
                       </tr>
                     )

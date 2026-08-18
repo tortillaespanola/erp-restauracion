@@ -396,3 +396,19 @@ Todo revertido con `ROLLBACK`; aplicado después en firme (`BEGIN; ...; COMMIT`)
 ### Fuera de alcance de este fix
 
 `necesidades_pedidos()` (no tocada); lógica de distribución/previsiones; la columna "Stock disponible"/"Estado" de la tabla.
+
+---
+
+## Addenda: aviso de stock insuficiente en la columna "Previsto" de Pedidos (2026-08-18)
+
+**Problema**: la columna "Previsto" de `Pedidos.jsx` no avisaba si la tanda asignada a una previsión se había quedado sin stock suficiente -- el operador solo se enteraba al intentar crear el albarán y toparse con "Solo quedan 0.000 unidades disponibles en ese lote de producción".
+
+**Cambio**: para cada línea con previsión y tanda asignada (`produccion_pf_id` no nulo), se compara `cantidad_prevista` contra el `stock_disponible` real de esa tanda (`stock_lotes_producto_final`). Si el stock es menor que lo previsto, el número se muestra en rojo con el stock real disponible al lado (`(solo X disp. en la tanda asignada)`). Sin tanda asignada (`produccion_pf_id = NULL`), no se aplica ningún aviso -- no hay lote real que comprobar todavía, ya se distingue de otra forma (previsión existe, tanda no).
+
+**Consulta sin N+1**: tras cargar los pedidos, se recogen en un `Set` todos los `produccion_pf_id` no nulos de todas las líneas de todos los pedidos visibles, y se hace **una única consulta batch** (`stock_lotes_producto_final` con `.in('produccion_id', idsArray)`) para traer el stock real de exactamente esas tandas -- nunca una consulta por línea ni por pedido. Si ninguna línea tiene tanda asignada, esa consulta ni se dispara.
+
+**Verificación**: lógica de aviso probada contra los tres casos -- previsto mayor que stock disponible (aviso rojo, verdadero), previsto igual al stock disponible (sin aviso, no es insuficiente), y sin tanda asignada (sin aviso, `produccion_pf_id` nulo) -- confirmados con datos reales de `previsiones_distribucion_pf`/`stock_lotes_producto_final` para las cuatro previsiones existentes (ninguna en déficit actualmente, tras la reasignación manual ya hecha por el usuario con el fix del selector de tanda) y un caso sintético con los mismos números que sí dispara el aviso. `npx eslint` sobre `Pedidos.jsx`: 1 problema, idéntico al baseline anterior a este cambio -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de este cambio
+
+El "Crear albarán de venta" y el bloqueo de lote en `AlbaranesVenta.jsx` (ya resuelto en pasos anteriores) no se han tocado -- este cambio es puramente informativo, no bloquea ni impide crear el albarán con el parcial que decida el operador.
