@@ -353,3 +353,46 @@ const hayAlternativas = f.produccion_pf_id != null
 ### Fuera de alcance de este fix
 
 El problema 2 reportado junto con este (déficit fantasma en `necesidades_pedidos_cascada()` por líneas ya servidas dentro de un pedido con estado mixto) -- diagnosticado, pendiente de decidir el fix en una revisión aparte. La query de `stock_lotes_producto_final` en `cargarDistribucionPF` (el filtro `gt('stock_disponible', 0)`) no se ha tocado.
+
+---
+
+## Addenda: fix -- déficit fantasma en necesidades_pedidos_cascada() por línea ya servida dentro de pedido abierto (2026-08-18)
+
+**Bug reportado**: con `necesidad_agregada = 7` y `producido_hoy = 7` (ambas tandas ya cerradas) para `ZZ_TORTILLASINCEBOLLAGRANDE`, el estado seguía mostrando "Falta stock de semielaborados", como si aún faltara producir.
+
+**Causa raíz confirmada**: `necesidades_pedidos_cascada()` calculaba la necesidad de partida (`tmp_cs_pf`) sumando `lpv.cantidad` **bruta** de todas las líneas de pedidos `pendiente`/`en_produccion`, sin descontar lo que cada línea individual ya tuviera servido vía `lineas_albaran_venta`. Antes de Capa C esto era correcto -- nunca existía una línea ya servida dentro de un pedido que siguiera abierto por otra línea distinta, porque la entrega iba ligada al pedido como unidad. Capa C lo hizo posible (producción agregada + `previsiones_distribucion_pf` + entrega parcial por línea), abriendo este hueco. Caso real: pedido de ZZ_Empresa1 con la línea de `ZZ_TORTILLASINCEBOLLAGRANDE` (5 uds) ya servida por completo, pero el pedido seguía `pendiente` por otra línea distinta (`ZZ_TORTILLACONCEBOLLAGRANDE`, sin servir) -- esas 5 uds ya entregadas se seguían sumando a la necesidad bruta.
+
+**Fix**: `supabase/migrations/20260918_necesidades_pedidos_cascada_neta_por_linea.sql` -- `CREATE OR REPLACE FUNCTION necesidades_pedidos_cascada()`, único cambio real en la construcción de `tmp_cs_pf`, netando cada línea individualmente contra lo servido de esa misma línea antes de sumar por producto final:
+
+```sql
+drop table if exists tmp_cs_pf;
+create temporary table tmp_cs_pf on commit drop as
+select lpv.producto_final_id as id,
+  sum(greatest(lpv.cantidad - coalesce(servido.cantidad, 0), 0)) as necesidad
+from lineas_pedido_venta lpv
+left join (
+  select linea_pedido_id, sum(cantidad) as cantidad
+  from lineas_albaran_venta
+  where linea_pedido_id is not null
+  group by linea_pedido_id
+) servido on servido.linea_pedido_id = lpv.id
+where lpv.pedido_id = any(p_pedido_ids) and lpv.producto_final_id is not null
+group by lpv.producto_final_id;
+```
+
+El resto de la función (déficit contra stock, oleadas topológicas hacia semielaborados/ingredientes/artículos) no cambia -- sigue leyendo `tmp_cs_pf.necesidad` exactamente igual que antes. Único añadido complementario: el `select` final del nivel `producto_final` gana un `where pf.necesidad > 0` (los otros tres niveles ya lo tenían) -- antes no hacía falta, la necesidad bruta por producto siempre era `> 0` si el producto aparecía en `tmp_cs_pf`; con el neteo por línea, un producto cuya única demanda venga de una línea ya completamente servida puede netear a 0, y sin este filtro aparecería en la tabla con "Necesidad agregada: 0" sin ningún sentido.
+
+`necesidades_pedidos()` (la función hermana sin cascada, usada por `Producciones.jsx`/`ProduccionProductosFinales.jsx`) no se ha tocado -- no depende de este cálculo.
+
+**Prueba en transacción y aplicación en firme**, contra datos reales:
+1. **Caso reportado**: pedidos 126 (ZZ_Cliente1) y 127 (ZZ_Empresa1) -- línea 145 (2 uds, 0 servido) + línea 146 (5 uds, **5 servido**) para `producto_final_id=6` -- resultado `necesidad=2`, no 7. Déficit fantasma desaparecido.
+2. **Líneas totalmente sin servir** (mismo pedido 126, productos 8 y 9): sin cambios, `4` y `5` exactos.
+3. **Pedido con todas sus líneas servidas** (pedido real 37, estado `servido` confirmado): excluido de forma natural por el filtro del frontend (`estado in (pendiente, en_produccion)`) antes de llegar a la función; prueba defensiva adicional llamando la función directamente con ese id (saltándose el frontend) confirma `0` filas en total.
+4. Cascada hacia semielaborados verificada coherente tras el fix (4 filas de nivel `semielaborado`, sin errores).
+5. Repetido bajo el rol `authenticated` real (`SET LOCAL ROLE` + JWT claim simulado): mismo resultado, `producto_final_id=6 → 2`, sin `42501`.
+
+Todo revertido con `ROLLBACK`; aplicado después en firme (`BEGIN; ...; COMMIT`) y confirmado por lectura contra los datos reales: `producto_final_id=6 → necesidad=2`, sin tablas temporales residuales, sin cambios en `previsiones_distribucion_pf` (la función es de solo lectura).
+
+### Fuera de alcance de este fix
+
+`necesidades_pedidos()` (no tocada); lógica de distribución/previsiones; la columna "Stock disponible"/"Estado" de la tabla.
