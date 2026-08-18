@@ -510,11 +510,11 @@ function AlbaranesVenta() {
 // precargada (neta de lo ya añadido en esta sesión para esa tanda concreta) y "+ Añadir" propio.
 // Vuelve null en cuanto esa previsión concreta queda cubierta (restante <= 0), igual criterio que el
 // resto del sistema ("nada pendiente, no mostrar nada").
-function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas }) {
+function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas, lineaPedido }) {
   const yaUsado = cantidadYaEnLineas(prevision.produccion_pf_id)
   const restante = Number(prevision.cantidad_prevista) - yaUsado
   const [cantidad, setCantidad] = useState(restante > 0 ? String(restante) : '')
-  const [precio, setPrecio] = useState(producto.precio_venta ?? '')
+  const [precio, setPrecio] = useState(lineaPedido?.precio_unitario ?? producto.precio_venta ?? '')
 
   useEffect(() => {
     if (restante > 0) setCantidad(String(restante))
@@ -626,6 +626,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
           tandaInfo={lotes.find((l) => Number(l.produccion_id) === Number(pd.produccion_pf_id))}
           onAdd={onAdd}
           cantidadYaEnLineas={cantidadYaEnLineas}
+          lineaPedido={lineaPedido}
         />
       ))}
 
