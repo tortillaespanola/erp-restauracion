@@ -78,7 +78,9 @@ function AlbaranesVenta() {
           entregado_previo: (l.lineas_albaran_venta || []).reduce((sum, e) => sum + e.cantidad, 0),
           // Capa C, Paso 2: si Producciones del día ya fijó una tanda para esta línea (vía FIFO o a
           // mano), se precarga y se bloquea el selector de lote -- "se puede tocar cantidad, no lote".
-          produccion_pf_id_previsto: l.previsiones_distribucion_pf?.[0]?.produccion_pf_id ?? null,
+          // previsiones_distribucion_pf tiene UNIQUE(linea_pedido_id) -> PostgREST la embebe como
+          // relación a-uno (objeto único o null, no array) -- mismo bug ya corregido en Pedidos.jsx.
+          produccion_pf_id_previsto: l.previsiones_distribucion_pf?.produccion_pf_id ?? null,
         }))
         setPedidoLineas(lineasConEntregado)
       }
