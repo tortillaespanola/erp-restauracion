@@ -1,6 +1,6 @@
 # Contrato: Producción de Productos Finales — Capa B (distribución provisional) y Capa C (cierre del ciclo producir → distribuir → albaranear)
 
-Estado: Capa B — Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados, con un fix posterior de permisos ya corregido y verificado bajo el rol real. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" y "Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)" más abajo. Capa C — Paso 1 (modelo de datos: tanda en la previsión + sugerencia FIFO) completo, aplicado en firme y verificado bajo el rol real; Paso 2 (UI) pendiente. Ver "Capa C — cierre del ciclo producir → distribuir → albaranear" más abajo. Fecha: 2026-08-18.
+Estado: Capa B — Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados, con un fix posterior de permisos ya corregido y verificado bajo el rol real. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" y "Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)" más abajo. Capa C — Paso 1 (modelo de datos: tanda en la previsión + sugerencia FIFO) y Paso 2 (UI en Pedidos, Producciones del día y AlbaranesVenta, más el trigger de reparto/reconstrucción de previsiones) completos, aplicados en firme y verificados bajo el rol real. Ciclo producir → distribuir → albaranear cerrado de extremo a extremo. Ver "Capa C — cierre del ciclo producir → distribuir → albaranear" más abajo. Fecha: 2026-08-18.
 
 Este contrato es independiente de `CONTRATO_VISTA_DINAMICA_PRODUCCION.md` (Semielaborados + traslado mecánico "Capa A" a Producto final, ya aplicado) — cubre exclusivamente la particularidad real de Producto final que Capa A dejó fuera a propósito: la producción va destinada a pedidos de cliente concretos, y hace falta reflejar de forma provisional qué parte de lo producido hoy se piensa repartir a cada uno, antes de que exista una pantalla de Expediciones real.
 
@@ -247,3 +247,69 @@ Aplicada después en firme (`BEGIN; ...; COMMIT`). Verificación posterior, solo
 ### Fuera de alcance de este Paso 1 (sin tocar)
 
 UI de Pedidos, Producciones del día, AlbaranesVenta (Paso 2 de Capa C, siguiente); los dos triggers auditados (`trg_actualizar_estado_pedido_por_servicio`, `trg_actualizar_estado_pedido_por_produccion`); Expediciones.
+
+### Paso 2 — UI en Pedidos, Producciones del día y AlbaranesVenta
+
+Cierra el ciclo: Pedidos ya no ofrece iniciar producción por línea (es agregada, desde Producciones del día); el desglose de "Producciones del día" permite fijar/cambiar la tanda de cada previsión; AlbaranesVenta precarga y bloquea el lote cuando viene de una previsión, y un trigger nuevo mantiene sincronizada la previsión con lo efectivamente albaranado.
+
+**Tres decisiones abiertas, confirmadas antes de implementar:**
+
+1. **Selector de tanda en el desglose**: icono junto al campo "Previsto", visible solo cuando hay más de una tanda con stock disponible; al pulsarlo despliega un `<Select>` inline con todas las tandas disponibles. Con una previsión sin alternativas (0 o 1 tanda), no se muestra el icono, solo una etiqueta pasiva ("Sin tanda asignada" / "Tanda `fecha`").
+2. **`cantidad_prevista` al llegar a 0 o menos**: se trunca a 0 (`greatest(0, ...)`, nunca negativa) pero la fila se mantiene, conservando `produccion_pf_id` como rastro de qué tanda cubrió finalmente esa línea de pedido -- trazabilidad para el futuro histórico, y evita que la reconstrucción al borrar una línea de albarán tenga que decidir entre `UPDATE` e `INSERT` en el caso normal.
+3. **Identificación fiable para reconstruir la previsión al borrar una línea de albarán**: trigger DB simétrico `AFTER INSERT OR DELETE` en `lineas_albaran_venta` (mismo patrón que `trg_actualizar_estado_pedido_por_servicio`, ya existente en esa tabla), identificando la previsión únicamente por `linea_pedido_id` -- el `UNIQUE(linea_pedido_id)` del Paso 1 garantiza que hay como mucho una, sea cual sea la tanda a la que apunte en ese momento. Atómico, y cubre igual el borrado de una línea suelta o el borrado en cascada de un albarán completo (`lineas_albaran_venta_albaran_venta_id_fkey` tiene `ON DELETE CASCADE`, confirmado), sin depender de por qué vía desaparece la línea.
+
+**Migración `supabase/migrations/20260916_previsiones_trigger_lineas_albaran.sql`** -- trigger `trg_actualizar_previsiones_por_linea_albaran`:
+
+```sql
+create or replace function public.actualizar_previsiones_por_linea_albaran()
+returns trigger
+language plpgsql
+as $$
+begin
+  if TG_OP = 'INSERT' then
+    if NEW.linea_pedido_id is not null and NEW.produccion_pf_id is not null then
+      update previsiones_distribucion_pf
+      set cantidad_prevista = greatest(0, cantidad_prevista - NEW.cantidad)
+      where linea_pedido_id = NEW.linea_pedido_id;
+    end if;
+    return NEW;
+  elsif TG_OP = 'DELETE' then
+    if OLD.linea_pedido_id is not null and OLD.produccion_pf_id is not null then
+      update previsiones_distribucion_pf
+      set cantidad_prevista = cantidad_prevista + OLD.cantidad
+      where linea_pedido_id = OLD.linea_pedido_id;
+      if not found then
+        insert into previsiones_distribucion_pf (producto_final_id, linea_pedido_id, cantidad_prevista, produccion_pf_id)
+        values (OLD.producto_final_id, OLD.linea_pedido_id, OLD.cantidad, OLD.produccion_pf_id);
+      end if;
+    end if;
+    return OLD;
+  end if;
+  return null;
+end;
+$$;
+
+create trigger trg_actualizar_previsiones_por_linea_albaran
+after insert or delete on lineas_albaran_venta
+for each row execute function actualizar_previsiones_por_linea_albaran();
+```
+
+Solo actúa sobre líneas de tipo "producto final" ligadas a un pedido real (`linea_pedido_id` y `produccion_pf_id` no nulos) -- mercadería, libres, o ventas directas sin pedido de origen no participan de `previsiones_distribucion_pf` y el trigger no las toca. La rama `if not found` en el `DELETE` es una red de seguridad defensiva (el flujo normal, con la decisión de "mantener la fila en 0", casi nunca la ejecuta) para el caso en que la previsión falte por cualquier otro motivo.
+
+**Migración `supabase/migrations/20260917_distribucion_prevista_pf_produccion_pf_id.sql`** -- `distribucion_prevista_pf()` amplía su salida con `produccion_pf_id` (columna aditiva sobre la CTE `lineas_pendientes` de la versión vigente desde el ajuste "sin líneas"), para que el desglose de "Producciones del día" sepa qué tanda tiene asignada cada línea sin una segunda consulta. Requiere `drop function` previo (Postgres no permite `CREATE OR REPLACE` cuando cambia el conjunto de columnas de un `RETURNS TABLE`, error `42P13`).
+
+**Prueba en transacción y aplicación en firme**: probadas ambas migraciones juntas contra datos reales (líneas de pedido pendientes 143/145/146 con previsiones reales existentes, más una tanda y un albarán de prueba insertados y revertidos) -- `INSERT` resta correctamente, `DELETE` de línea suelta reconstruye al valor original, `DELETE` en cascada de un albarán con dos líneas (145 y 146) reconstruye ambas previsiones correctamente, la rama defensiva `not found` recrea la fila desde cero cuando se fuerza su ausencia. Repetido bajo el rol `authenticated` real (`SET LOCAL ROLE` + JWT claim simulado): `INSERT`, `DELETE` y la función ampliada funcionan sin `42501`. Todo revertido con `ROLLBACK`; aplicado después en firme (`BEGIN; ...; COMMIT`) y confirmado por lectura que no quedó ningún dato de prueba (previsiones reales intactas, cero tandas/albaranes de prueba persistidos).
+
+**Cambios de UI:**
+
+- **`Pedidos.jsx`**: eliminado el link "Iniciar producción" por línea (ya no aplica, la producción es agregada desde Producciones del día); añadida columna "Previsto" entre "Pedido" y "Servido", sumando `previsiones_distribucion_pf.cantidad_prevista` por `linea_pedido_id` -- mismo patrón que "Servido". El link "Crear albarán de venta" y el agrupamiento pendientes/histórico (vía `trg_actualizar_estado_pedido_por_servicio`) no se han tocado.
+- **`PedidosDelDia.jsx`** (`DesgloseDistribucionPF`): `cargarDistribucionPF` ahora también carga las tandas con stock disponible del producto (`stock_lotes_producto_final`, mismo `order by fecha asc` que `AlbaranesVenta.jsx`/`CierreTanda.jsx`). `guardarPrevision()` sugiere la tanda FIFO (`tanda_fifo_producto_final()`) solo cuando la previsión todavía no tenía ninguna asignada -- no pisa una elección manual ya hecha. Nuevo `cambiarTandaPrevision()` para el cambio manual desde el selector. El icono de cambio de tanda (`IconArrowsExchange`) solo aparece con más de una tanda disponible; debajo del campo "Previsto" siempre se muestra una etiqueta pasiva con la tanda asignada o "Sin tanda asignada".
+- **`AlbaranesVenta.jsx`** (`ProductoParaVender`): la carga de líneas del pedido (`cargarPedido`) ahora también trae `previsiones_distribucion_pf(produccion_pf_id, cantidad_prevista)`, exponiendo `produccion_pf_id_previsto` por línea. Si existe, se precarga `loteId` y el selector de lote se sustituye por una etiqueta fija no editable ("asignado desde Producciones del día") -- cantidad y precio siguen editables igual que antes. La consulta de lotes deja de filtrar `stock_disponible > 0` en el servidor (se filtra en JS vía `lotesConDisponibleReal`, ya existente) para poder mostrar el lote bloqueado aunque su stock actual sea 0; el guard de "sin nada que ofrecer" ahora respeta ese caso (`lotesConDisponibleReal.length === 0 && !loteBloqueado`). El `INSERT` real en `lineas_albaran_venta` no cambia -- la resta de la previsión ya la hace el trigger del lado de la base de datos, no lógica nueva en el frontend.
+
+### Verificación
+
+`npx eslint` sobre los tres archivos modificados (`Pedidos.jsx`, `PedidosDelDia.jsx`, `AlbaranesVenta.jsx`): 9 problemas (6 errores, 3 warnings), idéntico al baseline antes de esta sesión -- sin regresión (los errores/warnings preexistentes son de `react-hooks/set-state-in-effect` y `exhaustive-deps` en efectos ya existentes, no tocados). `npm run build`: compila sin errores. Sin navegador disponible en este entorno para click-through real -- no se ha probado la interacción en vivo (selector de tanda, precarga/bloqueo de lote en AlbaranesVenta), solo build/lint/pruebas SQL contra datos reales bajo el rol `authenticated`.
+
+### Fuera de alcance de este Paso 2 (sin tocar)
+
+Expediciones, kanban/pedidos ficticios; reparto de una línea entre varias tandas a la vez (descartado, una tanda por línea de pedido); los dos triggers ya auditados (`trg_actualizar_estado_pedido_por_servicio`, `trg_actualizar_estado_pedido_por_produccion`).

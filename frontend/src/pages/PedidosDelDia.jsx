@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck, IconChevronRight, IconChevronDown, IconPlayerPlay } from '@tabler/icons-react'
+import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck, IconChevronRight, IconChevronDown, IconPlayerPlay, IconArrowsExchange } from '@tabler/icons-react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
@@ -343,7 +343,7 @@ function DesgloseComponentes({ filas, colSpan }) {
 // == null` en la única fila es la señal de "sin pedidos pendientes", con los totales igualmente
 // visibles. `valorDe`/`onCambiar`/`onGuardar` gestionan el borrador editable de cantidad_prevista por
 // línea, igual patrón (onChange local + onBlur guarda) que "Cantidad objetivo" en ProduccionAbierta.
-function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar }) {
+function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar, tandas, tandaEditando, onAbrirTanda, onCambiarTanda }) {
   if (filas === 'cargando') {
     return (
       <tr>
@@ -395,24 +395,69 @@ function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filas.map((f) => (
-                <tr key={f.linea_pedido_id}>
-                  <td className="pl-8 pr-2 py-1 text-gray-700">{f.cliente_nombre}</td>
-                  <td className="px-2 py-1 text-gray-500 font-mono text-xs">{f.codigo_pedido}</td>
-                  <td className="px-2 py-1 text-gray-500">{f.fecha_entrega_prevista ? formatFecha(f.fecha_entrega_prevista) : 'sin fecha'}</td>
-                  <td className="px-2 py-1">{Number(f.cantidad_pedida).toFixed(3)}</td>
-                  <td className="px-2 py-1">
-                    <Input
-                      type="number"
-                      step="0.001"
-                      value={valorDe(f)}
-                      onChange={(e) => onCambiar(f.linea_pedido_id, e.target.value)}
-                      onBlur={() => onGuardar(f)}
-                      className="text-sm w-28 py-1"
-                    />
-                  </td>
-                </tr>
-              ))}
+              {filas.map((f) => {
+                // Tanda actualmente asignada, buscada dentro de las tandas con stock disponible ya
+                // cargadas para este producto final -- si produccion_pf_id apunta a una tanda que ya no
+                // tiene stock (caso raro), tandaActual sale undefined y se muestra un texto de reserva.
+                const tandasProducto = tandas || []
+                const tandaActual = f.produccion_pf_id != null
+                  ? tandasProducto.find((t) => Number(t.produccion_id) === Number(f.produccion_pf_id))
+                  : null
+                const hayAlternativas = tandasProducto.length > 1
+                const editandoTanda = tandaEditando === f.linea_pedido_id
+
+                return (
+                  <tr key={f.linea_pedido_id}>
+                    <td className="pl-8 pr-2 py-1 text-gray-700">{f.cliente_nombre}</td>
+                    <td className="px-2 py-1 text-gray-500 font-mono text-xs">{f.codigo_pedido}</td>
+                    <td className="px-2 py-1 text-gray-500">{f.fecha_entrega_prevista ? formatFecha(f.fecha_entrega_prevista) : 'sin fecha'}</td>
+                    <td className="px-2 py-1">{Number(f.cantidad_pedida).toFixed(3)}</td>
+                    <td className="px-2 py-1">
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.001"
+                          value={valorDe(f)}
+                          onChange={(e) => onCambiar(f.linea_pedido_id, e.target.value)}
+                          onBlur={() => onGuardar(f)}
+                          className="text-sm w-28 py-1"
+                        />
+                        {hayAlternativas && (
+                          <button
+                            type="button"
+                            onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
+                            className="text-gray-400 hover:text-[#0854A0]"
+                            title="Cambiar tanda asignada"
+                          >
+                            <IconArrowsExchange size={15} />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {f.produccion_pf_id == null
+                          ? 'Sin tanda asignada'
+                          : tandaActual
+                            ? `Tanda ${formatFecha(tandaActual.fecha)}`
+                            : 'Tanda asignada'}
+                      </p>
+                      {editandoTanda && (
+                        <Select
+                          value={f.produccion_pf_id ?? ''}
+                          onChange={(e) => onCambiarTanda(f, e.target.value ? parseInt(e.target.value) : null)}
+                          className="text-xs mt-1 py-1 w-40"
+                        >
+                          <option value="">Sin tanda asignada</option>
+                          {tandasProducto.map((t) => (
+                            <option key={t.produccion_id} value={t.produccion_id}>
+                              {formatFecha(t.fecha)} · {Number(t.stock_disponible).toFixed(3)} disp.
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -465,6 +510,10 @@ function PedidosDelDia() {
   // limpia la entrada de una línea tras guardarla con éxito, para que vuelva a reflejar el valor ya
   // confirmado por el servidor en el siguiente refresco.
   const [borradorPrevision, setBorradorPrevision] = useState(new Map())
+  // Capa C, Paso 2: tandas con stock disponible por producto final (para el selector de tanda del
+  // desglose) y qué línea de pedido tiene ese selector abierto en este momento (una sola a la vez).
+  const [tandasPFPorId, setTandasPFPorId] = useState(new Map())
+  const [tandaEditandoLinea, setTandaEditandoLinea] = useState(null)
 
   async function cargarDatos() {
     setCargando(true)
@@ -473,6 +522,8 @@ function PedidosDelDia() {
     setDesgloseSemiPorId(new Map())
     setDesglosePFPorId(new Map())
     setBorradorPrevision(new Map())
+    setTandasPFPorId(new Map())
+    setTandaEditandoLinea(null)
 
     const resProductos = await supabase.from('productos_finales').select('id, nombre').order('nombre')
     if (resProductos.error) console.error('Error cargando productos finales:', resProductos.error)
@@ -765,15 +816,27 @@ function PedidosDelDia() {
   // Capa B, Paso 2: carga (o recarga) la distribución prevista de un producto final -- extraída de
   // toggleExpandPF para poder llamarla también tras guardar una previsión (refresco de totales), no
   // solo al expandir.
+  // Capa C, Paso 2: junto a la distribución, carga también las tandas con stock disponible de ese
+  // producto final (para el selector de tanda del desglose) -- misma fuente y mismo `order by fecha
+  // asc` que ya usan AlbaranesVenta.jsx y CierreTanda.jsx para elegir lote.
   async function cargarDistribucionPF(productoFinalId) {
     setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, 'cargando'))
-    const { data, error } = await supabase.rpc('distribucion_prevista_pf', { p_producto_final_id: productoFinalId })
-    if (error) {
-      console.error('Error calculando distribución prevista:', error)
+    const [resDistribucion, resTandas] = await Promise.all([
+      supabase.rpc('distribucion_prevista_pf', { p_producto_final_id: productoFinalId }),
+      supabase
+        .from('stock_lotes_producto_final')
+        .select('produccion_id, fecha, stock_disponible, codigo_lote')
+        .eq('producto_final_id', productoFinalId)
+        .gt('stock_disponible', 0)
+        .order('fecha', { ascending: true }),
+    ])
+    if (resDistribucion.error) {
+      console.error('Error calculando distribución prevista:', resDistribucion.error)
       setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, []))
       return
     }
-    setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, data || []))
+    setDesglosePFPorId((prev) => new Map(prev).set(productoFinalId, resDistribucion.data || []))
+    setTandasPFPorId((prev) => new Map(prev).set(productoFinalId, resTandas.data || []))
   }
 
   // A diferencia de toggleExpandSemi, SIEMPRE recarga al expandir (no cachea para siempre) -- la
@@ -803,6 +866,11 @@ function PedidosDelDia() {
   // visual si residual_libre sale negativo, nunca bloqueo). Refresca la distribución de ese producto
   // final tras guardar, para que los totales reflejen el cambio al instante. `productoFinalId` lo pasa
   // el llamante (la fila padre ya expandida), no se recalcula por búsqueda inversa.
+  //
+  // Capa C, Paso 2: si la previsión todavía no tiene tanda asignada (f.produccion_pf_id nulo), se
+  // sugiere automáticamente la tanda FIFO al guardar la cantidad. Si ya tenía una asignada -- por FIFO
+  // en una edición anterior, o elegida a mano vía cambiarTandaPrevision() -- esa elección se respeta y
+  // no se pisa: editar solo la cantidad nunca debe deshacer en silencio un cambio manual de tanda.
   async function guardarPrevision(f, productoFinalId) {
     const valor = borradorPrevision.get(f.linea_pedido_id)
     if (valor === undefined) return // sin edición real, no golpear la base de datos
@@ -816,9 +884,19 @@ function PedidosDelDia() {
       })
       return
     }
+
+    let produccionPfId = f.produccion_pf_id ?? null
+    if (produccionPfId == null) {
+      const { data: sugerencia } = await supabase.rpc('tanda_fifo_producto_final', { p_producto_final_id: productoFinalId })
+      produccionPfId = sugerencia?.[0]?.produccion_id ?? null
+    }
+
     const { error } = await supabase
       .from('previsiones_distribucion_pf')
-      .upsert({ producto_final_id: productoFinalId, linea_pedido_id: f.linea_pedido_id, cantidad_prevista: cantidad }, { onConflict: 'linea_pedido_id' })
+      .upsert(
+        { producto_final_id: productoFinalId, linea_pedido_id: f.linea_pedido_id, cantidad_prevista: cantidad, produccion_pf_id: produccionPfId },
+        { onConflict: 'linea_pedido_id' }
+      )
     if (error) {
       alert('Error al guardar la previsión: ' + error.message)
       return
@@ -828,6 +906,23 @@ function PedidosDelDia() {
       next.delete(f.linea_pedido_id)
       return next
     })
+    await cargarDistribucionPF(productoFinalId)
+  }
+
+  // Capa C, Paso 2: cambio manual de tanda desde el selector del desglose (icono, visible solo cuando
+  // hay más de una tanda con stock). Mantiene la cantidad ya prevista, solo cambia produccion_pf_id.
+  async function cambiarTandaPrevision(f, productoFinalId, produccionPfId) {
+    const { error } = await supabase
+      .from('previsiones_distribucion_pf')
+      .upsert(
+        { producto_final_id: productoFinalId, linea_pedido_id: f.linea_pedido_id, cantidad_prevista: Number(f.cantidad_prevista), produccion_pf_id: produccionPfId },
+        { onConflict: 'linea_pedido_id' }
+      )
+    if (error) {
+      alert('Error al cambiar la tanda: ' + error.message)
+      return
+    }
+    setTandaEditandoLinea(null)
     await cargarDistribucionPF(productoFinalId)
   }
 
@@ -912,6 +1007,10 @@ function PedidosDelDia() {
                         valorDe={valorPrevision}
                         onCambiar={cambiarBorradorPrevision}
                         onGuardar={(linea) => guardarPrevision(linea, f.id)}
+                        tandas={tandasPFPorId.get(f.id)}
+                        tandaEditando={tandaEditandoLinea}
+                        onAbrirTanda={setTandaEditandoLinea}
+                        onCambiarTanda={(linea, produccionPfId) => cambiarTandaPrevision(linea, f.id, produccionPfId)}
                       />
                     )}
                   </Fragment>

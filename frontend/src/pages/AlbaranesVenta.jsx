@@ -67,7 +67,7 @@ function AlbaranesVenta() {
     async function cargarPedido() {
       const { data } = await supabase
         .from('pedidos_venta')
-        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario, lineas_albaran_venta(cantidad))')
+        .select('cliente_id, lineas_pedido_venta(id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario, lineas_albaran_venta(cantidad), previsiones_distribucion_pf(produccion_pf_id, cantidad_prevista))')
         .eq('id', pedidoIdParam)
         .single()
 
@@ -76,6 +76,9 @@ function AlbaranesVenta() {
         const lineasConEntregado = (data.lineas_pedido_venta || []).map((l) => ({
           ...l,
           entregado_previo: (l.lineas_albaran_venta || []).reduce((sum, e) => sum + e.cantidad, 0),
+          // Capa C, Paso 2: si Producciones del día ya fijó una tanda para esta línea (vía FIFO o a
+          // mano), se precarga y se bloquea el selector de lote -- "se puede tocar cantidad, no lote".
+          produccion_pf_id_previsto: l.previsiones_distribucion_pf?.[0]?.produccion_pf_id ?? null,
         }))
         setPedidoLineas(lineasConEntregado)
       }
@@ -504,20 +507,27 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   // editable. Resincroniza tras cada "+ Añadir" — si el pedido tenía más de
   // una línea del mismo producto (ej. una a precio normal y otra de muestra),
   // pasa a precargar la siguiente pendiente en vez de quedarse con la ya cubierta.
+  //
+  // Capa C, Paso 2: también precarga loteId con la tanda que Producciones del día ya fijó para esta
+  // línea (produccion_pf_id_previsto), si la hay -- coherente con "se puede tocar cantidad, no lote".
   useEffect(() => {
     if (lineaPedido && lineaPedido.restante > 0) {
       setCantidad(String(lineaPedido.restante))
       setPrecio(lineaPedido.precio_unitario ?? '')
+      setLoteId(lineaPedido.produccion_pf_id_previsto ? String(lineaPedido.produccion_pf_id_previsto) : '')
     }
   }, [lineaPedido?.id, lineaPedido?.restante])
 
+  // Sin filtro de stock_disponible > 0 en la consulta: el lote bloqueado por una previsión debe poder
+  // mostrarse aunque su stock_disponible actual sea 0 (caso raro pero posible). El filtro de "solo
+  // ofrecer para elegir a mano los que sí tienen stock" se aplica después, en JS, vía
+  // lotesConDisponibleReal -- que es la única lista que alimenta el <Select> manual.
   useEffect(() => {
     async function cargarLotes() {
       const { data } = await supabase
         .from('stock_lotes_producto_final')
         .select('*')
         .eq('producto_final_id', producto.id)
-        .gt('stock_disponible', 0)
         .order('fecha', { ascending: true })
       setLotes(data || [])
       setCargando(false)
@@ -538,24 +548,38 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
     .map((l) => ({ ...l, disponibleReal: l.stock_disponible - cantidadYaEnLineas(l.produccion_id) }))
     .filter((l) => l.disponibleReal > 0)
 
-  if (lotesConDisponibleReal.length === 0) return null
+  const loteBloqueado = lineaPedido?.produccion_pf_id_previsto
+    ? lotes.find((l) => Number(l.produccion_id) === Number(lineaPedido.produccion_pf_id_previsto))
+    : null
+
+  // Si no hay lote bloqueado y tampoco hay stock disponible para elegir a mano, no hay nada que
+  // ofrecer para este producto -- mismo criterio de antes. Con lote bloqueado, se muestra igual aunque
+  // el resto de tandas esté a 0, para que el operador vea la asignación ya decidida.
+  if (lotesConDisponibleReal.length === 0 && !loteBloqueado) return null
 
   return (
     <div className="border border-gray-200 rounded-md p-3">
       <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
-        <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
-          <option value="">Selecciona lote de producción</option>
-          {lotesConDisponibleReal.map((l) => {
-            const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
-            const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
-            return (
-              <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
-                {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {formatFecha(l.fecha)} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
-              </option>
-            )
-          })}
-        </Select>
+        {loteBloqueado ? (
+          <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
+            {loteBloqueado.codigo_lote ? `${loteBloqueado.codigo_lote} · ` : ''}Producción {formatFecha(loteBloqueado.fecha)}
+            <span className="text-gray-400 text-xs"> — asignado desde Producciones del día</span>
+          </div>
+        ) : (
+          <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
+            <option value="">Selecciona lote de producción</option>
+            {lotesConDisponibleReal.map((l) => {
+              const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
+              const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
+              return (
+                <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
+                  {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {formatFecha(l.fecha)} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
+                </option>
+              )
+            })}
+          </Select>
+        )}
         <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
           className="text-sm" title="Se redondeará a 3 decimales" />

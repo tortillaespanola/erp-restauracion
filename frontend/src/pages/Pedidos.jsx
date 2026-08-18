@@ -76,7 +76,8 @@ function Pedidos() {
             id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario,
             productos_finales(nombre),
             articulos_compra(nombre, unidad),
-            lineas_albaran_venta(cantidad)
+            lineas_albaran_venta(cantidad),
+            previsiones_distribucion_pf(cantidad_prevista)
           )
         `)
         .order('fecha', { ascending: false }),
@@ -466,8 +467,8 @@ function Pedidos() {
                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
                     <th className="py-1.5 font-medium">Línea</th>
                     <th className="py-1.5 font-medium">Pedido</th>
+                    <th className="py-1.5 font-medium">Previsto</th>
                     <th className="py-1.5 font-medium">Servido</th>
-                    <th className="py-1.5 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -475,6 +476,10 @@ function Pedidos() {
                     const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
                     const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
                     const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
+                    // Mismo patrón que "Servido", sumando previsiones_distribucion_pf en vez de
+                    // lineas_albaran_venta -- UNIQUE(linea_pedido_id) garantiza como mucho una fila,
+                    // pero se suma igual por consistencia con el patrón ya establecido.
+                    const previsto = (linea.previsiones_distribucion_pf || []).reduce((sum, pr) => sum + Number(pr.cantidad_prevista), 0)
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
                     return (
@@ -485,18 +490,8 @@ function Pedidos() {
                           {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
                         </td>
                         <td className="py-1.5">{linea.cantidad} {unidad}</td>
+                        <td className="py-1.5 text-gray-500">{tipo === 'producto' ? `${previsto} ${unidad}` : '-'}</td>
                         <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
-                        <td className="py-1.5 text-right">
-                          {tipo === 'producto' && !completa && p.estado !== 'servido' && p.estado !== 'cancelado' && (
-                            <LinkAction
-                              tone="blue"
-                              className="text-xs"
-                              onClick={() => navigate(`/produccion-productos?pedido_id=${p.id}&producto_final_id=${linea.producto_final_id}`)}
-                            >
-                              Iniciar producción
-                            </LinkAction>
-                          )}
-                        </td>
                       </tr>
                     )
                   })}
