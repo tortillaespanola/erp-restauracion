@@ -486,6 +486,7 @@ function PedidosDelDia() {
 
   const [necesidadesPF, setNecesidadesPF] = useState([])
   const [stockPorPF, setStockPorPF] = useState(new Map())
+  const [producidoHoyPorPF, setProducidoHoyPorPF] = useState(new Map())
   const [pedidosPorPF, setPedidosPorPF] = useState(new Map())
   const [faltantesPorPF, setFaltantesPorPF] = useState(new Map())
   const [dependeDePF, setDependeDePF] = useState(new Map())
@@ -620,6 +621,24 @@ function PedidosDelDia() {
       mapaStockPF.set(l.producto_final_id, (mapaStockPF.get(l.producto_final_id) || 0) + Number(l.stock_disponible))
     }
     setStockPorPF(mapaStockPF)
+
+    // Fix "botón play precarga necesidad total en vez de lo que falta por fabricar": producido HOY en
+    // tandas ya cerradas, agregado por producto final -- mismo criterio que total_producido_hoy de
+    // distribucion_prevista_pf() (estado='cerrada' AND fecha=hoy), NO el stock_disponible de arriba
+    // (que descuenta lo ya albaranado, una pregunta distinta: "cuánto falta por ENTREGAR", no "cuánto
+    // falta por FABRICAR"). Usado solo por handleProducirPF, no se muestra en la tabla.
+    const hoy = new Date().toISOString().slice(0, 10)
+    const resProducidoHoyPF = await supabase
+      .from('producciones_producto_final')
+      .select('producto_final_id, cantidad_producida')
+      .eq('estado', 'cerrada')
+      .eq('fecha', hoy)
+    if (resProducidoHoyPF.error) console.error('Error cargando producido hoy de producto final:', resProducidoHoyPF.error)
+    const mapaProducidoHoyPF = new Map()
+    for (const p of resProducidoHoyPF.data || []) {
+      mapaProducidoHoyPF.set(p.producto_final_id, (mapaProducidoHoyPF.get(p.producto_final_id) || 0) + Number(p.cantidad_producida))
+    }
+    setProducidoHoyPorPF(mapaProducidoHoyPF)
 
     // Orden jerárquico hoja→raíz sobre el conjunto de semielaborados con necesidad pendiente, y el
     // mismo mapa de adyacencia reutilizado para la trazabilidad descendente de más abajo. No aplica a
@@ -790,10 +809,20 @@ function PedidosDelDia() {
   }
 
   // Capa B, Paso 2: mismo patrón que handleProducir de semielaborados, hacia ProduccionProductosFinales.jsx
-  // (?producto_final_id=&cantidad=, ya leídos ahí desde Capa A) -- precarga la necesidad agregada total
-  // como cantidad objetivo, editable sin bloqueo, igual criterio confirmado que el resto del sistema.
+  // (?producto_final_id=&cantidad=, ya leídos ahí desde Capa A) -- precarga cantidad objetivo, editable
+  // sin bloqueo, igual criterio confirmado que el resto del sistema.
+  //
+  // Fix: al producir el mismo producto final en varias tandas el mismo día, precargar fila.necesidad
+  // (la necesidad agregada TOTAL, bruta -- necesidades_pedidos_cascada() nunca la neta para el nivel
+  // producto_final, ver esa función) hacía que la segunda tanda partiera otra vez de la necesidad
+  // completa, ignorando lo ya fabricado hoy. Se descuenta aquí lo producido HOY en tandas cerradas de
+  // este producto (producidoHoyPorPF) -- explícitamente NO stockPorPF/disponible, que descuenta lo ya
+  // ALBARANADO: la cantidad objetivo de producción debe reflejar cuánto falta por FABRICAR, no cuánto
+  // falta por entregar (eso es previsiones_distribucion_pf, una cuestión distinta).
   function handleProducirPF(fila) {
-    navigate(`/produccion-productos?producto_final_id=${fila.id}&cantidad=${fila.necesidad}`)
+    const producidoHoy = producidoHoyPorPF.get(fila.id) || 0
+    const residual = Math.max(0, fila.necesidad - producidoHoy)
+    navigate(`/produccion-productos?producto_final_id=${fila.id}&cantidad=${residual}`)
   }
 
   // Addenda "desglose por componente en Producciones del día": expande/contrae una fila y, si es la

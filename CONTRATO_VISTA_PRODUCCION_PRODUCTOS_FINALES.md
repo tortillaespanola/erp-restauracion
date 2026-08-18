@@ -313,3 +313,21 @@ Solo actúa sobre líneas de tipo "producto final" ligadas a un pedido real (`li
 ### Fuera de alcance de este Paso 2 (sin tocar)
 
 Expediciones, kanban/pedidos ficticios; reparto de una línea entre varias tandas a la vez (descartado, una tanda por línea de pedido); los dos triggers ya auditados (`trg_actualizar_estado_pedido_por_servicio`, `trg_actualizar_estado_pedido_por_produccion`).
+
+---
+
+## Addenda: fix -- botón play precargaba necesidad total en vez de lo que falta por fabricar (2026-08-18)
+
+**Bug reportado**: al producir un producto final en varias tandas el mismo día, el botón play de la tabla "Productos finales" precargaba siempre la necesidad agregada TOTAL como cantidad objetivo, sin descontar lo ya producido hoy en tandas anteriores del mismo producto. Caso real: `ZZ_TORTILLASINCEBOLLAGRANDE`, necesidad agregada 7; primera tanda cerrada con 5 uds; al pulsar play para la segunda tanda, precargaba 7 en vez de 2 (`7 − 5`).
+
+**Causa raíz confirmada**: `handleProducirPF` (`PedidosDelDia.jsx`) navegaba con `cantidad=${fila.necesidad}`, y `fila.necesidad` viene directa de `necesidades_pedidos_cascada()` -- que para el nivel `producto_final` devuelve explícitamente necesidad **bruta** de pedido, nunca neta de stock propio (documentado en la cabecera de esa función: "La fila 'producto_final' devuelta sigue siendo necesidad bruta de pedido, sin cambio de comportamiento visible en esa tabla"). `necesidades_pedidos_cascada()` no se ha tocado -- sigue siendo correcta para lo que hace, que es calcular necesidad agregada bruta y cascada de déficit hacia semielaborados/ingredientes, no un residual de fabricación por producto final.
+
+**No era solo "reutilizar mal una resta ya hecha"**: la tabla no tenía, en ningún sitio, un valor de "cuánto falta por fabricar" listo para reutilizar. La columna "Stock disponible" (`stockPorPF`, de `stock_lotes_producto_final`) es un balance histórico que ya descuenta lo **albaranado** -- útil para la columna "Estado" de la tabla, pero responde a una pregunta distinta ("cuánto queda para vender/entregar"), no a "cuánto queda por producir hoy". Usarla para el play hubiera sido tan incorrecto como el bug original, solo que por el motivo contrario (el enunciado del bug lo advertía explícitamente).
+
+**Fix**: nueva agregación `producidoHoyPorPF` (estado análogo a `stockPorPF`, cargada en el mismo punto de `cargarDatos()`), suma de `cantidad_producida` de `producciones_producto_final` con `estado = 'cerrada'` y `fecha = hoy` por producto final -- mismo criterio que `total_producido_hoy` de `distribucion_prevista_pf()` (Capa B), pero como agregado batch en el frontend en vez de una llamada RPC por fila, para no disparar una consulta por producto solo por tener el botón visible. `handleProducirPF` pasa a navegar con `cantidad = Math.max(0, fila.necesidad - producidoHoy)`.
+
+**Verificación con datos reales**: `ZZ_TORTILLASINCEBOLLAGRANDE` (`producto_final_id = 6`) tiene hoy dos tandas cerradas reales, `id=137` (5 uds) e `id=138` (2 uds), necesidad bruta real 7. Replicando la query nueva solo contra la tanda 137 (escenario real reportado, "primera tanda ya cerrada"): `producidoHoy = 5`, residual `7 − 5 = 2` -- coincide exactamente con lo esperado. Con ambas tandas (estado real actual): `producidoHoy = 7`, residual `0` (ya cubierto). `npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, idéntico al baseline anterior a este fix -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de este fix
+
+`necesidades_pedidos_cascada()` (no tocada, confirmado correcta para su propósito); lógica de distribución/previsiones (`previsiones_distribucion_pf`, ya cerrada en los pasos anteriores); la columna "Stock disponible"/"Estado" de la tabla, que sigue sin cambios.
