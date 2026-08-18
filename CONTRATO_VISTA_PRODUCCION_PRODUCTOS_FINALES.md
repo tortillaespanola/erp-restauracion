@@ -462,3 +462,55 @@ El "Crear albarán de venta" y el bloqueo de lote en `AlbaranesVenta.jsx` (ya re
 ### Fuera de alcance de estos fixes
 
 `ArticuloParaVender` (mercadería) tiene la misma comparación estricta `entrada_material_id === parseInt(loteId)` sin normalizar, pero no participa del flujo de previsión/bloqueo de lote (no existe concepto de "tanda bloqueada" para mercadería) -- no se ha tocado, es un problema distinto y no relacionado con el bug reportado.
+
+---
+
+## Addenda: reparto de una línea de pedido entre varias tandas -- Paso 1, modelo de datos (2026-08-18)
+
+Reabre la decisión "una tanda por línea de pedido" documentada como descartada en el Paso 2 de Capa C (más arriba) -- ahora hace falta soportar repartir una misma línea entre varias tandas (ej. pedido de 5, tanda A con 2 disponibles + tanda B con 3, cubriendo el total entre ambas). Este addenda cubre **solo el modelo de datos**; la UI de `AlbaranesVenta.jsx` (formulario con varias sub-filas por línea) y de `PedidosDelDia.jsx` (varias filas de cantidad+tanda por línea en el desglose) queda fuera de alcance, Paso 2 en un prompt aparte.
+
+### Auditoría previa (resumen -- detalle completo en la conversación)
+
+Confirmado el blast radius exacto antes de tocar nada: el trigger de reparto/reconstrucción identificaba la fila solo por `linea_pedido_id`, ambiguo en cuanto hay varias previsiones por línea (necesita `(linea_pedido_id, produccion_pf_id)`); `distribucion_prevista_pf()` no necesita cambios (el `LEFT JOIN` ya existente devuelve varias filas por línea automáticamente en cuanto existan); `AlbaranesVenta.jsx`/`PedidosDelDia.jsx` sí necesitan cambios reales de UI (fuera de este Paso 1); no hay ningún otro punto del código o esquema que dependa de la unicidad simple.
+
+### Migración `supabase/migrations/20260919_previsiones_multiples_tandas_por_linea.sql`
+
+**1. Esquema** -- sustituye `UNIQUE(linea_pedido_id)` por `UNIQUE(linea_pedido_id, produccion_pf_id)`: ya no "una previsión por línea", sino "una previsión por línea Y tanda".
+
+```sql
+alter table previsiones_distribucion_pf
+  drop constraint previsiones_distribucion_pf_linea_pedido_id_key;
+
+alter table previsiones_distribucion_pf
+  add constraint previsiones_distribucion_pf_linea_pedido_id_produccion_pf_key
+  unique (linea_pedido_id, produccion_pf_id);
+```
+
+**2. Trigger `actualizar_previsiones_por_linea_albaran()`** -- ambas ramas (INSERT y DELETE) pasan a identificar la fila por `(linea_pedido_id, produccion_pf_id)` en vez de solo `linea_pedido_id`, para no restar/reconstruir en TODAS las tandas de la línea cuando solo una de ellas cubrió el albarán real. La rama defensiva `if not found then insert` no cambió -- ya insertaba con un `produccion_pf_id` concreto, coherente con la nueva restricción compuesta.
+
+**3. `distribucion_prevista_pf()`** -- sin cambios, confirmado con prueba real (no asumido): el `LEFT JOIN` de `lineas_pendientes` ya devuelve una fila por cada previsión que encuentre para una línea, así que en cuanto hay varias, la función empieza a devolver varias filas por línea sola, sin tocar su SQL.
+
+**4. Índice único parcial** -- hallazgo propio detectado antes de aplicar: el `UNIQUE` compuesto del punto 1 no bloquea dos previsiones **sin tanda asignada** (`produccion_pf_id IS NULL`) para la misma línea, porque en Postgres `NULL` nunca se considera igual a `NULL` a efectos de `UNIQUE`. Antes de esta migración eso era imposible (el `UNIQUE(linea_pedido_id)` simple lo cubría sin distinguir `NULL`). Cerrado con un índice único parcial:
+
+```sql
+create unique index previsiones_distribucion_pf_linea_sin_tanda_key
+  on previsiones_distribucion_pf (linea_pedido_id)
+  where produccion_pf_id is null;
+```
+
+### Prueba en transacción y aplicación en firme
+
+Probado contra datos reales (líneas de pedido 145/146/147, tandas reales 140/141 de `ZZ_TORTILLASINCEBOLLAGRANDE`, con previsiones ya existentes):
+
+1. Dos previsiones para la misma línea (145), tandas distintas (140 y 141) -- aceptado.
+2. Duplicado exacto `(145, 140)` -- rechazado por el `UNIQUE` compuesto (`23505`).
+3. Segunda previsión sin tanda para una línea que ya tenía una (línea 147) -- rechazada por el índice parcial (`23505`); confirmado que esto NO afecta a las previsiones con tanda asignada (línea 145 conserva sus 2 filas).
+4. Línea de albarán que cubre `(145, 141)` -- resta SOLO esa previsión (`2 → 1`); `(145, 140)` y la previsión de la línea 146 (otra línea, misma tanda) quedan intactas.
+5. Borrar esa línea de albarán -- reconstruye SOLO `(145, 141)` (`1 → 2`).
+6. `distribucion_prevista_pf(6)` -- confirmado que devuelve 2 filas para la línea 145 (una por tanda) y 1 para la línea 146, sin haber tocado el SQL de la función.
+
+Repetido bajo el rol `authenticated` real (`SET LOCAL ROLE` + JWT claim simulado): mismos resultados en los casos 1, 4, 5 y 6, sin `42501`. Todo revertido con `ROLLBACK`; aplicado después en firme (`BEGIN; ...; COMMIT`) y confirmado por lectura: constraints e índices correctos, función del trigger contiene las nuevas condiciones `produccion_pf_id = NEW/OLD.produccion_pf_id`, previsiones reales intactas (sin datos de prueba persistidos).
+
+### Fuera de alcance de este Paso 1
+
+UI de `AlbaranesVenta.jsx` (formulario con varias sub-filas de cantidad+lote bloqueado por línea, sumando el total previsto) y de `PedidosDelDia.jsx` (desglose con varias filas de cantidad+tanda por línea, incluyendo key de React compuesta, borrador de edición reclave por `(linea_pedido_id, produccion_pf_id)`, y un control nuevo para añadir un split) -- Paso 2, prompt aparte.
