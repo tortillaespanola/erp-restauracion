@@ -379,6 +379,10 @@ function DesgloseDistribucionPF({
   // explícitamente, conservando el orden de primera aparición.
   const grupos = []
   const indicePorLinea = new Map()
+  // Fix: aviso de tanda insuficiente en Producciones del día, mismo cálculo de disponible neto que ya
+  // usa Pedidos.jsx -- suma de cantidad_prevista por tanda a través de TODAS las líneas de este
+  // producto final (ya vienen todas en `filas`, sin consulta aparte).
+  const sumaPrevistoPorTanda = new Map()
   if (!sinPedidos) {
     for (const f of filas) {
       if (indicePorLinea.has(f.linea_pedido_id)) {
@@ -386,6 +390,9 @@ function DesgloseDistribucionPF({
       } else {
         indicePorLinea.set(f.linea_pedido_id, grupos.length)
         grupos.push({ linea_pedido_id: f.linea_pedido_id, filas: [f] })
+      }
+      if (f.produccion_pf_id != null) {
+        sumaPrevistoPorTanda.set(f.produccion_pf_id, (sumaPrevistoPorTanda.get(f.produccion_pf_id) || 0) + Number(f.cantidad_prevista))
       }
     }
   }
@@ -425,6 +432,11 @@ function DesgloseDistribucionPF({
                 )
                 const hayTandaLibreParaRepartir = tandasProducto.some((t) => !tandasUsadasPorLinea.has(Number(t.produccion_id)))
                 const editandoNuevoSplit = nuevoSplitLinea === grupo.linea_pedido_id
+                // Fix: línea ya servida del todo (cantidad_pedida - servido <= 0) -- puede seguir
+                // dentro de un pedido abierto por OTRA línea distinta. cantidad_pedida/servido son
+                // agregados a nivel de línea, iguales en todas las filas-tanda del grupo -- basta con
+                // mirar la primera. Sin controles activos: cantidad en texto plano, sin "+ repartir".
+                const lineaYaServida = Number(grupo.filas[0].cantidad_pedida) - Number(grupo.filas[0].servido) <= 0
 
                 return (
                   <Fragment key={grupo.linea_pedido_id}>
@@ -453,6 +465,15 @@ function DesgloseDistribucionPF({
                       // vacía, heredada del trigger de reconstrucción). No afecta a hayAlternativas en sí,
                       // solo a si se pinta.
                       const hayCantidadPrevista = Number(f.cantidad_prevista) !== 0
+                      // Fix: mismo cálculo de disponible neto que el aviso de Pedidos.jsx -- stock de
+                      // la tanda menos lo que OTRAS previsiones (de cualquier línea) también reclaman
+                      // de ella. Sin aviso en líneas ya servidas del todo (nada que solucionar ahí).
+                      const stockTandaBruto = tandaActual?.stock_disponible != null ? Number(tandaActual.stock_disponible) : null
+                      const sumaOtrasPrevisiones = f.produccion_pf_id != null
+                        ? (sumaPrevistoPorTanda.get(f.produccion_pf_id) || 0) - Number(f.cantidad_prevista)
+                        : null
+                      const disponibleNeto = stockTandaBruto != null ? stockTandaBruto - sumaOtrasPrevisiones : null
+                      const tandaInsuficiente = !lineaYaServida && hayCantidadPrevista && disponibleNeto != null && disponibleNeto < Number(f.cantidad_prevista)
 
                       return (
                         <tr key={`${f.linea_pedido_id}-${f.produccion_pf_id}`}>
@@ -462,35 +483,41 @@ function DesgloseDistribucionPF({
                           <td className="px-2 py-1">{esPrimeraDelGrupo ? Number(f.cantidad_pedida).toFixed(3) : ''}</td>
                           <td className="px-2 py-1">
                             <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                step="0.001"
-                                value={valorDe(f)}
-                                onChange={(e) => onCambiar(f.linea_pedido_id, f.produccion_pf_id, e.target.value)}
-                                onBlur={() => onGuardar(f)}
-                                className="text-sm w-28 py-1"
-                              />
-                              {hayAlternativas && hayCantidadPrevista && (
-                                <button
-                                  type="button"
-                                  onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
-                                  className="text-gray-400 hover:text-[#0854A0]"
-                                  title="Cambiar tanda asignada"
-                                >
-                                  <IconArrowsExchange size={15} />
-                                </button>
+                              {lineaYaServida ? (
+                                <span className="text-sm text-gray-500">{Number(f.cantidad_prevista).toFixed(3)}</span>
+                              ) : (
+                                <>
+                                  <Input
+                                    type="number"
+                                    step="0.001"
+                                    value={valorDe(f)}
+                                    onChange={(e) => onCambiar(f.linea_pedido_id, f.produccion_pf_id, e.target.value)}
+                                    onBlur={() => onGuardar(f)}
+                                    className="text-sm w-28 py-1"
+                                  />
+                                  {hayAlternativas && hayCantidadPrevista && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
+                                      className="text-gray-400 hover:text-[#0854A0]"
+                                      title="Cambiar tanda asignada"
+                                    >
+                                      <IconArrowsExchange size={15} />
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                             {hayCantidadPrevista && (
-                              <p className="text-[11px] text-gray-400 mt-0.5">
+                              <p className={`text-[11px] mt-0.5 ${tandaInsuficiente ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
                                 {f.produccion_pf_id == null
                                   ? 'Sin tanda asignada'
                                   : tandaActual
-                                    ? `Tanda ${formatFecha(tandaActual.fecha)}`
+                                    ? `Tanda ${formatFecha(tandaActual.fecha)}${tandaInsuficiente ? ` · solo ${disponibleNeto.toFixed(3)} disp.` : ''}`
                                     : 'Tanda asignada'}
                               </p>
                             )}
-                            {editandoTanda && hayCantidadPrevista && (
+                            {!lineaYaServida && editandoTanda && hayCantidadPrevista && (
                               <Select
                                 value={f.produccion_pf_id ?? ''}
                                 onChange={(e) => onCambiarTanda(f, e.target.value ? parseInt(e.target.value) : null)}
@@ -552,7 +579,7 @@ function DesgloseDistribucionPF({
                         </td>
                       </tr>
                     )}
-                    {!editandoNuevoSplit && hayTandaLibreParaRepartir && (
+                    {!lineaYaServida && !editandoNuevoSplit && hayTandaLibreParaRepartir && (
                       <tr>
                         <td className="pl-8 pr-2 py-1"></td>
                         <td className="px-2 py-1"></td>

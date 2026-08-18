@@ -561,3 +561,31 @@ Lógica de las tres pantallas verificada con datos reales y casos hipotéticos c
 ### Fuera de alcance de este Paso 2
 
 Expediciones, kanban/pedidos ficticios; los dos triggers ya auditados. `ArticuloParaVender` (mercadería) sigue sin concepto de tanda bloqueada -- no participa de este reparto multi-tanda, no se ha tocado.
+
+---
+
+## Addenda: dos fricciones del reparto multi-tanda en Producciones del día (2026-08-18)
+
+### Fix 1 -- líneas ya servidas del todo seguían con controles activos
+
+**Bug**: `distribucion_prevista_pf()` filtra por pedido pendiente, pero no por línea individual -- una línea ya 100% servida (ej. Cliente1, 2/2) dentro de un pedido que sigue abierto por otra línea distinta seguía mostrando el campo "Previsto" editable y el link "+ repartir en otra tanda" activos, sin nada pendiente ahí de verdad.
+
+**Migración `supabase/migrations/20260920_distribucion_prevista_pf_servido.sql`**: `distribucion_prevista_pf()` no exponía `servido` -- añadido a la CTE `lineas_pendientes` y a la salida, mismo cálculo (`sum(lineas_albaran_venta.cantidad)` por línea) que ya usa `Pedidos.jsx`. Cambio puramente aditivo, requiere `drop function` previo (cambia el conjunto de columnas de salida). Probado en transacción contra datos reales (línea 145: `cantidad_pedida=2, servido=2`; línea 146: `cantidad_pedida=5, servido=0`) y bajo el rol `authenticated`, luego aplicado en firme.
+
+**`PedidosDelDia.jsx`**: `lineaYaServida = cantidad_pedida - servido <= 0`, calculado una vez por grupo (línea) a partir de la primera fila (`cantidad_pedida`/`servido` son agregados de línea, iguales en todas sus filas-tanda). Con `lineaYaServida`: el campo se renderiza como texto plano en vez de `<Input>`, el icono de cambio de tanda y el `<Select>` de reasignación no se muestran, y el link "+ repartir en otra tanda" del grupo entero se oculta.
+
+**Verificación con datos reales, en firme**: Cliente1 (línea 145, `cantidad_pedida=2, servido=2`) -> `lineaYaServida=true`, solo lectura confirmada. Empresa1 (línea 146, `cantidad_pedida=5, servido=0`) -> `lineaYaServida=false`, exactamente igual que antes.
+
+### Fix 2 -- sin aviso de tanda insuficiente donde se puede actuar
+
+**Problema**: el aviso de "tanda con menos stock del previsto" solo existía en `Pedidos.jsx` (solo lectura) -- la acción para solucionarlo (repartir en otra tanda) vive en `PedidosDelDia.jsx`, sin ningún aviso ahí.
+
+**Fix**: mismo cálculo de disponible neto ya usado en el fix de `Pedidos.jsx` (`stock_disponible` de la tanda menos la suma de `cantidad_prevista` de TODAS las demás previsiones que también la reclaman), reutilizado tal cual -- no reescrito. La suma por tanda (`sumaPrevistoPorTanda`) se calcula directamente a partir de `filas` (ya trae todas las previsiones de este producto final, sin consulta nueva). Si `disponibleNeto < cantidad_prevista` de esa fila (y la línea no está ya servida del todo, ni la cantidad prevista es 0), la etiqueta "Tanda X" se pinta en rojo con el disponible real añadido: `Tanda 18/08/2026 · solo 3.000 disp.`. Mismo sitio que la etiqueta pasiva ya existente -- no se añadió una línea aparte, coherente con el resto del desglose.
+
+**Verificación con datos reales, en firme**: Empresa1 (línea 146, previsto 5 en tanda 140 con stock bruto 3, sin otras previsiones que la reclamen) -> `disponibleNeto=3 < 5` -> aviso rojo confirmado, exactamente el caso reportado.
+
+`npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, idéntico al baseline anterior a estos fixes -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de estos fixes
+
+`Pedidos.jsx`/`AlbaranesVenta.jsx` no se han tocado -- el aviso de `Pedidos.jsx` ya existía, y este addenda solo lo replica en la pantalla donde se actúa.
