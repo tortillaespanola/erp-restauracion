@@ -331,3 +331,25 @@ Expediciones, kanban/pedidos ficticios; reparto de una línea entre varias tanda
 ### Fuera de alcance de este fix
 
 `necesidades_pedidos_cascada()` (no tocada, confirmado correcta para su propósito); lógica de distribución/previsiones (`previsiones_distribucion_pf`, ya cerrada en los pasos anteriores); la columna "Stock disponible"/"Estado" de la tabla, que sigue sin cambios.
+
+---
+
+## Addenda: fix -- selector de reasignación de tanda no mostraba alternativas con la tanda actual vacía (2026-08-18)
+
+**Bug reportado**: al agotar la tanda asignada a una previsión (todo su stock consumido por un albarán real de otra línea del mismo producto), el selector de tanda del desglose de "Producciones del día" dejaba de mostrar cualquier alternativa para reasignar -- aunque existiera otra tanda del mismo producto con stock real. Caso real: `ZZ_TORTILLASINCEBOLLAGRANDE`, tanda 140 (0 disponible, asignada a la previsión de Cliente1) y tanda 141 (2 disponible, sin asignar) -- el icono para cambiar de tanda no aparecía en la fila de Cliente1.
+
+**Causa raíz confirmada**: `hayAlternativas = tandasProducto.length > 1`, donde `tandasProducto` ya viene filtrada por `stock_disponible > 0` (correcto para no reofrecer un lote agotado como opción nueva). Al vaciarse la tanda ya asignada, esta queda excluida de esa lista -- con una sola tanda restante (la 141), `length` daba 1, y `1 > 1` es `false`, ocultando el selector aunque esa tanda sí fuera una alternativa real. El bug estaba solo en el conteo, no en el filtro de la query (que sigue igual, sin tocar).
+
+**Fix** (`DesgloseDistribucionPF`, `PedidosDelDia.jsx`): `hayAlternativas` compara ahora contra la tanda ya asignada de esa previsión en vez de solo contar el tamaño de la lista -- hay alternativa si existe alguna tanda en `tandasProducto` con `produccion_id` distinto de `f.produccion_pf_id`, o si todavía no hay ninguna tanda asignada y la lista tiene al menos una:
+
+```js
+const hayAlternativas = f.produccion_pf_id != null
+  ? tandasProducto.some((t) => Number(t.produccion_id) !== Number(f.produccion_pf_id))
+  : tandasProducto.length > 0
+```
+
+**Verificación con datos reales**: replicada la query exacta de `cargarDistribucionPF` contra `producto_final_id = 6` -- `tandasProducto` real solo contiene la tanda 141 (2 disponible). Con la previsión real de Cliente1 (`produccion_pf_id = 140`, la tanda vacía), el código corregido da `hayAlternativas = true` (la 141 es distinta de la 140 asignada); el código anterior daba `false` para el mismo caso -- confirma el bug y el fix con el mismo dato real. Caso de control (previsión de Empresa1, también apuntando a la 140): igualmente `true`. `npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, idéntico al baseline anterior a este fix -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de este fix
+
+El problema 2 reportado junto con este (déficit fantasma en `necesidades_pedidos_cascada()` por líneas ya servidas dentro de un pedido con estado mixto) -- diagnosticado, pendiente de decidir el fix en una revisión aparte. La query de `stock_lotes_producto_final` en `cargarDistribucionPF` (el filtro `gt('stock_disponible', 0)`) no se ha tocado.

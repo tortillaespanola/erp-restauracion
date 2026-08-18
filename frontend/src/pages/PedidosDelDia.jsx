@@ -403,7 +403,15 @@ function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar,
                 const tandaActual = f.produccion_pf_id != null
                   ? tandasProducto.find((t) => Number(t.produccion_id) === Number(f.produccion_pf_id))
                   : null
-                const hayAlternativas = tandasProducto.length > 1
+                // Fix: contar tandasProducto.length > 1 no bastaba -- si la tanda ya asignada se vació
+                // (stock_disponible=0), queda excluida de esta lista (ya filtrada a > 0) y con una sola
+                // tanda restante el conteo daba 1, ocultando el selector aunque esa tanda SÍ fuera una
+                // alternativa real. Se compara contra la tanda asignada: hay alternativa si existe
+                // alguna tanda en la lista distinta de la actual, o si todavía no hay ninguna asignada
+                // y la lista tiene al menos una.
+                const hayAlternativas = f.produccion_pf_id != null
+                  ? tandasProducto.some((t) => Number(t.produccion_id) !== Number(f.produccion_pf_id))
+                  : tandasProducto.length > 0
                 const editandoTanda = tandaEditando === f.linea_pedido_id
 
                 return (
