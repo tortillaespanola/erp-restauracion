@@ -66,6 +66,11 @@ function Pedidos() {
   // previsión asignada, cargado en un único batch (in produccion_id) tras conocer los pedidos -- nunca
   // una consulta por línea.
   const [stockPorProduccionId, setStockPorProduccionId] = useState(new Map())
+  // Fix: el aviso comparaba cantidad_prevista contra el stock físico bruto de la tanda, sin descontar
+  // lo que OTRAS previsiones (de otras líneas de pedido) también reclaman de esa misma tanda -- suma de
+  // cantidad_prevista por produccion_pf_id, para restar "lo de los demás" al calcular el disponible neto
+  // de cada línea.
+  const [sumaPrevistoPorProduccionId, setSumaPrevistoPorProduccionId] = useState(new Map())
 
   async function cargarDatos() {
     setCargando(true)
@@ -96,12 +101,17 @@ function Pedidos() {
       setPedidos(pedidosOrdenados)
 
       const idsProduccion = new Set()
+      const sumaPrevisto = new Map()
       for (const p of pedidosOrdenados) {
         for (const l of p.lineas_pedido_venta) {
           const produccionId = l.previsiones_distribucion_pf?.produccion_pf_id
-          if (produccionId != null) idsProduccion.add(produccionId)
+          if (produccionId == null) continue
+          idsProduccion.add(produccionId)
+          const cantidad = Number(l.previsiones_distribucion_pf?.cantidad_prevista ?? 0)
+          sumaPrevisto.set(produccionId, (sumaPrevisto.get(produccionId) || 0) + cantidad)
         }
       }
+      setSumaPrevistoPorProduccionId(sumaPrevisto)
       if (idsProduccion.size > 0) {
         const resStock = await supabase
           .from('stock_lotes_producto_final')
@@ -509,10 +519,22 @@ function Pedidos() {
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
                     // Aviso "tanda sin stock suficiente": solo tiene sentido si hay tanda asignada
-                    // (produccion_pf_id no nulo) -- sin tanda, no hay lote real que comprobar todavía.
+                    // (produccion_pf_id no nulo) y si esta línea tiene algo pendiente de verdad
+                    // (previsto > 0) -- con previsto = 0 no hay nada que redistribuir, aunque la tanda
+                    // esté sobreasignada por OTRAS líneas (mismo criterio ya aplicado en el desglose de
+                    // Producciones del día).
+                    //
+                    // Fix: comparar contra el disponible NETO de la tanda, no el stock físico bruto --
+                    // hay que descontar lo que OTRAS previsiones (de otras líneas de pedido) también
+                    // reclaman de esa misma tanda, o dos previsiones que se solapan podían aparecer
+                    // ambas "verdes" aunque juntas superen el stock real.
                     const produccionPfId = linea.previsiones_distribucion_pf?.produccion_pf_id ?? null
                     const stockTanda = produccionPfId != null ? stockPorProduccionId.get(produccionPfId) : null
-                    const stockInsuficiente = produccionPfId != null && stockTanda != null && stockTanda < previsto
+                    const sumaOtrasPrevisiones = produccionPfId != null
+                      ? (sumaPrevistoPorProduccionId.get(produccionPfId) || 0) - previsto
+                      : null
+                    const disponibleNeto = stockTanda != null ? stockTanda - sumaOtrasPrevisiones : null
+                    const stockInsuficiente = produccionPfId != null && previsto > 0 && disponibleNeto != null && disponibleNeto < previsto
                     return (
                       <tr key={linea.id}>
                         <td className="py-1.5">
@@ -526,7 +548,7 @@ function Pedidos() {
                             <>
                               {previsto} {unidad}
                               {stockInsuficiente && (
-                                <span className="text-xs"> (solo {stockTanda.toFixed(3)} disp. en la tanda asignada)</span>
+                                <span className="text-xs"> (solo {disponibleNeto.toFixed(3)} disp. en la tanda asignada)</span>
                               )}
                             </>
                           ) : '-'}

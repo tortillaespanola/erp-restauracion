@@ -428,3 +428,37 @@ El "Crear albarán de venta" y el bloqueo de lote en `AlbaranesVenta.jsx` (ya re
 ### Fuera de alcance de este fix
 
 `hayAlternativas` y la lógica de asignación/reasignación de tanda -- no se han tocado, ya eran correctas.
+
+---
+
+## Addenda: tres fixes -- aviso de stock neto, formato y lote bloqueado en AlbaranesVenta (2026-08-18)
+
+### Fix 1 -- aviso de "Previsto" en Pedidos no descontaba lo reclamado por OTRAS previsiones del mismo lote
+
+**Bug**: el aviso rojo comparaba `cantidad_prevista` contra el stock físico bruto de la tanda asignada, sin restar lo que otras previsiones (de otras líneas de pedido) también reclaman de esa misma tanda -- dos previsiones que se solapan podían aparecer ambas "sin aviso" aunque juntas superasen el stock real.
+
+**Fix** (`Pedidos.jsx`): nuevo estado `sumaPrevistoPorProduccionId` (suma de `cantidad_prevista` por `produccion_pf_id`, agregada en el mismo recorrido que ya construye `idsProduccion` -- sin consulta adicional, los datos ya están cargados). El disponible neto de cada línea se calcula como `stock_tanda - (suma_total_de_la_tanda - previsto_de_esta_línea)`; el aviso se dispara si `previsto > disponible_neto`, y solo si `previsto > 0` (con previsto = 0 no hay nada que redistribuir, mismo criterio ya aplicado en el desglose de Producciones del día).
+
+**Verificación**: dato real actual -- tanda 140 (stock=3), línea 145 (Cliente1, previsto=0, sin aviso por previsto=0) y línea 146 (Empresa1, previsto=5, sumaTotal=5) -- disponible neto = 3, `5 > 3` → aviso rojo, "solo 3 disp.". Ejemplo del enunciado (tanda 5 uds, A=2 y B=5, total 7) -- ambas dan `insuficiente=true` (A: neto=0, B: neto=3), confirmando que las dos muestran aviso desde el principio, no solo tras albaranar.
+
+### Fix 2 -- formato del aviso nativo de stock insuficiente
+
+**Bug**: "Solo quedan 3.000 unidades disponibles" en vez de "3" para valores enteros.
+
+**Fix** (`AlbaranesVenta.jsx`): nueva función `formatCantidad(n)` (`Number(n.toFixed(3)).toString()`, redondea a 3 decimales y quita ceros sobrantes), aplicada en los dos `alert()` de "Solo quedan X unidades disponibles" (rama producto final y rama mercadería). Verificado: `3` → `"3"`, `2.5` → `"2.5"`, `0` → `"0"`.
+
+### Fix 3 -- error de validación con lote precargado y bloqueado
+
+**Bug reportado**: al guardar un albarán parcial con el lote ya precargado y bloqueado desde una previsión, aparecía "Selecciona un lote e introduce una cantidad válida" pese a que el lote SÍ estaba seleccionado en pantalla.
+
+**Diagnóstico confirmado**: la etiqueta visible ("asignado desde Producciones del día") se calcula de `loteBloqueado`, derivado de forma **síncrona** en cada render a partir de `lineaPedido.produccion_pf_id_previsto` y `lotes`. Pero `handleAdd()` usaba el estado `loteId`, que solo se sincroniza con `produccion_pf_id_previsto` vía un `useEffect` **asíncrono** (corre después del primer render). Si el operador interactúa con el formulario antes de que ese efecto haya tenido tiempo de ejecutarse, `loteId` sigue valiendo `''` mientras la etiqueta ya se ve bloqueada y correcta -- dos fuentes de verdad desincronizadas por una condición de carrera de timing, no un fallo de lógica de negocio.
+
+**Fix**: `handleAdd()` deriva el `produccion_id` a enviar directamente de `loteBloqueado` cuando existe (misma fuente que la etiqueta, sin depender del timing del efecto), cayendo a `loteId` solo cuando no hay lote bloqueado (selección manual, comportamiento sin cambios). De paso, se corrige también la comparación `lotes.find((l) => l.produccion_id === parseInt(loteId))` a `Number(l.produccion_id) === Number(...)` -- `produccion_id` puede llegar como string (bigint vía PostgREST), y la comparación estricta anterior nunca encontraba coincidencia, dejando `stockLoteOriginal` siempre en 0.
+
+**Verificación con datos reales**: línea 146 (Empresa1), lote precargado `FG-ZZTORTSC-260006` (`produccion_pf_id_previsto = 140`, stock real 3), cantidad 3 (parcial sobre los 5 previstos). Simulado con `loteId=''` (efecto sin correr todavía, reproduciendo la condición de carrera): código anterior dispara la alerta de "Selecciona un lote..."; código corregido guarda correctamente (`idProduccion=140, cant=3`), sin alertas. Con el efecto ya sincronizado (`loteId='140'`), ambos códigos se comportan igual -- sin regresión en el caso normal.
+
+`npx eslint` sobre `Pedidos.jsx` y `AlbaranesVenta.jsx`: 7 problemas combinados, idéntico al baseline anterior a estos fixes -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de estos fixes
+
+`ArticuloParaVender` (mercadería) tiene la misma comparación estricta `entrada_material_id === parseInt(loteId)` sin normalizar, pero no participa del flujo de previsión/bloqueo de lote (no existe concepto de "tanda bloqueada" para mercadería) -- no se ha tocado, es un problema distinto y no relacionado con el bug reportado.

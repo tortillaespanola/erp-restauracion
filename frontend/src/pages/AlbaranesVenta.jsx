@@ -10,6 +10,12 @@ function nombreLineaVenta(linea) {
   return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre ?? linea.descripcion
 }
 
+// Fix: los avisos de stock mostraban "3.000" en vez de "3" para valores enteros -- redondea a 3
+// decimales (mismo tope ya usado en toda la UI, step="0.001") y quita los ceros sobrantes.
+function formatCantidad(n) {
+  return Number(n.toFixed(3)).toString()
+}
+
 function AlbaranesVenta() {
   const [searchParams] = useSearchParams()
   const pedidoIdParam = searchParams.get('pedido_id')
@@ -153,7 +159,7 @@ function AlbaranesVenta() {
     const restante = stockLoteOriginal - yaUsado
 
     if (cant > restante) {
-      alert(`Solo quedan ${restante.toFixed(3)} unidades disponibles en ese lote de producción`)
+      alert(`Solo quedan ${formatCantidad(restante)} unidades disponibles en ese lote de producción`)
       return
     }
 
@@ -184,7 +190,7 @@ function AlbaranesVenta() {
     const restante = stockLoteOriginal - yaUsado
 
     if (cant > restante) {
-      alert(`Solo quedan ${restante.toFixed(3)} unidades disponibles en ese lote`)
+      alert(`Solo quedan ${formatCantidad(restante)} unidades disponibles en ese lote`)
       return
     }
 
@@ -537,9 +543,24 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
     cargarLotes()
   }, [producto.id, refrescoStock])
 
+  const loteBloqueado = !cargando && lineaPedido?.produccion_pf_id_previsto
+    ? lotes.find((l) => Number(l.produccion_id) === Number(lineaPedido.produccion_pf_id_previsto))
+    : null
+
+  // Fix: con lote bloqueado, la etiqueta visible ("asignado desde Producciones del día") se calcula
+  // directamente de loteBloqueado (arriba), pero handleAdd usaba el estado loteId -- que solo se
+  // sincroniza con produccion_pf_id_previsto vía un efecto asíncrono (useEffect corre después del
+  // primer render). Si el operador interactúa antes de que ese efecto haya corrido, loteId todavía
+  // vale '' aunque la etiqueta ya se vea bloqueada y correcta -- "Selecciona un lote e introduce una
+  // cantidad válida" pese a que el lote SÍ está seleccionado en pantalla. Derivar directamente de
+  // loteBloqueado (misma fuente que la etiqueta, calculada de forma síncrona en cada render) elimina el
+  // desfase por completo -- ya no depende de que el efecto haya tenido tiempo de ejecutarse.
   function handleAdd() {
-    const lote = lotes.find((l) => l.produccion_id === parseInt(loteId))
-    onAdd(producto, loteId, cantidad, precio, lote?.stock_disponible ?? 0)
+    const produccionIdFinal = loteBloqueado ? loteBloqueado.produccion_id : loteId
+    // Number(...) en ambos lados: produccion_id puede llegar como string (bigint vía PostgREST) --
+    // comparar contra un parseInt sin normalizar el otro lado nunca encontraba coincidencia.
+    const lote = lotes.find((l) => Number(l.produccion_id) === Number(produccionIdFinal))
+    onAdd(producto, produccionIdFinal, cantidad, precio, lote?.stock_disponible ?? 0)
     setLoteId('')
     setCantidad('')
   }
@@ -549,10 +570,6 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   const lotesConDisponibleReal = lotes
     .map((l) => ({ ...l, disponibleReal: l.stock_disponible - cantidadYaEnLineas(l.produccion_id) }))
     .filter((l) => l.disponibleReal > 0)
-
-  const loteBloqueado = lineaPedido?.produccion_pf_id_previsto
-    ? lotes.find((l) => Number(l.produccion_id) === Number(lineaPedido.produccion_pf_id_previsto))
-    : null
 
   // Si no hay lote bloqueado y tampoco hay stock disponible para elegir a mano, no hay nada que
   // ofrecer para este producto -- mismo criterio de antes. Con lote bloqueado, se muestra igual aunque
