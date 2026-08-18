@@ -476,10 +476,11 @@ function Pedidos() {
                     const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
                     const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
                     const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
-                    // Mismo patrón que "Servido", sumando previsiones_distribucion_pf en vez de
-                    // lineas_albaran_venta -- UNIQUE(linea_pedido_id) garantiza como mucho una fila,
-                    // pero se suma igual por consistencia con el patrón ya establecido.
-                    const previsto = (linea.previsiones_distribucion_pf || []).reduce((sum, pr) => sum + Number(pr.cantidad_prevista), 0)
+                    // A diferencia de lineas_albaran_venta (sin UNIQUE en linea_pedido_id, PostgREST lo
+                    // embebe como array), previsiones_distribucion_pf SÍ tiene UNIQUE(linea_pedido_id) --
+                    // PostgREST lo detecta como relación a-uno y lo embebe como objeto único o null, no
+                    // como array. Leer la propiedad directamente, sin reduce.
+                    const previsto = Number(linea.previsiones_distribucion_pf?.cantidad_prevista ?? 0)
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
                     return (
