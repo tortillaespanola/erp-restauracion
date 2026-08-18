@@ -372,6 +372,12 @@ function DesgloseDistribucionPF({
 
   const [resumen] = filas
   const sinPedidos = filas.length === 1 && filas[0].linea_pedido_id == null
+  // Fix: "Residual libre" comparaba lo distribuido contra total_producido_hoy (distribucion_prevista_pf,
+  // filtrado a fecha = current_date) -- daba falso aviso en cuanto una tanda con stock real disponible
+  // tenía `fecha` de un día distinto a hoy (cierre con fecha retroactiva). Se compara en su lugar contra
+  // el stock real total (`tandas`, misma fuente que ya usa el aviso de tanda insuficiente por línea más
+  // abajo), sin importar en qué fecha se produjo.
+  const stockRealDisponible = (tandas || []).reduce((sum, t) => sum + Number(t.stock_disponible), 0)
 
   // Reparto multi-tanda: filas.map ya no basta -- distribucion_prevista_pf() puede devolver varias
   // filas para la misma línea de pedido (una por tanda), y su orden no las garantiza adyacentes (el
@@ -402,11 +408,17 @@ function DesgloseDistribucionPF({
       <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
         <div className="px-2 py-1 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 border-b border-gray-200 pb-2 mb-2">
           <span>Producido hoy: <span className="font-medium text-gray-700">{Number(resumen.total_producido_hoy).toFixed(3)} uds</span></span>
+          <span>Stock disponible: <span className="font-medium text-gray-700">{stockRealDisponible.toFixed(3)} uds</span></span>
           <span>Distribuido: <span className="font-medium text-gray-700">{Number(resumen.total_distribuido).toFixed(3)} uds</span></span>
-          <span className={Number(resumen.residual_libre) < 0 ? 'text-red-600 font-medium' : ''}>
-            Residual libre: {Number(resumen.residual_libre).toFixed(3)} uds
-            {Number(resumen.residual_libre) < 0 && ' — distribuido supera lo producido hoy'}
-          </span>
+          {(() => {
+            const residualLibre = stockRealDisponible - Number(resumen.total_distribuido)
+            return (
+              <span className={residualLibre < 0 ? 'text-red-600 font-medium' : ''}>
+                Residual libre: {residualLibre.toFixed(3)} uds
+                {residualLibre < 0 && ' — distribuido supera el stock disponible'}
+              </span>
+            )
+          })()}
         </div>
 
         {sinPedidos ? (
