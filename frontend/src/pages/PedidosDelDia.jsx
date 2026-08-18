@@ -413,6 +413,11 @@ function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar,
                   ? tandasProducto.some((t) => Number(t.produccion_id) !== Number(f.produccion_pf_id))
                   : tandasProducto.length > 0
                 const editandoTanda = tandaEditando === f.linea_pedido_id
+                // Fix: con cantidad_prevista = 0 (previsión ya completamente cubierta por un albarán
+                // real) no hay nada que redistribuir -- mostrar tanda/icono de swap ahí es ruido, aunque
+                // hayAlternativas dé true (puede seguir apuntando a una tanda ya vacía, heredada del
+                // trigger de reconstrucción). No afecta a hayAlternativas en sí, solo a si se pinta.
+                const hayCantidadPrevista = Number(f.cantidad_prevista) !== 0
 
                 return (
                   <tr key={f.linea_pedido_id}>
@@ -430,7 +435,7 @@ function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar,
                           onBlur={() => onGuardar(f)}
                           className="text-sm w-28 py-1"
                         />
-                        {hayAlternativas && (
+                        {hayAlternativas && hayCantidadPrevista && (
                           <button
                             type="button"
                             onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
@@ -441,14 +446,16 @@ function DesgloseDistribucionPF({ filas, colSpan, valorDe, onCambiar, onGuardar,
                           </button>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
-                        {f.produccion_pf_id == null
-                          ? 'Sin tanda asignada'
-                          : tandaActual
-                            ? `Tanda ${formatFecha(tandaActual.fecha)}`
-                            : 'Tanda asignada'}
-                      </p>
-                      {editandoTanda && (
+                      {hayCantidadPrevista && (
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {f.produccion_pf_id == null
+                            ? 'Sin tanda asignada'
+                            : tandaActual
+                              ? `Tanda ${formatFecha(tandaActual.fecha)}`
+                              : 'Tanda asignada'}
+                        </p>
+                      )}
+                      {editandoTanda && hayCantidadPrevista && (
                         <Select
                           value={f.produccion_pf_id ?? ''}
                           onChange={(e) => onCambiarTanda(f, e.target.value ? parseInt(e.target.value) : null)}

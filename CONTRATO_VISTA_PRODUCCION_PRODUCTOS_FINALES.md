@@ -412,3 +412,19 @@ Todo revertido con `ROLLBACK`; aplicado después en firme (`BEGIN; ...; COMMIT`)
 ### Fuera de alcance de este cambio
 
 El "Crear albarán de venta" y el bloqueo de lote en `AlbaranesVenta.jsx` (ya resuelto en pasos anteriores) no se han tocado -- este cambio es puramente informativo, no bloquea ni impide crear el albarán con el parcial que decida el operador.
+
+---
+
+## Addenda: fix -- ruido de tanda en previsiones con cantidad_prevista = 0 (2026-08-18)
+
+**Bug reportado**: tras borrar un albarán, la línea de Cliente1 (previsto=2, genuinamente pendiente) no mostraba icono de cambio de tanda, mientras que la de Empresa1 (previsto=0, ya servida por completo) sí lo mostraba -- al revés de lo esperable a primera vista.
+
+**Diagnóstico confirmado con datos reales**: solo existe una tanda con stock en el sistema para el producto (`141`, 2 disponibles). La previsión de Cliente1 ya apunta exactamente a esa tanda y la cubre entera -- `hayAlternativas` da `false` correctamente, no hay ninguna otra tanda a la que cambiar, es la asignación óptima. La previsión de Empresa1 (`cantidad_prevista = 0`) sigue apuntando a la tanda vacía (`140`, heredada del trigger de reconstrucción al borrar el albarán) -- como `141 ≠ 140`, `hayAlternativas` da `true` y el icono aparece, pero no hay nada que redistribuir en una previsión de cantidad 0. **No era un bug de `hayAlternativas`** (que sigue siendo correcta y no se ha tocado) -- era un problema de presentación: mostrar información de tanda para una fila sin nada pendiente.
+
+**Fix** (`DesgloseDistribucionPF`, `PedidosDelDia.jsx`): nueva condición `hayCantidadPrevista = Number(f.cantidad_prevista) !== 0`, que gatea tanto el icono de cambio de tanda como la etiqueta pasiva ("Tanda ..." / "Sin tanda asignada") y el `<Select>` de reasignación -- con cantidad 0, la fila no muestra nada de tanda, independientemente de `hayAlternativas`.
+
+**Verificación con datos reales**: Empresa1 (previsto=0, `produccion_pf_id=140`) -- ni icono ni etiqueta, confirmado. Cliente1 (previsto=2, `produccion_pf_id=141`) -- etiqueta "Tanda ..." sigue mostrándose igual que antes; icono sigue sin aparecer (comportamiento correcto preexistente, sin cambios). `npx eslint` sobre `PedidosDelDia.jsx`: 2 problemas, idéntico al baseline anterior a este fix -- sin regresión. `npm run build`: compila sin errores.
+
+### Fuera de alcance de este fix
+
+`hayAlternativas` y la lógica de asignación/reasignación de tanda -- no se han tocado, ya eran correctas.
