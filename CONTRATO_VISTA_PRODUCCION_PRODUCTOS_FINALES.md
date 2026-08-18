@@ -514,3 +514,50 @@ Repetido bajo el rol `authenticated` real (`SET LOCAL ROLE` + JWT claim simulado
 ### Fuera de alcance de este Paso 1
 
 UI de `AlbaranesVenta.jsx` (formulario con varias sub-filas de cantidad+lote bloqueado por línea, sumando el total previsto) y de `PedidosDelDia.jsx` (desglose con varias filas de cantidad+tanda por línea, incluyendo key de React compuesta, borrador de edición reclave por `(linea_pedido_id, produccion_pf_id)`, y un control nuevo para añadir un split) -- Paso 2, prompt aparte.
+
+---
+
+## Addenda: reparto de una línea de pedido entre varias tandas -- Paso 2, UI (2026-08-18)
+
+### Grep final de `previsiones_distribucion_pf` en todo el frontend
+
+Antes de tocar nada, grep exhaustivo (no solo los tres puntos ya conocidos de la auditoría) -- confirmado: **solo dos** archivos embeben la tabla vía `select` anidado y se ven afectados por el cambio de forma del embed: `Pedidos.jsx` y `AlbaranesVenta.jsx`. `PedidosDelDia.jsx` referencia la tabla solo vía `.from('previsiones_distribucion_pf')` directo (upsert/update/insert), no vía embed anidado -- no le afecta el cambio de forma, aunque sí (por diseño, ya confirmado) la posibilidad de varias filas por línea en la salida de `distribucion_prevista_pf()`. No queda ningún cuarto sitio.
+
+**Por qué el embed pasa a array**: PostgREST solo infiere relación a-uno cuando el `UNIQUE`/`PRIMARY KEY` cubre **exactamente** la columna del FK usada en el embed (`linea_pedido_id`). Confirmado contra `pg_constraint`: ya no existe ningún `UNIQUE` de una sola columna sobre `linea_pedido_id` (el compuesto `UNIQUE(linea_pedido_id, produccion_pf_id)` no cuenta, cubre más columnas de las que se usan en este embed concreto; el índice parcial "sin tanda" tampoco cuenta, se creó como índice con `CREATE UNIQUE INDEX`, no como constraint de tabla, y PostgREST solo mira `pg_constraint`). Sin sesión autenticada real disponible en este entorno para una llamada HTTP en vivo -- verificación basada en `pg_constraint` (ausencia confirmada) más la regla de inferencia documentada y estable de PostgREST, no en una prueba end-to-end contra el servidor real.
+
+**`Pedidos.jsx`**: `l.previsiones_distribucion_pf` pasa de objeto/null a array. La columna "Previsto" ahora suma `cantidad_prevista` de todas las previsiones de la línea; el aviso de stock insuficiente se calcula por cada previsión con tanda y cantidad > 0 por separado (antes una sola), listando "solo X disp." por cada tanda insuficiente si hay más de una.
+
+### `PedidosDelDia.jsx` -- desglose con varias filas por línea
+
+Diseño confirmado: el control "+ repartir en otra tanda" aparece como link al final de la última fila-tanda de cada línea, visible solo si queda alguna tanda con stock que esa línea todavía no esté usando (`hayTandaLibreParaRepartir`, comparado contra el conjunto de tandas ya usadas por CUALQUIER fila de esa línea, no contra `tandasProducto.length` a secas).
+
+- **Agrupación por línea**: `distribucion_prevista_pf()` no garantiza que las filas de una misma línea salgan adyacentes (su `order by` es `fecha_entrega_prevista, pedido_id`, no incluye `linea_pedido_id` -- dos líneas del mismo pedido con la misma fecha podrían intercalarse). Se agrupa explícitamente en el frontend, conservando el orden de primera aparición. Solo la primera fila de cada grupo muestra Cliente/Pedido/Entrega/Cantidad pedida; las siguientes filas-tanda de la misma línea dejan esas columnas en blanco (continuación visual).
+- **Key compuesta**: `${linea_pedido_id}-${produccion_pf_id}` en vez de `linea_pedido_id` a secas -- evita colisión de `key` de React entre las filas-tanda de una misma línea.
+- **Borrador compuesto**: `borradorPrevision` reclave con `claveBorrador(lineaPedidoId, produccionPfId)` (normaliza `null` a la cadena `'null'`) -- evita que editar la cantidad de una tanda pise el borrador de otra tanda de la misma línea.
+- **"+ repartir en otra tanda"**: abre un borrador local (`nuevoSplitLinea`/`nuevoSplitCantidad`/`nuevoSplitTanda`, un solo editor activo a la vez, mismo criterio que `tandaEditandoLinea`) con cantidad vacía y selector de tanda limitado a las que esa línea todavía no usa. `guardarNuevoSplit()` valida cantidad > 0, tanda seleccionada, y que esa tanda no esté ya usada por otra fila de la misma línea (si lo estuviera, un `upsert`/`insert` ahí pisaría o duplicaría en vez de crear un reparto nuevo) antes de hacer un `INSERT` directo (nunca upsert, es por definición una fila que no existe todavía para esa combinación).
+
+### `AlbaranesVenta.jsx` -- el cambio estructural
+
+Diseño confirmado: por cada previsión con tanda asignada de la línea activa, una sub-fila bloqueada independiente (`FilaBloqueada`, nuevo componente) -- cantidad precargada (neta de lo ya añadido en esta sesión para esa tanda concreta) + lote fijo + su propio "+ Añadir"; arriba, "Total previsto: X" si hay alguna previsión. La fila manual de selección libre de lote (la que ya existía) solo se muestra si sobra cantidad por cubrir más allá de lo que las filas bloqueadas representan.
+
+- **`sumaBloqueadaPendiente`**: para cada previsión con tanda, `max(0, cantidad_prevista - cantidadYaEnLineas(esa tanda))` sumado -- "cuánto falta por añadir todavía a través de las filas bloqueadas", recalculado en cada render a partir de `lineas` (sesión local), no un valor estático.
+- **`restanteManual = lineaPedido.restante - sumaBloqueadaPendiente`**: verificado con datos reales a lo largo de todo el ciclo de vida (antes de añadir nada, tras añadir una fila bloqueada, tras añadir todas) que se mantiene coherente -- baja correctamente según se van añadiendo las filas bloqueadas, sin recalcular mal por comparar un total estático contra un restante que ya se movió. Sin `lineaPedido` (venta directa, sin pedido de origen), la fila manual se comporta exactamente igual que antes de este cambio (sin previsiones que descontar).
+- **`FilaBloqueada`**: sub-componente independiente por previsión, con su propio estado de cantidad/precio (mismo patrón de resincronización vía `useEffect` que ya usaba el formulario original) -- vuelve `null` en cuanto esa previsión concreta queda cubierta en la sesión (`restante <= 0`), mismo criterio "nada pendiente, no mostrar nada" ya aplicado en el resto del sistema.
+
+### Corrección respecto al plan original: `onConflict` compuesto no sirve para *cambiar* la tanda de una previsión existente
+
+El plan pedía que `guardarPrevision`/`cambiarTandaPrevision` usaran `onConflict: 'linea_pedido_id,produccion_pf_id'`. Al implementarlo se confirmó que **eso solo funciona correctamente cuando la tanda del payload coincide con la que ya tenía la fila** (editar cantidad sin tocar tanda). En los otros dos casos reales -- `cambiarTandaPrevision` (reasignación manual) y la rama de `guardarPrevision` que pasa de "sin tanda" a la sugerencia FIFO -- el `upsert` compara contra los valores **nuevos**, no contra la fila actual: si la tanda cambia, el `upsert` o bien inserta una fila nueva (dejando huérfana la vieja, con su cantidad vieja intacta) o bien fusiona con OTRA fila que ya tuviera esa tanda -- en ningún caso actualiza la fila que realmente se quería cambiar.
+
+**Fix**: nuevo helper `actualizarOInsertarPrevision(productoFinalId, lineaPedidoId, produccionPfIdActual, produccionPfIdNuevo, cantidadPrevista)` -- hace un `UPDATE` dirigido por `linea_pedido_id` + la tanda **anterior** (`.is()` si era `null`), y solo si no encuentra ninguna fila que actualizar, inserta una nueva. Cubre uniformemente los tres casos: editar cantidad sin cambiar tanda (la fila se actualiza a sí misma), pasar de "sin tanda" a FIFO, y reasignación manual. Verificado con datos reales (línea 147, de `produccion_pf_id=NULL` a tanda 141: mismo `id` de fila, sin duplicado; línea 146, reasignada de tanda 140 a 141: mismo `id`, sin huérfana en 140) en transacción con `ROLLBACK`, nada aplicado en firme por esta verificación puntual (la migración de esquema ya estaba aplicada desde el Paso 1).
+
+El "+ repartir en otra tanda" de `PedidosDelDia.jsx` sí usa `INSERT` directo (no upsert, no este helper) -- es por definición una fila nueva, con la comprobación de "tanda no usada ya por esta línea" hecha en el frontend antes de guardar.
+
+### Verificación
+
+Lógica de las tres pantallas verificada con datos reales y casos hipotéticos coherentes con ellos (agrupación/`hayTandaLibreParaRepartir` en `PedidosDelDia.jsx`, `restanteManual`/`mostrarFilaManual` en `AlbaranesVenta.jsx` a lo largo del ciclo de vida completo, suma y aviso multi-previsión en `Pedidos.jsx`) -- resultados exactos en todos los casos.
+
+`npx eslint` sobre los tres archivos: 10 problemas (7 errores, 3 warnings) vs. 9 (6, 3) del baseline -- **1 error nuevo**, no una regresión de una regla distinta: es la misma `react-hooks/set-state-in-effect` que ya aparecía en el resto de este archivo (`ArticuloParaVender`, `LineaPedidoLibrePendiente`), ahora también en `FilaBloqueada` (mismo patrón de sincronización prop→estado editable ya usado en todo `AlbaranesVenta.jsx`, no una regla nueva violada). `npm run build`: compila sin errores.
+
+### Fuera de alcance de este Paso 2
+
+Expediciones, kanban/pedidos ficticios; los dos triggers ya auditados. `ArticuloParaVender` (mercadería) sigue sin concepto de tanda bloqueada -- no participa de este reparto multi-tanda, no se ha tocado.

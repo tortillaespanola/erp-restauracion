@@ -79,14 +79,15 @@ function AlbaranesVenta() {
 
       if (data) {
         setClienteId(String(data.cliente_id))
+        // Reparto multi-tanda: previsiones_distribucion_pf ya no tiene UNIQUE(linea_pedido_id) a
+        // secas (ahora compuesto, linea_pedido_id + produccion_pf_id) -- PostgREST solo infiere
+        // relación a-uno cuando el UNIQUE cubre EXACTAMENTE la columna del FK del embed, así que pasa
+        // a embeberse como array (confirmado por ausencia de cualquier UNIQUE de una sola columna
+        // sobre linea_pedido_id). Una línea puede tener varias previsiones (una por tanda) -- se
+        // guardan tal cual, sin colapsar a un único produccion_pf_id_previsto.
         const lineasConEntregado = (data.lineas_pedido_venta || []).map((l) => ({
           ...l,
           entregado_previo: (l.lineas_albaran_venta || []).reduce((sum, e) => sum + e.cantidad, 0),
-          // Capa C, Paso 2: si Producciones del día ya fijó una tanda para esta línea (vía FIFO o a
-          // mano), se precarga y se bloquea el selector de lote -- "se puede tocar cantidad, no lote".
-          // previsiones_distribucion_pf tiene UNIQUE(linea_pedido_id) -> PostgREST la embebe como
-          // relación a-uno (objeto único o null, no array) -- mismo bug ya corregido en Pedidos.jsx.
-          produccion_pf_id_previsto: l.previsiones_distribucion_pf?.produccion_pf_id ?? null,
         }))
         setPedidoLineas(lineasConEntregado)
       }
@@ -504,32 +505,79 @@ function AlbaranesVenta() {
   )
 }
 
+// Reparto multi-tanda: una línea de pedido puede tener varias previsiones (una por tanda). Cada una
+// con tanda asignada se renderiza como su propia sub-fila bloqueada, independiente -- cantidad
+// precargada (neta de lo ya añadido en esta sesión para esa tanda concreta) y "+ Añadir" propio.
+// Vuelve null en cuanto esa previsión concreta queda cubierta (restante <= 0), igual criterio que el
+// resto del sistema ("nada pendiente, no mostrar nada").
+function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas }) {
+  const yaUsado = cantidadYaEnLineas(prevision.produccion_pf_id)
+  const restante = Number(prevision.cantidad_prevista) - yaUsado
+  const [cantidad, setCantidad] = useState(restante > 0 ? String(restante) : '')
+  const [precio, setPrecio] = useState(producto.precio_venta ?? '')
+
+  useEffect(() => {
+    if (restante > 0) setCantidad(String(restante))
+  }, [restante])
+
+  function handleAdd() {
+    onAdd(producto, prevision.produccion_pf_id, cantidad, precio, tandaInfo?.stock_disponible ?? 0)
+    setCantidad('')
+  }
+
+  if (restante <= 0) return null
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
+      <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
+        {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}Producción {tandaInfo ? formatFecha(tandaInfo.fecha) : ''}
+        <span className="text-gray-400 text-xs"> — asignado desde Producciones del día</span>
+      </div>
+      <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+        onChange={(e) => setCantidad(e.target.value)}
+        className="text-sm" title="Se redondeará a 3 decimales" />
+      <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+        onChange={(e) => setPrecio(e.target.value)}
+        className="text-sm" />
+      <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+    </div>
+  )
+}
+
 function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran, lineaPedido }) {
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
-  const [cantidad, setCantidad] = useState(lineaPedido?.restante > 0 ? String(lineaPedido.restante) : '')
+
+  // Reparto multi-tanda: previsiones con tanda asignada de esta línea (cada una se renderiza como su
+  // propia FilaBloqueada, más abajo). sumaBloqueadaPendiente es lo que TODAVÍA falta por añadir
+  // específicamente a través de esas filas -- se usa para decidir cuánto queda para la fila manual
+  // (ver más abajo) sin depender de recalcular nada al vuelo dentro del render de cada FilaBloqueada.
+  const previsionesConTanda = (lineaPedido?.previsiones_distribucion_pf || []).filter((pd) => pd.produccion_pf_id != null)
+  const totalPrevisto = (lineaPedido?.previsiones_distribucion_pf || []).reduce((sum, pd) => sum + Number(pd.cantidad_prevista), 0)
+  const sumaBloqueadaPendiente = previsionesConTanda.reduce((sum, pd) => {
+    const restanteDePrevision = Number(pd.cantidad_prevista) - cantidadYaEnLineas(pd.produccion_pf_id)
+    return sum + Math.max(0, restanteDePrevision)
+  }, 0)
+  // Fila manual (selección libre de lote): solo tiene sentido lo que las filas bloqueadas NO cubren.
+  // Sin lineaPedido (venta directa, sin pedido de origen) se comporta exactamente igual que antes --
+  // siempre visible, sin nada previsto que descontar.
+  const restanteManual = lineaPedido ? lineaPedido.restante - sumaBloqueadaPendiente : null
+  const mostrarFilaManual = !lineaPedido || restanteManual > 0
+
+  const [cantidad, setCantidad] = useState(restanteManual > 0 ? String(restanteManual) : (lineaPedido?.restante > 0 ? String(lineaPedido.restante) : ''))
   const [precio, setPrecio] = useState(lineaPedido?.restante > 0 ? lineaPedido.precio_unitario : (producto.precio_venta ?? ''))
 
-  // Precarga la próxima línea de pedido pendiente (precio/cantidad pactados),
-  // editable. Resincroniza tras cada "+ Añadir" — si el pedido tenía más de
-  // una línea del mismo producto (ej. una a precio normal y otra de muestra),
-  // pasa a precargar la siguiente pendiente en vez de quedarse con la ya cubierta.
-  //
-  // Capa C, Paso 2: también precarga loteId con la tanda que Producciones del día ya fijó para esta
-  // línea (produccion_pf_id_previsto), si la hay -- coherente con "se puede tocar cantidad, no lote".
+  // Precarga la fila manual con lo que de verdad queda sin cubrir por previsión (restanteManual, no el
+  // restante bruto de la línea) -- resincroniza también cuando avanza sumaBloqueadaPendiente (al añadir
+  // una fila bloqueada), no solo al cambiar de línea.
   useEffect(() => {
-    if (lineaPedido && lineaPedido.restante > 0) {
-      setCantidad(String(lineaPedido.restante))
+    if (restanteManual > 0) {
+      setCantidad(String(restanteManual))
       setPrecio(lineaPedido.precio_unitario ?? '')
-      setLoteId(lineaPedido.produccion_pf_id_previsto ? String(lineaPedido.produccion_pf_id_previsto) : '')
     }
-  }, [lineaPedido?.id, lineaPedido?.restante])
+  }, [lineaPedido?.id, restanteManual])
 
-  // Sin filtro de stock_disponible > 0 en la consulta: el lote bloqueado por una previsión debe poder
-  // mostrarse aunque su stock_disponible actual sea 0 (caso raro pero posible). El filtro de "solo
-  // ofrecer para elegir a mano los que sí tienen stock" se aplica después, en JS, vía
-  // lotesConDisponibleReal -- que es la única lista que alimenta el <Select> manual.
   useEffect(() => {
     async function cargarLotes() {
       const { data } = await supabase
@@ -543,24 +591,9 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
     cargarLotes()
   }, [producto.id, refrescoStock])
 
-  const loteBloqueado = !cargando && lineaPedido?.produccion_pf_id_previsto
-    ? lotes.find((l) => Number(l.produccion_id) === Number(lineaPedido.produccion_pf_id_previsto))
-    : null
-
-  // Fix: con lote bloqueado, la etiqueta visible ("asignado desde Producciones del día") se calcula
-  // directamente de loteBloqueado (arriba), pero handleAdd usaba el estado loteId -- que solo se
-  // sincroniza con produccion_pf_id_previsto vía un efecto asíncrono (useEffect corre después del
-  // primer render). Si el operador interactúa antes de que ese efecto haya corrido, loteId todavía
-  // vale '' aunque la etiqueta ya se vea bloqueada y correcta -- "Selecciona un lote e introduce una
-  // cantidad válida" pese a que el lote SÍ está seleccionado en pantalla. Derivar directamente de
-  // loteBloqueado (misma fuente que la etiqueta, calculada de forma síncrona en cada render) elimina el
-  // desfase por completo -- ya no depende de que el efecto haya tenido tiempo de ejecutarse.
   function handleAdd() {
-    const produccionIdFinal = loteBloqueado ? loteBloqueado.produccion_id : loteId
-    // Number(...) en ambos lados: produccion_id puede llegar como string (bigint vía PostgREST) --
-    // comparar contra un parseInt sin normalizar el otro lado nunca encontraba coincidencia.
-    const lote = lotes.find((l) => Number(l.produccion_id) === Number(produccionIdFinal))
-    onAdd(producto, produccionIdFinal, cantidad, precio, lote?.stock_disponible ?? 0)
+    const lote = lotes.find((l) => Number(l.produccion_id) === Number(loteId))
+    onAdd(producto, loteId, cantidad, precio, lote?.stock_disponible ?? 0)
     setLoteId('')
     setCantidad('')
   }
@@ -571,21 +604,33 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
     .map((l) => ({ ...l, disponibleReal: l.stock_disponible - cantidadYaEnLineas(l.produccion_id) }))
     .filter((l) => l.disponibleReal > 0)
 
-  // Si no hay lote bloqueado y tampoco hay stock disponible para elegir a mano, no hay nada que
-  // ofrecer para este producto -- mismo criterio de antes. Con lote bloqueado, se muestra igual aunque
-  // el resto de tandas esté a 0, para que el operador vea la asignación ya decidida.
-  if (lotesConDisponibleReal.length === 0 && !loteBloqueado) return null
+  // Nada que ofrecer: ninguna previsión con tanda que mostrar como fila bloqueada, y tampoco stock
+  // disponible para elegir a mano -- mismo criterio que antes (con o sin lineaPedido, no cambia: sin
+  // pedido nunca hubo bloqueada, así que este guard ya se comportaba exactamente así).
+  if (previsionesConTanda.length === 0 && lotesConDisponibleReal.length === 0) return null
 
   return (
     <div className="border border-gray-200 rounded-md p-3">
-      <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
-      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
-        {loteBloqueado ? (
-          <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
-            {loteBloqueado.codigo_lote ? `${loteBloqueado.codigo_lote} · ` : ''}Producción {formatFecha(loteBloqueado.fecha)}
-            <span className="text-gray-400 text-xs"> — asignado desde Producciones del día</span>
-          </div>
-        ) : (
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
+        {totalPrevisto > 0 && (
+          <p className="text-xs text-gray-400">Total previsto: {totalPrevisto.toFixed(3)}</p>
+        )}
+      </div>
+
+      {previsionesConTanda.map((pd) => (
+        <FilaBloqueada
+          key={pd.produccion_pf_id}
+          producto={producto}
+          prevision={pd}
+          tandaInfo={lotes.find((l) => Number(l.produccion_id) === Number(pd.produccion_pf_id))}
+          onAdd={onAdd}
+          cantidadYaEnLineas={cantidadYaEnLineas}
+        />
+      ))}
+
+      {mostrarFilaManual && lotesConDisponibleReal.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
           <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
             <option value="">Selecciona lote de producción</option>
             {lotesConDisponibleReal.map((l) => {
@@ -598,15 +643,15 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
               )
             })}
           </Select>
-        )}
-        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
-          onChange={(e) => setCantidad(e.target.value)}
-          className="text-sm" title="Se redondeará a 3 decimales" />
-        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
-          onChange={(e) => setPrecio(e.target.value)}
-          className="text-sm" />
-        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
-      </div>
+          <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+            onChange={(e) => setCantidad(e.target.value)}
+            className="text-sm" title="Se redondeará a 3 decimales" />
+          <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+            onChange={(e) => setPrecio(e.target.value)}
+            className="text-sm" />
+          <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+        </div>
+      )}
     </div>
   )
 }

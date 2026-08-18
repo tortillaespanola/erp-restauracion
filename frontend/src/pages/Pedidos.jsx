@@ -100,15 +100,17 @@ function Pedidos() {
       const pedidosOrdenados = (resPedidos.data ?? []).sort(compararPedidos)
       setPedidos(pedidosOrdenados)
 
+      // Reparto multi-tanda: previsiones_distribucion_pf se embebe ahora como array (ver comentario en
+      // el render, más abajo) -- una línea puede aportar varias previsiones a la suma por tanda.
       const idsProduccion = new Set()
       const sumaPrevisto = new Map()
       for (const p of pedidosOrdenados) {
         for (const l of p.lineas_pedido_venta) {
-          const produccionId = l.previsiones_distribucion_pf?.produccion_pf_id
-          if (produccionId == null) continue
-          idsProduccion.add(produccionId)
-          const cantidad = Number(l.previsiones_distribucion_pf?.cantidad_prevista ?? 0)
-          sumaPrevisto.set(produccionId, (sumaPrevisto.get(produccionId) || 0) + cantidad)
+          for (const pd of l.previsiones_distribucion_pf || []) {
+            if (pd.produccion_pf_id == null) continue
+            idsProduccion.add(pd.produccion_pf_id)
+            sumaPrevisto.set(pd.produccion_pf_id, (sumaPrevisto.get(pd.produccion_pf_id) || 0) + Number(pd.cantidad_prevista))
+          }
         }
       }
       setSumaPrevistoPorProduccionId(sumaPrevisto)
@@ -511,30 +513,33 @@ function Pedidos() {
                     const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
                     const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
                     const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
-                    // A diferencia de lineas_albaran_venta (sin UNIQUE en linea_pedido_id, PostgREST lo
-                    // embebe como array), previsiones_distribucion_pf SÍ tiene UNIQUE(linea_pedido_id) --
-                    // PostgREST lo detecta como relación a-uno y lo embebe como objeto único o null, no
-                    // como array. Leer la propiedad directamente, sin reduce.
-                    const previsto = Number(linea.previsiones_distribucion_pf?.cantidad_prevista ?? 0)
+                    // Reparto multi-tanda: previsiones_distribucion_pf ya no tiene UNIQUE(linea_pedido_id)
+                    // a secas (ahora es UNIQUE(linea_pedido_id, produccion_pf_id), compuesto) -- PostgREST
+                    // solo infiere relación a-uno cuando el UNIQUE cubre EXACTAMENTE la columna del FK
+                    // usada en el embed; un UNIQUE compuesto no cuenta, así que pasa a embeberse como
+                    // array (confirmado por ausencia de cualquier UNIQUE de una sola columna sobre
+                    // linea_pedido_id en pg_constraint -- el índice parcial "sin tanda" tampoco cuenta,
+                    // creado como índice, no como constraint). Una línea puede tener varias previsiones
+                    // (una por tanda) -- se suman todas para "Previsto".
+                    const previsiones = linea.previsiones_distribucion_pf || []
+                    const previsto = previsiones.reduce((sum, pd) => sum + Number(pd.cantidad_prevista), 0)
                     const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
                     const completa = servido >= linea.cantidad
-                    // Aviso "tanda sin stock suficiente": solo tiene sentido si hay tanda asignada
-                    // (produccion_pf_id no nulo) y si esta línea tiene algo pendiente de verdad
-                    // (previsto > 0) -- con previsto = 0 no hay nada que redistribuir, aunque la tanda
-                    // esté sobreasignada por OTRAS líneas (mismo criterio ya aplicado en el desglose de
-                    // Producciones del día).
-                    //
-                    // Fix: comparar contra el disponible NETO de la tanda, no el stock físico bruto --
-                    // hay que descontar lo que OTRAS previsiones (de otras líneas de pedido) también
-                    // reclaman de esa misma tanda, o dos previsiones que se solapan podían aparecer
-                    // ambas "verdes" aunque juntas superen el stock real.
-                    const produccionPfId = linea.previsiones_distribucion_pf?.produccion_pf_id ?? null
-                    const stockTanda = produccionPfId != null ? stockPorProduccionId.get(produccionPfId) : null
-                    const sumaOtrasPrevisiones = produccionPfId != null
-                      ? (sumaPrevistoPorProduccionId.get(produccionPfId) || 0) - previsto
-                      : null
-                    const disponibleNeto = stockTanda != null ? stockTanda - sumaOtrasPrevisiones : null
-                    const stockInsuficiente = produccionPfId != null && previsto > 0 && disponibleNeto != null && disponibleNeto < previsto
+                    // Aviso "tanda sin stock suficiente", por cada previsión con tanda asignada y
+                    // cantidad pendiente de verdad (previsto > 0) -- comparando contra el disponible NETO
+                    // de esa tanda (stock físico menos lo que OTRAS previsiones, de cualquier línea,
+                    // también reclaman de ella).
+                    const previsionesConAviso = previsiones
+                      .filter((pd) => pd.produccion_pf_id != null && Number(pd.cantidad_prevista) > 0)
+                      .map((pd) => {
+                        const cantidadPd = Number(pd.cantidad_prevista)
+                        const stockTanda = stockPorProduccionId.get(pd.produccion_pf_id)
+                        const sumaOtras = (sumaPrevistoPorProduccionId.get(pd.produccion_pf_id) || 0) - cantidadPd
+                        const disponibleNeto = stockTanda != null ? stockTanda - sumaOtras : null
+                        return { disponibleNeto, insuficiente: disponibleNeto != null && disponibleNeto < cantidadPd }
+                      })
+                      .filter((pd) => pd.insuficiente)
+                    const stockInsuficiente = previsionesConAviso.length > 0
                     return (
                       <tr key={linea.id}>
                         <td className="py-1.5">
@@ -548,7 +553,9 @@ function Pedidos() {
                             <>
                               {previsto} {unidad}
                               {stockInsuficiente && (
-                                <span className="text-xs"> (solo {disponibleNeto.toFixed(3)} disp. en la tanda asignada)</span>
+                                <span className="text-xs">
+                                  {' '}({previsionesConAviso.map((pd) => `solo ${pd.disponibleNeto.toFixed(3)} disp.`).join('; ')} en la tanda asignada)
+                                </span>
                               )}
                             </>
                           ) : '-'}
