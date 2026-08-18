@@ -1,6 +1,6 @@
-# Contrato: Producción de Productos Finales — Capa B (distribución provisional)
+# Contrato: Producción de Productos Finales — Capa B (distribución provisional) y Capa C (cierre del ciclo producir → distribuir → albaranear)
 
-Estado: Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados, con un fix posterior de permisos ya corregido y verificado bajo el rol real. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" y "Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)" más abajo. Fecha: 2026-08-16.
+Estado: Capa B — Paso 1 (modelo de datos + función de cálculo) y Paso 2 (UI en Producciones del día) completos, aplicados en firme y verificados, con un fix posterior de permisos ya corregido y verificado bajo el rol real. Ver "Addenda: Paso 2 — UI de distribución y botón play (2026-08-16)" y "Addenda: fix de permisos — GRANT faltante en previsiones_distribucion_pf (2026-08-16)" más abajo. Capa C — Paso 1 (modelo de datos: tanda en la previsión + sugerencia FIFO) completo, aplicado en firme y verificado bajo el rol real; Paso 2 (UI) pendiente. Ver "Capa C — cierre del ciclo producir → distribuir → albaranear" más abajo. Fecha: 2026-08-18.
 
 Este contrato es independiente de `CONTRATO_VISTA_DINAMICA_PRODUCCION.md` (Semielaborados + traslado mecánico "Capa A" a Producto final, ya aplicado) — cubre exclusivamente la particularidad real de Producto final que Capa A dejó fuera a propósito: la producción va destinada a pedidos de cliente concretos, y hace falta reflejar de forma provisional qué parte de lo producido hoy se piensa repartir a cada uno, antes de que exista una pantalla de Expediciones real.
 
@@ -177,3 +177,73 @@ permission denied for table previsiones_distribucion_pf
 **Verificación bajo el rol real** (no superusuario): primero con `SET LOCAL ROLE authenticated` a secas -- confirmó que el error 42501 desaparecía, pero la función devolvía la fila "sin pedidos pendientes" para los 4 productos aunque SÍ tienen líneas reales, porque `auth.role()` (usado por las políticas RLS) lee el *claim* del JWT, no el rol de Postgres, y sin ese claim las políticas de `lineas_pedido_venta`/`pedidos_venta` seguían filtrando todo. Repetido con `SET LOCAL ROLE authenticated` + `SET LOCAL request.jwt.claim.role = 'authenticated'` (simulación fiel de lo que hace PostgREST con un usuario real) — los 4 productos devolvieron sus datos reales sin error: id 8 → 1 línea (4 uds pedidas), id 9 → 1 línea (5 uds), id 7 → 1 línea (3 uds), id 6 → 2 líneas (2 y 5 uds), coincidiendo exactamente con lo ya visto como superusuario en el diagnóstico.
 
 **Fuera de alcance**: no se ha revisado si el mismo patrón de GRANT faltante existe en alguna otra tabla nueva de sesiones anteriores -- esta addenda corrige únicamente `previsiones_distribucion_pf`, la única tabla nueva creada en este contrato.
+
+---
+
+## Capa C — cierre del ciclo producir → distribuir → albaranear (2026-08-18)
+
+Objetivo de Capa C: cerrar el ciclo que Capa B dejó abierto a propósito. Capa B distribuye de forma provisional lo producido hoy entre pedidos pendientes, pero sin decidir qué tanda concreta cubre cada previsión ni conectar eso con la creación real del albarán. Capa C añade esa tanda concreta a la previsión (con sugerencia FIFO editable) y, en un Paso 2 posterior, precarga esa asignación al crear el albarán de venta.
+
+### Auditoría previa (resumen — detalle completo en la conversación, no repetido aquí)
+
+- "Crear albarán de venta" en `Pedidos.jsx` solo navega a `AlbaranesVenta.jsx?pedido_id=X` — no crea nada ni precarga lote. La precarga de cantidad/precio por línea de pedido ya existe ahí (`lineaPedidoPara()`), pero el selector de lote (`produccion_pf_id`) arranca siempre vacío; es 100% manual hoy.
+- La columna "Servido" de `Pedidos.jsx` ya suma `lineas_albaran_venta` por `linea_pedido_id`, confirmado. Añadir "Previsto" (Paso 2 de Capa C) es el mismo patrón, sumando `previsiones_distribucion_pf.cantidad_prevista`.
+- No existe FIFO de lote reutilizable. El FIFO de `CierreTanda.jsx` reparte cantidad de stock entre varios *pedidos* en déficit (orden de llegada), no elige una *tanda* concreta para una línea — no aplica aquí y no se toca.
+- `stock_lotes_producto_final` es la fuente correcta para FIFO de lote: expone `fecha` (fecha de producción) y `stock_disponible` por tanda cerrada, ya usada con `order by fecha asc` en `AlbaranesVenta.jsx` y `CierreTanda.jsx`.
+- `trg_actualizar_estado_pedido_por_servicio` (recalcula `pedidos_venta.estado = 'servido'` tras cambios en `lineas_albaran_venta`) ya resuelve gratis el paso de pedido a histórico — no se toca.
+- `trg_actualizar_estado_pedido_por_produccion` es código muerto: depende de `producciones_producto_final.pedido_id`, vínculo obsoleto que el flujo actual (por tanda) deja sin rellenar a propósito — no se toca.
+
+### Paso 1 — Modelo de datos: tanda en la previsión + sugerencia FIFO
+
+**Migración**: `supabase/migrations/20260915_produccion_pf_id_previsiones_distribucion.sql`.
+
+```sql
+alter table previsiones_distribucion_pf
+  add column produccion_pf_id bigint references producciones_producto_final(id) on delete set null;
+
+create or replace function tanda_fifo_producto_final(p_producto_final_id bigint)
+returns table (
+  produccion_id bigint,
+  fecha date,
+  stock_disponible numeric,
+  codigo_lote text
+)
+language sql
+stable
+as $$
+  select produccion_id, fecha, stock_disponible, codigo_lote
+  from stock_lotes_producto_final
+  where producto_final_id = p_producto_final_id
+    and stock_disponible > 0
+  order by fecha asc, produccion_id asc
+  limit 1
+$$;
+
+grant execute on function tanda_fifo_producto_final(bigint) to authenticated;
+```
+
+**Tres decisiones de diseño, justificadas:**
+
+1. **`produccion_pf_id` nullable** (no `NOT NULL`): una previsión puede fijarse antes de que exista ninguna tanda cerrada de ese producto — el desglose de Capa B ya permite hoy `cantidad_prevista` con `residual_libre` negativo, sin bloqueo. Forzar `NOT NULL` rompería ese caso ya aceptado. Sin tanda, la columna queda `NULL` y la sugerencia FIFO tampoco devuelve nada hasta que haya stock.
+2. **`UNIQUE(linea_pedido_id)` sin cambios**: sigue siendo "una previsión por línea de pedido"; añadir a qué tanda apunta esa única previsión no contradice esa unicidad. Reasignar a otra tanda (FIFO recalculado, o cambio manual desde el futuro selector de la UI) es un `UPDATE` de la fila existente, nunca un `INSERT` nuevo — verificado explícitamente en la prueba.
+3. **`ON DELETE SET NULL`** (no `CASCADE`, no `RESTRICT`): borrar una tanda es un caso real — `ProduccionProductosFinales.jsx` permite cancelar producciones abiertas y borrar producciones ya cerradas. La previsión no es un compromiso real (mismo principio que el `CASCADE` de `linea_pedido_id` en el Paso 1 de Capa B), pero aquí la fuente de verdad es la intención del cliente (`linea_pedido_id`), no la tanda que la cubre: borrar la tanda no debe borrar la previsión, solo debe hacerle perder su asignación de lote y volver a "sin tanda asignada".
+
+**Función `tanda_fifo_producto_final(p_producto_final_id)`**: da solo la sugerencia (primera tanda por antigüedad con `stock_disponible > 0`, o cero filas si no hay ninguna). El resto de tandas disponibles, para que el operador pueda cambiar a otra, se consulta directamente contra `stock_lotes_producto_final` desde el frontend en el Paso 2 — mismo patrón ya usado en `AlbaranesVenta.jsx`, no hace falta una segunda función.
+
+**`GRANT EXECUTE` explícito**: Postgres concede `EXECUTE` en funciones a `PUBLIC` por defecto (a diferencia de las tablas) — `distribucion_prevista_pf()` de Capa B nunca lo necesitó por eso, y de hecho el bug de la addenda anterior fue de `GRANT` de *tabla*, no de función. Se añade aquí de todos modos, explícito, por la misma disciplina que motivó esa addenda.
+
+### Prueba en transacción (`BEGIN...ROLLBACK`) y aplicación en firme
+
+Probado primero en transacción contra datos reales (líneas de pedido pendientes 143/145/146/147 de los productos 6/7/8/9, más dos tandas de prueba insertadas y revertidas): columna nullable confirmada, FK con `confdeltype='n'` (`SET NULL`) confirmada, `UNIQUE` sigue rechazando duplicados, reasignación por `UPDATE` funciona, `ON DELETE SET NULL` confirmado (al borrar la tanda referenciada, la previsión real sobrevivió con `produccion_pf_id=NULL`), FIFO devolvió correctamente la tanda más antigua de dos. Todo revertido con `ROLLBACK`, cero datos de prueba persistidos.
+
+Aplicada después en firme (`BEGIN; ...; COMMIT`). Verificación posterior, solo de lectura:
+
+- Columna, FK (`ON DELETE SET NULL`) y `UNIQUE` confirmados vía `information_schema`/`pg_constraint`.
+- Función registrada con la firma esperada; `EXECUTE` confirmado para `authenticated` (y `PUBLIC`, por el default).
+- **Verificación bajo el rol `authenticated` real** (no superusuario, con `SET LOCAL ROLE authenticated` + `SET LOCAL request.jwt.claim.role = 'authenticated'`, simulando PostgREST): `SELECT` de `produccion_pf_id` y llamada a `tanda_fifo_producto_final()` funcionan sin `42501`, para los 4 productos reales con pedidos pendientes.
+- `tanda_fifo_producto_final()` devuelve 0 filas para los 4 productos reales (6, 7, 8, 9) — correcto: actualmente no hay ninguna tanda cerrada con stock disponible para ninguno de ellos, no es un error.
+- Las 3 previsiones reales ya existentes (líneas 143, 145, 146) quedaron intactas, todas con `produccion_pf_id=NULL` — ni se tocaron ni se dejó ningún dato de prueba.
+
+### Fuera de alcance de este Paso 1 (sin tocar)
+
+UI de Pedidos, Producciones del día, AlbaranesVenta (Paso 2 de Capa C, siguiente); los dos triggers auditados (`trg_actualizar_estado_pedido_por_servicio`, `trg_actualizar_estado_pedido_por_produccion`); Expediciones.
