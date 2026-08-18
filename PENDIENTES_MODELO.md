@@ -140,3 +140,23 @@ La Vista 1 (`PedidosDelDia.jsx`, ahora "Producciones del día") y la validación
 **Por qué no se resolvió ahora**: la Vista Dinámica de Producción se diseñó y verificó deliberadamente por fases (Vista 1 → validación de Vista 2), dejando explícitamente fuera de alcance el "Estado 2" (albaranar en masa una vez el stock está en verde) — que es precisamente donde había que decidir si ese estado 2 revive `tandas_produccion` como su mecanismo de agrupación, lo sustituye por otro, o reconecta `CierreTanda.jsx` tal cual. Resolver esto antes de tener ese diseño sería adivinar.
 
 **Cuándo retomarlo**: al escribir el contrato de Estado 2 — decidir explícitamente si `tandas_produccion`/`CierreTanda.jsx` se reutilizan, se rediseñan o se retiran. Detalle completo del estado y de las tres piezas huérfanas en `CONTRATO_VISTA_DINAMICA_PRODUCCION.md` (cabecera de estado y sección "Fuera de alcance de este contrato").
+
+## 13. ✅ Resuelto — Regresión en `actualizar_previsiones_por_linea_albaran()` por matching estricto sobre `produccion_pf_id` NULL
+
+**Resumen del bug**:
+
+- La migración `20260919_previsiones_multiples_tandas_por_linea.sql` endureció el `WHERE` del trigger de descuento de `previsiones_distribucion_pf`, pasando de matchear solo por `linea_pedido_id` a matchear por `(linea_pedido_id, produccion_pf_id)`, para no descontar de la tanda equivocada en reparto multi-tanda.
+- Esto rompió en silencio el caso en que la previsión quedaba "sin tanda asignada" (`produccion_pf_id IS NULL`) y el albarán real que la servía sí tenía una tanda concreta: `NULL = 144` nunca es `true` en SQL, así que el `UPDATE` no encontraba fila que tocar, sin error ni log.
+- Detectado por una fila con PREVISTO "vivo" en el listado de pedidos para una línea ya 100% servida (`ZZ_AlbondigasconTomate`, `OV-260101`).
+
+**Lección técnica importante (para no repetir el error al arreglarlo)**:
+
+- El primer intento de fix usó `IS NOT DISTINCT FROM` en vez de `=`, pensando que resolvía el caso NULL. No sirvió de nada: ambas ramas de la función están envueltas en un guard `if NEW.linea_pedido_id is not null and NEW.produccion_pf_id is not null then ...`, así que dentro de ese bloque `NEW.produccion_pf_id` nunca es NULL, y `produccion_pf_id IS NOT DISTINCT FROM NEW.produccion_pf_id` se comporta exactamente igual que `produccion_pf_id = NEW.produccion_pf_id`. `IS NOT DISTINCT FROM` solo aporta algo cuando AMBOS lados de la comparación pueden ser NULL a la vez — hay que revisar si algún guard previo ya descarta esa posibilidad antes de asumir que el operador arregla el caso.
+- Se detectó porque se probó explícitamente en `BEGIN...ROLLBACK` antes de comitear, reproduciendo el caso real y comprobando el número de filas afectadas — no se dio por bueno el fix solo por revisar el SQL a ojo.
+
+**Fix aplicado** (commit `802994e`, migración `20260921_previsiones_fallback_sin_tanda.sql`):
+
+- Fallback A: si el match exacto (`linea_pedido_id` + `produccion_pf_id`) no encuentra fila, se intenta un segundo `UPDATE` restringido a esa misma línea con `produccion_pf_id IS NULL`, absorbiendo el descuento desde la previsión "genérica".
+- Fallback C: si ni el match exacto ni el fallback A encuentran nada, se inserta una incidencia en `incidencias_reparto_pedido` (`motivo='prevision_no_encontrada'`) en vez de fallar en silencio, para que cualquier caso futuro no cubierto quede visible y trazable en vez de perderse.
+
+**Nota para el futuro**: cualquier otra función/trigger que compare columnas opcionales (nullable) como parte de su lógica de matching debería revisarse con el mismo criterio: ¿puede el lado `NEW` ser NULL en el punto donde se hace la comparación, o hay un guard previo que ya lo descarta? Si lo descarta, `IS NOT DISTINCT FROM` no aporta nada y hay que resolverlo con un fallback explícito (como A) en vez de solo cambiar el operador.
