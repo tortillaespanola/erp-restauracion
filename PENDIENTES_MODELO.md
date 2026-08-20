@@ -170,3 +170,28 @@ Migración `20260923_unidades_medida.sql` (detectada durante la construcción de
 **Por qué no se resolvió del todo ahora**: dropear `unidad` y migrar los 12 archivos a leer `unidad_id`/`unidades_medida.codigo` es trabajo real, y las dos pantallas que de verdad necesitan cambiar su formulario (`Ingredientes.jsx`, `Articulos.jsx`, de texto libre a `<Select>` de `unidad_id`) todavía no se han tocado — quedaron para la fase inmediatamente siguiente de la misma sesión.
 
 **Cuándo retomarlo**: al completar esa fase (UI de `Ingredientes.jsx`/`Articulos.jsx` con selector de unidad) y, más adelante, cuando se audite cada uno de los 12 archivos restantes para leer `unidad_id` directamente — solo entonces dropear la columna `unidad` (texto) y los dos triggers espejo, que dejan de hacer falta.
+
+## 15. `productos_finales.unidad_id` fijo a "ud" — falta auditar 8 sitios con "uds" incrustado antes de permitir otra unidad
+
+Migración `20260926_unidad_semielaborados_productos_finales.sql` cerró la inconsistencia de que `semielaborados`/`productos_finales` quedaran fuera de `unidades_medida` (ver entrada #14) — pero con alcance deliberadamente distinto entre los dos:
+
+- **`semielaborados`**: migración completa, igual patrón que ingredientes/artículos (`unidad_id` NOT NULL + trigger espejo sobre `unidad` texto existente) — Fase C ya aplicada, `Semielaborados.jsx` tiene `<Select>` de unidad en alta y edición.
+- **`productos_finales`**: `unidad_id` con `DEFAULT` fijo al id de `'ud'`, backfill de todas las filas existentes a `'ud'` — **sin `<Select>` en `ProductosFinales.jsx`, a propósito**. `productos_finales` nunca tuvo columna `unidad` (ni texto ni ningún otro campo) — no es una migración, es un concepto que no existía. Al menos 8 sitios del frontend dan por hecho, con el literal `"uds"` incrustado directamente en el JSX (no leen ningún campo, verificado), que un producto final se cuenta siempre en unidades:
+
+```
+PedidosDelDia.jsx:410  Producido hoy: ... uds
+PedidosDelDia.jsx:411  Stock disponible: ... uds
+PedidosDelDia.jsx:412  Distribuido: ... uds
+PedidosDelDia.jsx:417  Residual libre: ... uds
+PedidosDelDia.jsx:1257 necesidad ... uds
+PedidosDelDia.jsx:1258 disponible ... uds
+AlbaranesVenta.jsx:437 {l.cantidad} uds.
+AlbaranesVenta.jsx:751 {linea.restante} uds. pendientes del pedido
+ProduccionProductosFinales.jsx:859  {cantidad_producida} uds. de {nombre}
+```
+
+Ofrecer otra unidad en el alta sin corregir esos 8+ sitios generaría un producto final marcado, por ejemplo, en `kg`, mientras media app le sigue mostrando "uds" al lado de sus cantidades — peor que no tener el campo.
+
+**Nota de modelo, confirmada durante la auditoría de esta pieza (no una suposición)**: `receta_producto_final.cantidad`/`receta_semielaborado.cantidad` se interpretan siempre en la unidad del **componente** (hijo), nunca en la del padre — confirmado en `Semielaborados.jsx`, `ProductosFinales.jsx` y `lib/validarStockReceta.js`, los tres etiquetan `cantidad` con la unidad del artículo/ingrediente/semielaborado hijo, jamás con la del padre. Por eso `unidad_id` en semielaborados/productos_finales no necesita ninguna validación cruzada tipo `trg_validar_unidad_articulo_ingrediente` — no hay dos filas representando la misma cosa física que deban coincidir, a diferencia de `articulo_ingrediente`.
+
+**Cuándo retomarlo**: si aparece un caso real de un producto final que de verdad se venda/produzca en `kg`/`l` (no solo unidades) — auditar y corregir los 8 sitios de arriba para que lean `productos_finales.unidad_id` en vez de asumir "uds", y solo entonces añadir el `<Select>` en `ProductosFinales.jsx`.

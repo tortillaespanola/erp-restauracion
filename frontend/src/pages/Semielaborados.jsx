@@ -9,11 +9,12 @@ function Semielaborados() {
   const [semielaborados, setSemielaborados] = useState([])
   const [articulos, setArticulos] = useState([])
   const [ingredientes, setIngredientes] = useState([])
+  const [unidades, setUnidades] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
   const [codigo, setCodigo] = useState('')
-  const [unidad, setUnidad] = useState('')
+  const [unidadId, setUnidadId] = useState('')
   const [diasCaducidadDefault, setDiasCaducidadDefault] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
@@ -22,7 +23,7 @@ function Semielaborados() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resSemi, resArticulos, resIngredientes] = await Promise.all([
+    const [resSemi, resArticulos, resIngredientes, resUnidades] = await Promise.all([
       supabase
         .from('semielaborados')
         .select(`
@@ -41,6 +42,7 @@ function Semielaborados() {
         .order('nombre', { ascending: true }),
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
       supabase.from('ingredientes').select('id, nombre, unidad').order('nombre'),
+      supabase.from('unidades_medida').select('id, codigo, nombre').order('codigo'),
     ])
 
     if (resSemi.error) console.error(resSemi.error)
@@ -51,6 +53,9 @@ function Semielaborados() {
 
     if (resIngredientes.error) console.error(resIngredientes.error)
     else setIngredientes(resIngredientes.data)
+
+    if (resUnidades.error) console.error('Error cargando unidades:', resUnidades.error)
+    else setUnidades(resUnidades.data)
 
     setCargando(false)
   }
@@ -83,7 +88,7 @@ function Semielaborados() {
   function resetForm() {
     setNombre('')
     setCodigo('')
-    setUnidad('')
+    setUnidadId('')
     setDiasCaducidadDefault('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
@@ -93,7 +98,7 @@ function Semielaborados() {
   function handleEditar(s) {
     setNombre(s.nombre ?? '')
     setCodigo(s.codigo ?? '')
-    setUnidad(s.unidad ?? '')
+    setUnidadId(s.unidad_id ? String(s.unidad_id) : '')
     setDiasCaducidadDefault(s.dias_caducidad_default ?? '')
     setNotas(s.notas ?? '')
 
@@ -129,7 +134,7 @@ function Semielaborados() {
         .update({
           nombre,
           codigo: codigo || null,
-          unidad,
+          unidad_id: parseInt(unidadId),
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
@@ -155,7 +160,7 @@ function Semielaborados() {
         .insert({
           nombre,
           codigo: codigo || null,
-          unidad,
+          unidad_id: parseInt(unidadId),
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
@@ -218,7 +223,12 @@ function Semielaborados() {
                 <Input type="text" placeholder="Ej. SOF" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
               </Field>
               <Field label="Unidad de producción">
-                <Input type="text" placeholder="kg, l, ud..." value={unidad} onChange={(e) => setUnidad(e.target.value)} required />
+                <Select value={unidadId} onChange={(e) => setUnidadId(e.target.value)} required>
+                  <option value="">Selecciona unidad</option>
+                  {unidades.map((u) => (
+                    <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
+                  ))}
+                </Select>
               </Field>
               <Field label="Días de caducidad por defecto (opcional)">
                 <Input type="number" step="1" min="0" placeholder="Ej. 3" value={diasCaducidadDefault}
