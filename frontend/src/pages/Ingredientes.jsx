@@ -3,23 +3,26 @@ import { supabase } from '../lib/supabase'
 import { IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, EmptyState, LoadingState } from '../components/ui'
 
-const vacio = { nombre: '', unidad: '', categoriaId: '' }
+const vacio = { nombre: '', unidadId: '', categoriaId: '' }
 
 function Ingredientes() {
   const [ingredientes, setIngredientes] = useState([])
   const [categorias, setCategorias] = useState([])
+  const [unidades, setUnidades] = useState([])
   const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(vacio)
+  const [editandoId, setEditandoId] = useState(null)
 
   async function cargarDatos() {
     setCargando(true)
 
-    const [resIngredientes, resCategorias] = await Promise.all([
+    const [resIngredientes, resCategorias, resUnidades] = await Promise.all([
       supabase
         .from('ingredientes')
         .select('*, categorias_articulo(nombre), articulo_ingrediente(articulo_id, articulos_compra(id, nombre, unidad))')
         .order('nombre'),
       supabase.from('categorias_articulo').select('id, nombre').order('nombre'),
+      supabase.from('unidades_medida').select('id, codigo, nombre').order('codigo'),
     ])
 
     if (resIngredientes.error) console.error('Error cargando ingredientes:', resIngredientes.error)
@@ -27,6 +30,9 @@ function Ingredientes() {
 
     if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
     else setCategorias(resCategorias.data)
+
+    if (resUnidades.error) console.error('Error cargando unidades:', resUnidades.error)
+    else setUnidades(resUnidades.data)
 
     setCargando(false)
   }
@@ -39,14 +45,36 @@ function Ingredientes() {
     setForm((prev) => ({ ...prev, [campo]: valor }))
   }
 
+  function handleEditar(i) {
+    setForm({
+      nombre: i.nombre ?? '',
+      unidadId: i.unidad_id ? String(i.unidad_id) : '',
+      categoriaId: i.categoria_id ? String(i.categoria_id) : '',
+    })
+    setEditandoId(i.id)
+  }
+
+  function handleCancelar() {
+    setForm(vacio)
+    setEditandoId(null)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
 
-    const { error } = await supabase.from('ingredientes').insert({
+    const payload = {
       nombre: form.nombre,
-      unidad: form.unidad,
+      unidad_id: parseInt(form.unidadId),
       categoria_id: parseInt(form.categoriaId),
-    })
+    }
+
+    // El trigger trg_validar_cambio_unidad_ingredientes bloquea cambiar unidad_id si el
+    // ingrediente ya está vinculado (articulo_ingrediente) a un artículo con otra unidad -- el
+    // mensaje de la excepción ya viene redactado en español para mostrarse tal cual, no hace
+    // falta reescribirlo aquí.
+    const { error } = editandoId
+      ? await supabase.from('ingredientes').update(payload).eq('id', editandoId)
+      : await supabase.from('ingredientes').insert(payload)
 
     if (error) {
       alert('Error al guardar: ' + error.message)
@@ -54,6 +82,7 @@ function Ingredientes() {
     }
 
     setForm(vacio)
+    setEditandoId(null)
     cargarDatos()
   }
 
@@ -65,7 +94,7 @@ function Ingredientes() {
       />
 
       <Card className="mb-6">
-        <CardHeader title="Nuevo ingrediente" />
+        <CardHeader title={editandoId ? 'Editar ingrediente' : 'Nuevo ingrediente'} />
         <CardBody>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
             <Field label="Nombre">
@@ -81,10 +110,21 @@ function Ingredientes() {
               </Select>
             </Field>
             <Field label="Unidad">
-              <Input type="text" placeholder="kg, l, ud..." value={form.unidad}
-                onChange={(e) => handleChange('unidad', e.target.value)} required />
+              <Select value={form.unidadId} onChange={(e) => handleChange('unidadId', e.target.value)} required>
+                <option value="">Selecciona unidad</option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
+                ))}
+              </Select>
             </Field>
-            <Button type="submit"><IconPlus size={15} /> Guardar ingrediente</Button>
+            <div className="flex gap-2">
+              <Button type="submit">
+                {editandoId ? 'Guardar cambios' : <><IconPlus size={15} /> Guardar ingrediente</>}
+              </Button>
+              {editandoId && (
+                <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
+              )}
+            </div>
           </form>
         </CardBody>
       </Card>
@@ -99,8 +139,13 @@ function Ingredientes() {
         <div className="flex flex-col gap-4">
           {ingredientes.map((i) => (
             <Card key={i.id} className="p-4">
-              <p className="font-semibold text-[#1C2938]">{i.nombre}</p>
-              <p className="text-sm text-gray-500">{i.unidad} · {i.categorias_articulo?.nombre ?? 'Sin categoría'}</p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-[#1C2938]">{i.nombre}</p>
+                  <p className="text-sm text-gray-500">{i.unidad} · {i.categorias_articulo?.nombre ?? 'Sin categoría'}</p>
+                </div>
+                <LinkAction tone="blue" onClick={() => handleEditar(i)} className="shrink-0">Editar</LinkAction>
+              </div>
 
               <ArticulosDelIngrediente ingrediente={i} onCambio={cargarDatos} />
             </Card>

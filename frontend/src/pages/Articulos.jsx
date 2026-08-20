@@ -6,9 +6,9 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Inpu
 const NUEVO_INGREDIENTE = '__nuevo__'
 
 const vacio = {
-  nombre: '', unidad: '', categoriaId: '', iva: '', tipo_material: 'RM',
+  nombre: '', unidadId: '', categoriaId: '', iva: '', tipo_material: 'RM',
   requiere_control_temperatura: false, temperatura_min: '', temperatura_max: '',
-  ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '',
+  ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidadId: '',
 }
 
 async function generarCodigoArticulo(categoriaId, categorias, ingredienteId) {
@@ -28,6 +28,7 @@ async function generarCodigoArticulo(categoriaId, categorias, ingredienteId) {
 function Articulos() {
   const [articulos, setArticulos] = useState([])
   const [categorias, setCategorias] = useState([])
+  const [unidades, setUnidades] = useState([])
   const [ingredientesDeCategoria, setIngredientesDeCategoria] = useState([])
   const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(vacio)
@@ -36,12 +37,13 @@ function Articulos() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resArticulos, resCategorias] = await Promise.all([
+    const [resArticulos, resCategorias, resUnidades] = await Promise.all([
       supabase
         .from('articulos_compra')
         .select('*, articulo_proveedor(id, precio, preferente, referencia_proveedor, proveedores(id, nombre_comercial)), categorias_articulo(nombre, acronimo)')
         .order('created_at', { ascending: false }),
       supabase.from('categorias_articulo').select('id, nombre, acronimo').order('nombre'),
+      supabase.from('unidades_medida').select('id, codigo, nombre').order('codigo'),
     ])
 
     if (resArticulos.error) console.error('Error cargando artículos:', resArticulos.error)
@@ -49,6 +51,9 @@ function Articulos() {
 
     if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
     else setCategorias(resCategorias.data)
+
+    if (resUnidades.error) console.error('Error cargando unidades:', resUnidades.error)
+    else setUnidades(resUnidades.data)
 
     setCargando(false)
   }
@@ -78,7 +83,7 @@ function Articulos() {
   }
 
   function handleChangeCategoria(valor) {
-    setForm((prev) => ({ ...prev, categoriaId: valor, ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '' }))
+    setForm((prev) => ({ ...prev, categoriaId: valor, ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidadId: '' }))
   }
 
   async function handleSubmit(e) {
@@ -86,7 +91,7 @@ function Articulos() {
 
     const payload = {
       nombre: form.nombre,
-      unidad: form.unidad,
+      unidad_id: parseInt(form.unidadId),
       categoria_id: parseInt(form.categoriaId),
       iva: form.iva ? parseFloat(form.iva) : null,
       tipo_material: form.tipo_material,
@@ -96,6 +101,9 @@ function Articulos() {
     }
 
     if (editandoId) {
+      // trg_validar_cambio_unidad_articulos bloquea el UPDATE si este artículo está vinculado a
+      // un ingrediente con otra unidad -- el mensaje de la excepción ya viene redactado en
+      // español, se muestra tal cual.
       const { error } = await supabase.from('articulos_compra').update(payload).eq('id', editandoId)
       if (error) {
         alert('Error al actualizar: ' + error.message)
@@ -105,13 +113,13 @@ function Articulos() {
       let ingredienteId = form.ingredienteId && form.ingredienteId !== NUEVO_INGREDIENTE ? parseInt(form.ingredienteId) : null
 
       if (form.ingredienteId === NUEVO_INGREDIENTE) {
-        if (!form.ingredienteNuevoNombre || !form.ingredienteNuevoUnidad) {
+        if (!form.ingredienteNuevoNombre || !form.ingredienteNuevoUnidadId) {
           alert('Indica nombre y unidad del ingrediente nuevo')
           return
         }
         const { data: nuevoIngrediente, error: errorIngrediente } = await supabase
           .from('ingredientes')
-          .insert({ nombre: form.ingredienteNuevoNombre, unidad: form.ingredienteNuevoUnidad, categoria_id: parseInt(form.categoriaId) })
+          .insert({ nombre: form.ingredienteNuevoNombre, unidad_id: parseInt(form.ingredienteNuevoUnidadId), categoria_id: parseInt(form.categoriaId) })
           .select()
           .single()
         if (errorIngrediente) {
@@ -151,14 +159,14 @@ function Articulos() {
   function handleEditar(a) {
     setForm({
       nombre: a.nombre ?? '',
-      unidad: a.unidad ?? '',
+      unidadId: a.unidad_id ? String(a.unidad_id) : '',
       categoriaId: a.categoria_id ? String(a.categoria_id) : '',
       iva: a.iva ?? '',
       tipo_material: a.tipo_material ?? 'RM',
       requiere_control_temperatura: a.requiere_control_temperatura ?? false,
       temperatura_min: a.temperatura_min ?? '',
       temperatura_max: a.temperatura_max ?? '',
-      ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidad: '',
+      ingredienteId: '', ingredienteNuevoNombre: '', ingredienteNuevoUnidadId: '',
     })
     setEditandoId(a.id)
   }
@@ -210,8 +218,12 @@ function Articulos() {
             </div>
 
             <Field label="Unidad">
-              <Input type="text" placeholder="kg, l, ud..." value={form.unidad}
-                onChange={(e) => handleChange('unidad', e.target.value)} required />
+              <Select value={form.unidadId} onChange={(e) => handleChange('unidadId', e.target.value)} required>
+                <option value="">Selecciona unidad</option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
+                ))}
+              </Select>
             </Field>
 
             {!editandoId && (
@@ -227,8 +239,12 @@ function Articulos() {
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <Input type="text" placeholder="Nombre del ingrediente" value={form.ingredienteNuevoNombre}
                       onChange={(e) => handleChange('ingredienteNuevoNombre', e.target.value)} />
-                    <Input type="text" placeholder="Unidad" value={form.ingredienteNuevoUnidad || form.unidad}
-                      onChange={(e) => handleChange('ingredienteNuevoUnidad', e.target.value)} />
+                    <Select value={form.ingredienteNuevoUnidadId || form.unidadId} onChange={(e) => handleChange('ingredienteNuevoUnidadId', e.target.value)}>
+                      <option value="">Selecciona unidad</option>
+                      {unidades.map((u) => (
+                        <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
+                      ))}
+                    </Select>
                   </div>
                 )}
               </Field>
