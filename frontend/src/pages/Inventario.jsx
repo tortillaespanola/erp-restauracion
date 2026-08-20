@@ -20,6 +20,7 @@ function Inventario() {
   const [ingredienteSel, setIngredienteSel] = useState([])
   const [semiSel, setSemiSel] = useState([])
   const [pfSel, setPfSel] = useState([])
+  const [soloConNecesidad, setSoloConNecesidad] = useState(false)
 
   const [expandidosIngrediente, setExpandidosIngrediente] = useState(new Set())
   const [expandidosArticulo, setExpandidosArticulo] = useState(new Set())
@@ -203,22 +204,26 @@ function Inventario() {
 
         const stock = articulos.reduce((sum, a) => sum + Number(a.stock), 0)
         const demanda = demandaPorIngrediente.get(i.id)
+        // Necesidad agregada = demanda pendiente de fabricar - stock actual de ingrediente ya en
+        // almacén (reutiliza `stock`, no una segunda agregación), clampeada a 0 -- "negativo" no
+        // existe en esta columna: 0 es "no hace falta comprar", positivo es "esto falta" (ver
+        // migración 20260925 para la parte de demanda, sin acumulado histórico).
+        const necesidad = demanda == null ? null : Math.max(demanda - stock, 0)
         return {
           ...i,
           articulos,
           stock,
-          // Necesidad agregada = demanda pendiente de fabricar - stock actual de ingrediente ya
-          // en almacén (reutiliza `stock`, no una segunda agregación) -- no un histórico
-          // acumulado de producción cerrada (ver migración 20260925, corrección de diseño).
-          necesidad: demanda == null ? null : demanda - stock,
-          ocultarPorFiltro: proveedorFiltroActivo && articuloIds.length > 0 && articulos.length === 0,
+          necesidad,
+          ocultarPorFiltro:
+            (proveedorFiltroActivo && articuloIds.length > 0 && articulos.length === 0) ||
+            (soloConNecesidad && !(necesidad > 0)),
         }
       })
       .filter((i) => !i.ocultarPorFiltro)
   }, [
     datos.ingredientes, ingredienteSel, ingredientesAlcanzables, articulosPorIngrediente,
     articuloPorId, duplasPorArticulo, proveedorSel, proveedorNombrePorId, ultimoPrecioPorDupla,
-    stockPorDupla, demandaPorIngrediente,
+    stockPorDupla, demandaPorIngrediente, soloConNecesidad,
   ])
 
   function toggleIngrediente(id) {
@@ -276,13 +281,23 @@ function Inventario() {
               onChange={setPfSel}
             />
           </Field>
+          <Field label="Solo con necesidad" className="w-52">
+            <label className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer">
+              <input type="checkbox" checked={soloConNecesidad} onChange={(e) => setSoloConNecesidad(e.target.checked)} />
+              Necesidad {'>'} 0
+            </label>
+          </Field>
         </CardBody>
       </Card>
 
       {cargando ? (
         <LoadingState />
       ) : filasVisibles.length === 0 ? (
-        <Card><EmptyState>Ningún ingrediente coincide con los filtros seleccionados.</EmptyState></Card>
+        <Card>
+          <EmptyState>
+            {soloConNecesidad ? 'Nada pendiente de comprar.' : 'Ningún ingrediente coincide con los filtros seleccionados.'}
+          </EmptyState>
+        </Card>
       ) : (
         <Card className="overflow-hidden">
           <Table>
