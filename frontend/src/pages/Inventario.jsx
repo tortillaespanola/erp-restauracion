@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatCantidad, formatPrecio } from '../lib/formatCantidad'
 import { IconChevronRight, IconChevronDown } from '@tabler/icons-react'
 import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -319,7 +320,7 @@ function Inventario() {
                         </button>
                       </Td>
                       <Td className="font-medium">{ing.nombre}</Td>
-                      <Td>{ing.stock.toFixed(3)} {ing.unidad}</Td>
+                      <Td>{formatCantidad(ing.stock, ing.unidad)} {ing.unidad}</Td>
                       <Td>
                         {cargandoNecesidad ? (
                           <span className="text-gray-400">…</span>
@@ -327,7 +328,7 @@ function Inventario() {
                           '—'
                         ) : (
                           <span className={ing.necesidad > 0 ? 'text-red-600 font-medium' : ''}>
-                            {ing.necesidad.toFixed(3)} {ing.unidad}
+                            {formatCantidad(ing.necesidad, ing.unidad)} {ing.unidad}
                           </span>
                         )}
                       </Td>
@@ -359,7 +360,7 @@ function Inventario() {
                                           </button>
                                         </td>
                                         <td className="px-2 py-1.5">{art.nombre}</td>
-                                        <td className="px-2 py-1.5">{Number(art.stock).toFixed(3)} {art.unidad}</td>
+                                        <td className="px-2 py-1.5">{formatCantidad(art.stock, art.unidad)} {art.unidad}</td>
                                       </tr>
                                       {expandidoArt && (
                                         <tr>
@@ -380,11 +381,11 @@ function Inventario() {
                                                   {art.duplas.map((d) => (
                                                     <tr key={d.proveedorId}>
                                                       <td className="pl-16 pr-2 py-1.5">{d.proveedorNombre}</td>
-                                                      <td className="px-2 py-1.5">{d.precio != null ? `${d.precio} €/${art.unidad}` : '—'}</td>
+                                                      <td className="px-2 py-1.5">{d.precio != null ? `${formatPrecio(d.precio)} €/${art.unidad}` : '—'}</td>
                                                       <td className="px-2 py-1.5">
-                                                        {d.ultimoPrecio ? `${d.ultimoPrecio.precio} €/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
+                                                        {d.ultimoPrecio ? `${formatPrecio(d.ultimoPrecio.precio)} €/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
                                                       </td>
-                                                      <td className="px-2 py-1.5">{Number(d.stock).toFixed(3)} {art.unidad}</td>
+                                                      <td className="px-2 py-1.5">{formatCantidad(d.stock, art.unidad)} {art.unidad}</td>
                                                     </tr>
                                                   ))}
                                                 </tbody>
