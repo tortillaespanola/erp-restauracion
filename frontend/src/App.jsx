@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Articulos from './pages/Articulos'
 import Ingredientes from './pages/Ingredientes'
+import Inventario from './pages/Inventario'
 import Semielaborados from './pages/Semielaborados'
 import PedidosDelDia from './pages/PedidosDelDia'
 import CierreTanda from './pages/CierreTanda'
@@ -28,6 +29,7 @@ function App({ session, onLogout }) {
           <Route path="/articulos" element={<Articulos />} />
 
           <Route path="/ingredientes" element={<Ingredientes />} />
+          <Route path="/inventario" element={<Inventario />} />
           <Route path="/semielaborados" element={<Semielaborados />} />
           <Route path="/pedidos-del-dia" element={<PedidosDelDia />} />
           <Route path="/cierre-tanda" element={<CierreTanda />} />

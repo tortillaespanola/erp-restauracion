@@ -1,8 +1,10 @@
 // Sistema de componentes compartido — lenguaje visual SAP Fiori
 // Referencia: mockups/mockup-articulos.html
 
+import { useState, useRef, useEffect } from 'react'
 import DatePicker, { registerLocale } from 'react-datepicker'
 import { es } from 'date-fns/locale'
+import { IconChevronDown } from '@tabler/icons-react'
 import 'react-datepicker/dist/react-datepicker.css'
 
 registerLocale('es', es)
@@ -96,6 +98,70 @@ export function Select({ className = '', ...props }) {
 
 export function Textarea({ className = '', ...props }) {
   return <textarea className={`${controlClass} ${className}`} {...props} />
+}
+
+// Checkbox-dropdown genérico de selección múltiple, mismo estilo visual que <Select> --
+// pensado para reutilizarse en cualquier filtro multi-select futuro (Inventario,
+// Expediciones, Facturación...), no acoplado a un caso concreto.
+// `options`: [{ value, label }]. `selected`: array de `value` seleccionados.
+// `onChange(nuevoArraySeleccionado)`.
+export function MultiSelect({ options, selected, onChange, placeholder = 'Todos', className = '' }) {
+  const [abierto, setAbierto] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClickFuera(e) {
+      if (ref.current && !ref.current.contains(e.target)) setAbierto(false)
+    }
+    document.addEventListener('mousedown', handleClickFuera)
+    return () => document.removeEventListener('mousedown', handleClickFuera)
+  }, [])
+
+  function toggle(value) {
+    onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value])
+  }
+
+  const etiqueta = selected.length === 0
+    ? placeholder
+    : selected.length === 1
+      ? (options.find((o) => o.value === selected[0])?.label ?? placeholder)
+      : `${selected.length} seleccionados`
+
+  return (
+    <div className={`relative ${className}`} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setAbierto((a) => !a)}
+        className={`${controlClass} flex items-center justify-between text-left`}
+      >
+        <span className={`truncate ${selected.length === 0 ? 'text-gray-400' : ''}`}>{etiqueta}</span>
+        <IconChevronDown size={16} className="text-gray-400 shrink-0 ml-2" />
+      </button>
+
+      {abierto && (
+        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg py-1">
+          {options.length === 0 ? (
+            <p className="text-sm text-gray-400 px-3 py-2">Sin opciones</p>
+          ) : (
+            <>
+              {selected.length > 0 && (
+                <button type="button" onClick={() => onChange([])}
+                  className="w-full text-left px-3 py-1.5 text-xs text-[#0854A0] hover:bg-blue-50 border-b border-gray-100">
+                  Limpiar selección
+                </button>
+              )}
+              {options.map((o) => (
+                <label key={o.value} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" checked={selected.includes(o.value)} onChange={() => toggle(o.value)} />
+                  {o.label}
+                </label>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function isoToDate(iso) {
