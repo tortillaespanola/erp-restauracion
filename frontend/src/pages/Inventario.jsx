@@ -12,7 +12,7 @@ const datosVacios = {
 
 function Inventario() {
   const [datos, setDatos] = useState(datosVacios)
-  const [necesidadPorIngrediente, setNecesidadPorIngrediente] = useState(new Map())
+  const [demandaPorIngrediente, setDemandaPorIngrediente] = useState(new Map())
   const [cargando, setCargando] = useState(true)
   const [cargandoNecesidad, setCargandoNecesidad] = useState(true)
 
@@ -62,14 +62,15 @@ function Inventario() {
     setDatos(nuevosDatos)
     setCargando(false)
 
-    // Necesidad agregada: una RPC por ingrediente, en paralelo -- volumen bajo (decenas), no
-    // hace falta una función bulk (ver diagnóstico de sesión).
-    const necesidades = await Promise.all(
+    // Demanda pendiente (sin restar stock -- eso lo hace filasVisibles reutilizando el subtotal
+    // de stock ya calculado, ver Necesidad agregada = demanda - stock más abajo): una RPC por
+    // ingrediente, en paralelo -- volumen bajo (decenas), no hace falta una función bulk.
+    const demandas = await Promise.all(
       nuevosDatos.ingredientes.map((i) =>
-        supabase.rpc('necesidad_agregada_ingrediente', { p_ingrediente_id: i.id }).then((r) => [i.id, r.error ? null : Number(r.data)])
+        supabase.rpc('demanda_pendiente_ingrediente', { p_ingrediente_id: i.id }).then((r) => [i.id, r.error ? null : Number(r.data)])
       )
     )
-    setNecesidadPorIngrediente(new Map(necesidades))
+    setDemandaPorIngrediente(new Map(demandas))
     setCargandoNecesidad(false)
   }
 
@@ -200,11 +201,16 @@ function Inventario() {
           })
           .filter((art) => !art.ocultarPorFiltro)
 
+        const stock = articulos.reduce((sum, a) => sum + Number(a.stock), 0)
+        const demanda = demandaPorIngrediente.get(i.id)
         return {
           ...i,
           articulos,
-          stock: articulos.reduce((sum, a) => sum + Number(a.stock), 0),
-          necesidad: necesidadPorIngrediente.get(i.id) ?? null,
+          stock,
+          // Necesidad agregada = demanda pendiente de fabricar - stock actual de ingrediente ya
+          // en almacén (reutiliza `stock`, no una segunda agregación) -- no un histórico
+          // acumulado de producción cerrada (ver migración 20260925, corrección de diseño).
+          necesidad: demanda == null ? null : demanda - stock,
           ocultarPorFiltro: proveedorFiltroActivo && articuloIds.length > 0 && articulos.length === 0,
         }
       })
@@ -212,7 +218,7 @@ function Inventario() {
   }, [
     datos.ingredientes, ingredienteSel, ingredientesAlcanzables, articulosPorIngrediente,
     articuloPorId, duplasPorArticulo, proveedorSel, proveedorNombrePorId, ultimoPrecioPorDupla,
-    stockPorDupla, necesidadPorIngrediente,
+    stockPorDupla, demandaPorIngrediente,
   ])
 
   function toggleIngrediente(id) {
