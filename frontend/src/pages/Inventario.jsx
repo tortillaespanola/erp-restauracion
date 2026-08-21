@@ -8,7 +8,8 @@ import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, E
 const datosVacios = {
   ingredientes: [], articuloIngrediente: [], stockArticulos: [], articuloProveedor: [],
   proveedores: [], stockLotes: [], entradaMaterial: [], recetaPF: [], recetaSemi: [],
-  productosFinales: [], semielaborados: [],
+  productosFinales: [], semielaborados: [], ajustesArticulo: [], consumoProduccion: [],
+  consumoProduccionPF: [],
 }
 
 function Inventario() {
@@ -25,6 +26,7 @@ function Inventario() {
 
   const [expandidosIngrediente, setExpandidosIngrediente] = useState(new Set())
   const [expandidosArticulo, setExpandidosArticulo] = useState(new Set())
+  const [expandidosDupla, setExpandidosDupla] = useState(new Set())
 
   async function cargarDatos() {
     setCargando(true)
@@ -33,7 +35,8 @@ function Inventario() {
     const [
       resIngredientes, resArticuloIngrediente, resStockArticulos, resArticuloProveedor,
       resProveedores, resStockLotes, resEntradaMaterial, resRecetaPF, resRecetaSemi,
-      resProductosFinales, resSemielaborados,
+      resProductosFinales, resSemielaborados, resAjustesArticulo, resConsumoProduccion,
+      resConsumoProduccionPF,
     ] = await Promise.all([
       supabase.from('ingredientes').select('id, nombre, unidad').order('nombre'),
       supabase.from('articulo_ingrediente').select('articulo_id, ingrediente_id'),
@@ -41,11 +44,14 @@ function Inventario() {
       supabase.from('articulo_proveedor').select('id, articulo_id, proveedor_id, precio, preferente'),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase.from('stock_lotes_articulo').select('entrada_material_id, articulo_id, stock_disponible'),
-      supabase.from('entrada_material').select('id, articulo_id, precio, albaranes_compra(proveedor_id, fecha)').not('precio', 'is', null),
+      supabase.from('entrada_material').select('id, articulo_id, cantidad, precio, codigo_lote, albaranes_compra(proveedor_id, fecha)'),
       supabase.from('receta_producto_final').select('producto_final_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, cantidad'),
       supabase.from('receta_semielaborado').select('semielaborado_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, cantidad'),
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('semielaborados').select('id, nombre').order('nombre'),
+      supabase.from('ajustes_articulo').select('entrada_material_id, cantidad'),
+      supabase.from('consumo_produccion').select('entrada_material_id, cantidad').not('entrada_material_id', 'is', null),
+      supabase.from('consumo_produccion_pf').select('entrada_material_id, cantidad').not('entrada_material_id', 'is', null),
     ])
 
     const nuevosDatos = {
@@ -60,6 +66,9 @@ function Inventario() {
       recetaSemi: resRecetaSemi.data || [],
       productosFinales: resProductosFinales.data || [],
       semielaborados: resSemielaborados.data || [],
+      ajustesArticulo: resAjustesArticulo.data || [],
+      consumoProduccion: resConsumoProduccion.data || [],
+      consumoProduccionPF: resConsumoProduccionPF.data || [],
     }
     setDatos(nuevosDatos)
     setCargando(false)
@@ -142,6 +151,58 @@ function Inventario() {
     return m
   }, [datos.entradaMaterial])
 
+  // Nivel 4: lotes vivos por dupla artículo-proveedor, con el desglose Entrado/Consumido que debe
+  // cuadrar contra stock_disponible (identidad verificada 57/57 en Fase A, migración de referencia
+  // ver stock_lotes_articulo). Ajuste positivo = entrada más (nunca "consumo negativo"); solo el
+  // ajuste que reduce el lote cuenta como Consumido.
+  const ajustesPorEntrada = useMemo(() => {
+    const m = new Map()
+    for (const aj of datos.ajustesArticulo) {
+      const actual = m.get(aj.entrada_material_id) || { positivos: 0, negativos: 0 }
+      const cantidad = Number(aj.cantidad)
+      if (cantidad > 0) actual.positivos += cantidad
+      else actual.negativos += -cantidad
+      m.set(aj.entrada_material_id, actual)
+    }
+    return m
+  }, [datos.ajustesArticulo])
+
+  const consumoPorEntrada = useMemo(() => {
+    const m = new Map()
+    for (const c of [...datos.consumoProduccion, ...datos.consumoProduccionPF]) {
+      m.set(c.entrada_material_id, (m.get(c.entrada_material_id) || 0) + Number(c.cantidad))
+    }
+    return m
+  }, [datos.consumoProduccion, datos.consumoProduccionPF])
+
+  const lotesPorDupla = useMemo(() => {
+    const m = new Map()
+    for (const lote of datos.stockLotes) {
+      if (Number(lote.stock_disponible) <= 0) continue
+      const proveedorId = proveedorDeEntrada.get(lote.entrada_material_id)
+      if (proveedorId == null) continue
+      const em = datos.entradaMaterial.find((e) => e.id === lote.entrada_material_id)
+      if (!em) continue
+      const ajustes = ajustesPorEntrada.get(lote.entrada_material_id) || { positivos: 0, negativos: 0 }
+      const consumoProduccionTotal = consumoPorEntrada.get(lote.entrada_material_id) || 0
+      const clave = `${lote.articulo_id}:${proveedorId}`
+      if (!m.has(clave)) m.set(clave, [])
+      m.get(clave).push({
+        entradaMaterialId: lote.entrada_material_id,
+        codigoLote: em.codigo_lote,
+        fechaRecepcion: em.albaranes_compra?.fecha,
+        cantidadRecibida: Number(em.cantidad),
+        ajustesPositivos: ajustes.positivos,
+        entrado: Number(em.cantidad) + ajustes.positivos,
+        consumoProduccionTotal,
+        ajustesNegativos: ajustes.negativos,
+        consumido: consumoProduccionTotal + ajustes.negativos,
+        stock: Number(lote.stock_disponible),
+      })
+    }
+    return m
+  }, [datos.stockLotes, datos.entradaMaterial, proveedorDeEntrada, ajustesPorEntrada, consumoPorEntrada])
+
   // Ingredientes alcanzables desde los semielaborados/productos finales seleccionados -- BFS
   // sobre receta_producto_final/receta_semielaborado ya cargadas, sin consulta nueva. `null` =
   // sin filtro de semi/PF activo, no restringe nada.
@@ -197,6 +258,7 @@ function Inventario() {
                   precio: d.precio,
                   ultimoPrecio: ultimoPrecioPorDupla.get(clave) ?? null,
                   stock: stockPorDupla.get(clave) ?? 0,
+                  lotes: lotesPorDupla.get(clave) ?? [],
                 }
               })
             return { ...art, duplas, ocultarPorFiltro: proveedorFiltroActivo && duplasTodas.length > 0 && duplas.length === 0 }
@@ -224,7 +286,7 @@ function Inventario() {
   }, [
     datos.ingredientes, ingredienteSel, ingredientesAlcanzables, articulosPorIngrediente,
     articuloPorId, duplasPorArticulo, proveedorSel, proveedorNombrePorId, ultimoPrecioPorDupla,
-    stockPorDupla, demandaPorIngrediente, soloConNecesidad,
+    stockPorDupla, lotesPorDupla, demandaPorIngrediente, soloConNecesidad,
   ])
 
   function toggleIngrediente(id) {
@@ -238,6 +300,15 @@ function Inventario() {
 
   function toggleArticulo(clave) {
     setExpandidosArticulo((prev) => {
+      const next = new Set(prev)
+      if (next.has(clave)) next.delete(clave)
+      else next.add(clave)
+      return next
+    })
+  }
+
+  function toggleDupla(clave) {
+    setExpandidosDupla((prev) => {
       const next = new Set(prev)
       if (next.has(clave)) next.delete(clave)
       else next.add(clave)
@@ -371,23 +442,83 @@ function Inventario() {
                                               <table className="w-full text-sm">
                                                 <thead>
                                                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
-                                                    <th className="pl-16 pr-2 py-1 font-medium">Proveedor</th>
+                                                    <th className="pl-16 pr-2 py-1 font-medium"></th>
+                                                    <th className="px-2 py-1 font-medium">Proveedor</th>
                                                     <th className="px-2 py-1 font-medium">Precio</th>
                                                     <th className="px-2 py-1 font-medium">Último precio de compra</th>
                                                     <th className="px-2 py-1 font-medium">Stock</th>
                                                   </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
-                                                  {art.duplas.map((d) => (
-                                                    <tr key={d.proveedorId}>
-                                                      <td className="pl-16 pr-2 py-1.5">{d.proveedorNombre}</td>
-                                                      <td className="px-2 py-1.5">{d.precio != null ? `${formatPrecio(d.precio)} €/${art.unidad}` : '—'}</td>
-                                                      <td className="px-2 py-1.5">
-                                                        {d.ultimoPrecio ? `${formatPrecio(d.ultimoPrecio.precio)} €/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
-                                                      </td>
-                                                      <td className="px-2 py-1.5">{formatCantidad(d.stock, art.unidad)} {art.unidad}</td>
-                                                    </tr>
-                                                  ))}
+                                                  {art.duplas.map((d) => {
+                                                    const claveDupla = `${claveArt}:${d.proveedorId}`
+                                                    const expandidoDupla = expandidosDupla.has(claveDupla)
+                                                    return (
+                                                      <Fragment key={d.proveedorId}>
+                                                        <tr className="hover:bg-blue-50/20">
+                                                          <td className="pl-16 pr-2 py-1.5">
+                                                            {d.lotes.length > 0 && (
+                                                              <button type="button" onClick={() => toggleDupla(claveDupla)} className="text-gray-400 hover:text-gray-600">
+                                                                {expandidoDupla ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                                                              </button>
+                                                            )}
+                                                          </td>
+                                                          <td className="px-2 py-1.5">{d.proveedorNombre}</td>
+                                                          <td className="px-2 py-1.5">{d.precio != null ? `${formatPrecio(d.precio)} €/${art.unidad}` : '—'}</td>
+                                                          <td className="px-2 py-1.5">
+                                                            {d.ultimoPrecio ? `${formatPrecio(d.ultimoPrecio.precio)} €/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
+                                                          </td>
+                                                          <td className="px-2 py-1.5">{formatCantidad(d.stock, art.unidad)} {art.unidad}</td>
+                                                        </tr>
+                                                        {expandidoDupla && (
+                                                          <tr>
+                                                            <td colSpan={5} className="bg-gray-50/40 py-1.5">
+                                                              {d.lotes.length === 0 ? (
+                                                                <p className="text-xs text-gray-400 pl-24 py-1">Sin lotes vivos de esta dupla.</p>
+                                                              ) : (
+                                                                <table className="w-full text-sm">
+                                                                  <thead>
+                                                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+                                                                      <th className="pl-24 pr-2 py-1 font-medium">Recepción</th>
+                                                                      <th className="px-2 py-1 font-medium">Lote</th>
+                                                                      <th className="px-2 py-1 font-medium">Entrado</th>
+                                                                      <th className="px-2 py-1 font-medium">Consumido</th>
+                                                                      <th className="px-2 py-1 font-medium">Stock</th>
+                                                                    </tr>
+                                                                  </thead>
+                                                                  <tbody className="divide-y divide-gray-100">
+                                                                    {d.lotes.map((lote) => (
+                                                                      <tr key={lote.entradaMaterialId}>
+                                                                        <td className="pl-24 pr-2 py-1.5">{lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—'}</td>
+                                                                        <td className="px-2 py-1.5">{lote.codigoLote || '—'}</td>
+                                                                        <td className="px-2 py-1.5">
+                                                                          {formatCantidad(lote.entrado, art.unidad)} {art.unidad}
+                                                                          {lote.ajustesPositivos > 0 && (
+                                                                            <div className="text-[10px] text-gray-400">
+                                                                              recibido {formatCantidad(lote.cantidadRecibida, art.unidad)} · ajuste +{formatCantidad(lote.ajustesPositivos, art.unidad)}
+                                                                            </div>
+                                                                          )}
+                                                                        </td>
+                                                                        <td className="px-2 py-1.5">
+                                                                          {formatCantidad(lote.consumido, art.unidad)} {art.unidad}
+                                                                          {lote.ajustesNegativos > 0 && (
+                                                                            <div className="text-[10px] text-gray-400">
+                                                                              prod. {formatCantidad(lote.consumoProduccionTotal, art.unidad)} · ajuste −{formatCantidad(lote.ajustesNegativos, art.unidad)}
+                                                                            </div>
+                                                                          )}
+                                                                        </td>
+                                                                        <td className="px-2 py-1.5">{formatCantidad(lote.stock, art.unidad)} {art.unidad}</td>
+                                                                      </tr>
+                                                                    ))}
+                                                                  </tbody>
+                                                                </table>
+                                                              )}
+                                                            </td>
+                                                          </tr>
+                                                        )}
+                                                      </Fragment>
+                                                    )
+                                                  })}
                                                 </tbody>
                                               </table>
                                             )}
