@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
+import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf } from '../lib/generarAlbaranVentaPdf'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
 function nombreLineaVenta(linea) {
   return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre ?? linea.descripcion
+}
+
+function unidadLineaVenta(linea) {
+  return linea.productos_finales?.unidades_medida?.codigo ?? linea.articulos_compra?.unidad ?? 'ud'
 }
 
 // Fix: los avisos de stock mostraban "3.000" en vez de "3" para valores enteros -- redondea a 3
@@ -40,7 +44,7 @@ function AlbaranesVenta() {
     const [resAlbaranes, resClientes, resProductos, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_venta')
-        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre), articulos_compra(nombre))')
+        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad))')
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
@@ -331,11 +335,13 @@ function AlbaranesVenta() {
       lineas: alb.lineas_albaran_venta.map((l) => ({
         concepto: nombreLineaVenta(l),
         cantidad: l.cantidad,
+        unidad: unidadLineaVenta(l),
         precioUnitario: l.precio_unitario,
       })),
       total: alb.lineas_albaran_venta.reduce(
         (sum, l) => sum + (l.precio_unitario ? l.cantidad * l.precio_unitario : 0), 0
       ),
+      notas: alb.notas,
     }
   }
 
@@ -473,8 +479,8 @@ function AlbaranesVenta() {
                   {alb.notas && <p className="text-sm text-gray-400 italic">{alb.notas}</p>}
                 </div>
                 <div className="flex gap-3 items-start shrink-0">
-                  <LinkAction tone="gray" onClick={() => imprimirPdf('Albarán', prepararDocumento(alb))}>Imprimir</LinkAction>
-                  <LinkAction tone="blue" onClick={() => descargarPdf('Albarán', prepararDocumento(alb))}>Descargar PDF</LinkAction>
+                  <LinkAction tone="gray" onClick={() => imprimirAlbaranVentaPdf(prepararDocumento(alb))}>Imprimir</LinkAction>
+                  <LinkAction tone="blue" onClick={() => descargarAlbaranVentaPdf(prepararDocumento(alb))}>Descargar PDF</LinkAction>
                   <LinkAction tone="red" onClick={() => handleBorrar(alb.id)}>Borrar</LinkAction>
                 </div>
               </div>
