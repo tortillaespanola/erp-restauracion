@@ -195,3 +195,13 @@ Ofrecer otra unidad en el alta sin corregir esos 8+ sitios generaría un product
 **Nota de modelo, confirmada durante la auditoría de esta pieza (no una suposición)**: `receta_producto_final.cantidad`/`receta_semielaborado.cantidad` se interpretan siempre en la unidad del **componente** (hijo), nunca en la del padre — confirmado en `Semielaborados.jsx`, `ProductosFinales.jsx` y `lib/validarStockReceta.js`, los tres etiquetan `cantidad` con la unidad del artículo/ingrediente/semielaborado hijo, jamás con la del padre. Por eso `unidad_id` en semielaborados/productos_finales no necesita ninguna validación cruzada tipo `trg_validar_unidad_articulo_ingrediente` — no hay dos filas representando la misma cosa física que deban coincidir, a diferencia de `articulo_ingrediente`.
 
 **Cuándo retomarlo**: si aparece un caso real de un producto final que de verdad se venda/produzca en `kg`/`l` (no solo unidades) — auditar y corregir los 8 sitios de arriba para que lean `productos_finales.unidad_id` en vez de asumir "uds", y solo entonces añadir el `<Select>` en `ProductosFinales.jsx`.
+
+## 16. `empresa_config.direccion` es texto libre, sin calle/CP/ciudad/país como campos separados
+
+Verificado al implementar la plantilla PDF del albarán de venta (Lieferschein): el nombre comercial, dirección, email y teléfono del emisor **ya se leen dinámicamente** de `empresa_config` (configurables en `Configuracion.jsx`, "Configuración de empresa") — no hay ningún dato de empresa hardcodeado en la plantilla nueva, solo el footer de marca fijo (copy de "Española": "SPANISCHI STUURHAIT", tagline, cita, "ESPANOLA.CH"), que es contenido de marca deliberadamente fijo, no un dato de negocio.
+
+Lo que sí quedó pendiente: `direccion` (tanto en `empresa_config` como en `clientes`) es un único campo de texto libre, sin calle/código postal/ciudad/país como columnas separadas. Hoy se imprime tal cual, en una sola línea, tanto en el bloque VON (emisor) como en el AN (cliente) del albarán.
+
+**Por qué no se resolvió ahora**: cambio de presentación de PDF, no de modelo de datos — estructurar `direccion` en campos separados no tiene ningún caso real que lo exija todavía (ni filtrado por ciudad/país, ni validación postal, ni necesidad de separar visualmente calle de ciudad en ningún documento).
+
+**Cuándo retomarlo**: si aparece un caso real que necesite los componentes de la dirección por separado (filtrar clientes por ciudad/país, validar código postal, maquetar una dirección a varias líneas en un documento), migrar `direccion` a columnas estructuradas en ese momento — en `empresa_config` y en `clientes` a la vez, para no quedar con los dos lados del mismo documento en formatos distintos.
