@@ -1,174 +1,70 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { formatCantidad } from '../lib/formatCantidad'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
+import AjusteStockForm from '../components/AjusteStockForm'
 
-const MOTIVO_CATEGORIA_LABEL = {
-  caducado: 'Caducado',
-  roto: 'Roto',
-  evento_no_consumido: 'Evento no consumido',
-  otro: 'Otro',
-}
+const TIPO_LABEL = { articulo: 'artículo', semielaborado: 'semielaborado', producto_final: 'producto final' }
+const PAGE_SIZE = 20
 
+// CONTRATO_AJUSTE_RAPIDO_INVENTARIO.md, Parte B: esta pantalla deja de ser el punto de entrada
+// para crear un ajuste (eso vive en el drawer, ver AjusteStockForm.jsx, disparado desde aquí y
+// desde Inventario.jsx) y pasa a ser histórico de movimientos -- tabla filtrable y paginada sobre
+// la vista historial_ajustes_stock, no una lista de artículos que crece sin límite.
 function AjustesStock() {
-  const [tipo, setTipo] = useState('articulo')
-  const [articulos, setArticulos] = useState([])
-  const [semielaborados, setSemielaborados] = useState([])
-  const [productosFinales, setProductosFinales] = useState([])
-  const [itemId, setItemId] = useState('')
-  const [lotes, setLotes] = useState([])
-  const [loteId, setLoteId] = useState('')
-  const [cantidad, setCantidad] = useState('')
-  const [motivo, setMotivo] = useState('')
-  const [motivoCategoria, setMotivoCategoria] = useState('')
-  const [motivoDetalle, setMotivoDetalle] = useState('')
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
+  const [drawerAbierto, setDrawerAbierto] = useState(false)
   const [historial, setHistorial] = useState([])
+  const [total, setTotal] = useState(0)
+  const [pagina, setPagina] = useState(0)
   const [cargando, setCargando] = useState(true)
+  const [errorCarga, setErrorCarga] = useState(null)
 
-  async function cargarBase() {
+  const [fechaDesde, setFechaDesde] = useState('')
+  const [fechaHasta, setFechaHasta] = useState('')
+  const [buscarItem, setBuscarItem] = useState('')
+  const [buscarMotivo, setBuscarMotivo] = useState('')
+
+  async function cargarHistorial() {
     setCargando(true)
-    const [resArt, resSemi, resPF, resAjArt, resAjSemi, resAjPF] = await Promise.all([
-      supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
-      supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
-      supabase.from('productos_finales').select('id, nombre').order('nombre'),
-      supabase.from('ajustes_articulo').select('*, articulos_compra(nombre, unidad)').order('fecha', { ascending: false }),
-      supabase.from('ajustes_semielaborado').select('*, semielaborados(nombre, unidad)').order('fecha', { ascending: false }),
-      supabase.from('ajustes_producto_final').select('*, producciones_producto_final(producto_final_id, productos_finales(nombre))').order('fecha', { ascending: false }),
-    ])
+    let query = supabase.from('historial_ajustes_stock').select('*', { count: 'exact' }).order('fecha', { ascending: false })
+    if (fechaDesde) query = query.gte('fecha', fechaDesde)
+    if (fechaHasta) query = query.lte('fecha', fechaHasta)
+    if (buscarItem.trim()) query = query.ilike('item_nombre', `%${buscarItem.trim()}%`)
+    if (buscarMotivo.trim()) query = query.ilike('motivo', `%${buscarMotivo.trim()}%`)
 
-    if (resArt.error) console.error(resArt.error)
-    else setArticulos(resArt.data)
-
-    if (resSemi.error) console.error(resSemi.error)
-    else setSemielaborados(resSemi.data)
-
-    if (resPF.error) console.error(resPF.error)
-    else setProductosFinales(resPF.data)
-
-    const historialArt = (resAjArt.data || []).map((a) => ({
-      ...a, tipo: 'articulo', nombre: a.articulos_compra?.nombre, unidad: a.articulos_compra?.unidad,
-    }))
-    const historialSemi = (resAjSemi.data || []).map((a) => ({
-      ...a, tipo: 'semielaborado', nombre: a.semielaborados?.nombre, unidad: a.semielaborados?.unidad,
-    }))
-    const historialPF = (resAjPF.data || []).map((a) => ({
-      ...a,
-      tipo: 'producto_final',
-      nombre: a.producciones_producto_final?.productos_finales?.nombre,
-      unidad: 'uds',
-      motivo: MOTIVO_CATEGORIA_LABEL[a.motivo_categoria] + (a.motivo_detalle ? ` — ${a.motivo_detalle}` : ''),
-    }))
-    const combinado = [...historialArt, ...historialSemi, ...historialPF].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-    setHistorial(combinado)
-
+    const desde = pagina * PAGE_SIZE
+    const { data, error, count } = await query.range(desde, desde + PAGE_SIZE - 1)
+    if (error) {
+      // No confundir "fallo al cargar" con "sin resultados" -- un 42501 de permisos u otro error
+      // de Supabase no debe disfrazarse de "0 coincidencias" (ver diagnóstico: así pasó
+      // desapercibido un GRANT que faltaba sobre la vista).
+      console.error(error)
+      setErrorCarga(error.message)
+      setHistorial([])
+      setTotal(0)
+      setCargando(false)
+      return
+    }
+    setErrorCarga(null)
+    setHistorial(data || [])
+    setTotal(count || 0)
     setCargando(false)
   }
 
   useEffect(() => {
-    cargarBase()
-  }, [])
+    cargarHistorial()
+  }, [pagina, fechaDesde, fechaHasta, buscarItem, buscarMotivo])
 
-  useEffect(() => {
-    async function cargarLotes() {
-      setLoteId('')
-      if (!itemId) {
-        setLotes([])
-        return
-      }
-      if (tipo === 'articulo') {
-        const { data } = await supabase
-          .from('stock_lotes_articulo')
-          .select('*')
-          .eq('articulo_id', itemId)
-          .order('fecha_recepcion', { ascending: true })
-        setLotes(data || [])
-      } else if (tipo === 'semielaborado') {
-        const { data } = await supabase
-          .from('stock_lotes_semielaborado')
-          .select('*')
-          .eq('semielaborado_id', itemId)
-          .order('fecha', { ascending: true })
-        setLotes(data || [])
-      } else {
-        const { data } = await supabase
-          .from('stock_lotes_producto_final')
-          .select('*')
-          .eq('producto_final_id', itemId)
-          .order('fecha', { ascending: true })
-        setLotes(data || [])
-      }
-    }
-    cargarLotes()
-  }, [tipo, itemId])
-
-  function resetForm() {
-    setItemId('')
-    setLoteId('')
-    setCantidad('')
-    setMotivo('')
-    setMotivoCategoria('')
-    setMotivoDetalle('')
-    setFecha(new Date().toISOString().slice(0, 10))
-    setLotes([])
+  // Cualquier cambio de filtro vuelve a la página 1 -- si no, se puede quedar "atascado" en una
+  // página que ya no existe para el nuevo filtro (ej. filtrar y quedarse en la página 3 de 1).
+  function conFiltro(setter) {
+    return (valor) => { setPagina(0); setter(valor) }
   }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-
-    if (tipo === 'producto_final') {
-      if (!itemId || !loteId || !cantidad || !motivoCategoria) {
-        alert('Selecciona el producto, el lote, la cantidad y el motivo')
-        return
-      }
-    } else if (!itemId || !loteId || !cantidad || !motivo) {
-      alert('Selecciona el ítem, el lote, la cantidad y el motivo')
-      return
-    }
-
-    const cant = parseFloat(cantidad)
-
-    if (tipo === 'articulo') {
-      const { error } = await supabase.from('ajustes_articulo').insert({
-        articulo_id: parseInt(itemId),
-        entrada_material_id: parseInt(loteId),
-        cantidad: cant,
-        motivo,
-        fecha,
-      })
-      if (error) {
-        alert('Error al guardar el ajuste: ' + error.message)
-        return
-      }
-    } else if (tipo === 'semielaborado') {
-      const { error } = await supabase.from('ajustes_semielaborado').insert({
-        semielaborado_id: parseInt(itemId),
-        produccion_id: parseInt(loteId),
-        cantidad: cant,
-        motivo,
-        fecha,
-      })
-      if (error) {
-        alert('Error al guardar el ajuste: ' + error.message)
-        return
-      }
-    } else {
-      const { error } = await supabase.from('ajustes_producto_final').insert({
-        produccion_pf_id: parseInt(loteId),
-        cantidad: cant,
-        motivo_categoria: motivoCategoria,
-        motivo_detalle: motivoDetalle || null,
-        fecha,
-      })
-      if (error) {
-        alert('Error al guardar el ajuste: ' + error.message)
-        return
-      }
-    }
-
-    resetForm()
-    cargarBase()
-  }
+  const handleFechaDesde = conFiltro(setFechaDesde)
+  const handleFechaHasta = conFiltro(setFechaHasta)
+  const handleBuscarItem = conFiltro(setBuscarItem)
+  const handleBuscarMotivo = conFiltro(setBuscarMotivo)
 
   async function handleBorrar(a) {
     if (!confirm('¿Seguro que quieres eliminar este ajuste? El stock volverá a su valor anterior.')) return
@@ -179,133 +75,94 @@ function AjustesStock() {
       alert('Error al borrar: ' + error.message)
       return
     }
-    cargarBase()
+    cargarHistorial()
   }
 
-  const items = tipo === 'articulo' ? articulos : tipo === 'semielaborado' ? semielaborados : productosFinales
+  const totalPaginas = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div>
-      <PageHeader title="Ajustes de stock" subtitle="Corrige el stock de un lote concreto por mermas, caducidad, roturas o errores de pesaje. Usa cantidades negativas para restar y positivas para sumar." />
+      <PageHeader
+        title="Ajustes de stock"
+        subtitle="Histórico de correcciones de stock por mermas, caducidad, roturas o errores de pesaje."
+      />
 
       <Card className="mb-6">
-        <CardHeader title="Nuevo ajuste" />
-        <CardBody>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={tipo === 'articulo'}
-                  onChange={() => { setTipo('articulo'); setItemId('') }} />
-                Artículo de compra
-              </label>
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={tipo === 'semielaborado'}
-                  onChange={() => { setTipo('semielaborado'); setItemId('') }} />
-                Semielaborado
-              </label>
-              <label className="flex items-center gap-1.5">
-                <input type="radio" checked={tipo === 'producto_final'}
-                  onChange={() => { setTipo('producto_final'); setItemId('') }} />
-                Producto final
-              </label>
-            </div>
-
-            <Select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
-              <option value="">Selecciona {tipo === 'articulo' ? 'artículo' : tipo === 'semielaborado' ? 'semielaborado' : 'producto final'}</option>
-              {items.map((i) => (
-                <option key={i.id} value={i.id}>{i.nombre} ({tipo === 'producto_final' ? 'uds' : i.unidad})</option>
-              ))}
-            </Select>
-
-            {itemId && (
-              <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} required>
-                <option value="">
-                  {lotes.length === 0 ? 'Este ítem no tiene lotes con stock' : 'Selecciona el lote a ajustar'}
-                </option>
-                {lotes.map((l, index) => {
-                  const id = tipo === 'articulo' ? l.entrada_material_id : l.produccion_id
-                  const esMasAntiguo = index === 0
-                  const label = tipo === 'articulo'
-                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                    : tipo === 'semielaborado'
-                    ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                    : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)}${l.fecha_caducidad ? ' · caduca ' + formatFecha(l.fecha_caducidad) : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                  return <option key={id} value={id}>{label}</option>
-                })}
-              </Select>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Cantidad (+ suma, - resta)">
-                <Input type="number" step="0.001" value={cantidad}
-                  onChange={(e) => setCantidad(e.target.value)}
-                  required title="Se redondeará a 3 decimales" />
-              </Field>
-              <Field label="Fecha">
-                <DateInput value={fecha} onChange={setFecha} required />
-              </Field>
-              {tipo === 'producto_final' ? (
-                <Field label="Motivo">
-                  <Select value={motivoCategoria} onChange={(e) => setMotivoCategoria(e.target.value)} required>
-                    <option value="">Selecciona motivo</option>
-                    {Object.entries(MOTIVO_CATEGORIA_LABEL).map(([valor, label]) => (
-                      <option key={valor} value={valor}>{label}</option>
-                    ))}
-                  </Select>
-                </Field>
-              ) : (
-                <Field label="Motivo">
-                  <Input type="text" placeholder="Caducidad, rotura, error pesaje..." value={motivo}
-                    onChange={(e) => setMotivo(e.target.value)} required />
-                </Field>
-              )}
-            </div>
-
-            {tipo === 'producto_final' && (
-              <Field label="Detalle del motivo (opcional)">
-                <Input type="text" placeholder="Aclaración adicional..." value={motivoDetalle}
-                  onChange={(e) => setMotivoDetalle(e.target.value)} />
-              </Field>
-            )}
-
-            <Button type="submit" className="self-start">Registrar ajuste</Button>
-          </form>
+        <CardHeader title="Movimientos" action={<Button onClick={() => setDrawerAbierto(true)}>+ Nuevo ajuste</Button>} />
+        <CardBody className="flex flex-wrap gap-3">
+          <Field label="Desde" className="w-40">
+            <DateInput value={fechaDesde} onChange={handleFechaDesde} isClearable />
+          </Field>
+          <Field label="Hasta" className="w-40">
+            <DateInput value={fechaHasta} onChange={handleFechaHasta} isClearable />
+          </Field>
+          <Field label="Artículo / ítem" className="w-56">
+            <Input type="text" placeholder="Buscar por nombre..." value={buscarItem} onChange={(e) => handleBuscarItem(e.target.value)} />
+          </Field>
+          <Field label="Motivo" className="w-56">
+            <Input type="text" placeholder="Buscar por motivo..." value={buscarMotivo} onChange={(e) => handleBuscarMotivo(e.target.value)} />
+          </Field>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Historial de ajustes</h2>
       {cargando ? (
         <LoadingState />
+      ) : errorCarga ? (
+        <Card><p className="text-sm text-red-600 py-6 text-center">Error al cargar el histórico: {errorCarga}</p></Card>
       ) : historial.length === 0 ? (
-        <Card><EmptyState>Todavía no hay ajustes registrados.</EmptyState></Card>
+        <Card><EmptyState>No hay ajustes que coincidan con los filtros.</EmptyState></Card>
       ) : (
-        <Card className="overflow-hidden">
-          <Table>
-            <Thead>
-              <Th>Fecha</Th>
-              <Th>Ítem</Th>
-              <Th>Cantidad</Th>
-              <Th>Motivo</Th>
-              <Th></Th>
-            </Thead>
-            <tbody className="divide-y divide-gray-100">
-              {historial.map((a) => (
-                <tr key={`${a.tipo}-${a.id}`} className="hover:bg-blue-50/40">
-                  <Td className="text-gray-500">{formatFecha(a.fecha)}</Td>
-                  <Td className="font-medium">{a.nombre} <span className="text-gray-400 text-xs font-normal">({a.tipo})</span></Td>
-                  <Td className={`font-medium ${a.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {a.cantidad >= 0 ? '+' : ''}{a.cantidad} {a.unidad}
-                  </Td>
-                  <Td className="text-gray-500">{a.motivo}</Td>
-                  <Td className="text-right">
-                    <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">Borrar</LinkAction>
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
+        <>
+          <Card className="overflow-hidden">
+            <Table>
+              <Thead>
+                <Th>Fecha</Th>
+                <Th>Ítem</Th>
+                <Th>Cantidad</Th>
+                <Th>Motivo</Th>
+                <Th>Usuario</Th>
+                <Th></Th>
+              </Thead>
+              <tbody className="divide-y divide-gray-100">
+                {historial.map((a) => (
+                  <tr key={`${a.tipo}-${a.id}`} className="hover:bg-blue-50/40">
+                    <Td className="text-gray-500">{formatFecha(a.fecha)}</Td>
+                    <Td className="font-medium">{a.item_nombre} <span className="text-gray-400 text-xs font-normal">({TIPO_LABEL[a.tipo]})</span></Td>
+                    <Td className={`font-medium ${a.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {a.cantidad >= 0 ? '+' : ''}{formatCantidad(a.cantidad, a.unidad)} {a.unidad}
+                    </Td>
+                    <Td className="text-gray-500">{a.motivo}</Td>
+                    <Td className="text-gray-500">{a.user_email || '—'}</Td>
+                    <Td className="text-right">
+                      <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">Borrar</LinkAction>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card>
+
+          <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
+            <span>{total} movimiento{total === 1 ? '' : 's'}</span>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" size="sm" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>Anterior</Button>
+              <span>Página {pagina + 1} de {totalPaginas}</span>
+              <Button variant="secondary" size="sm" disabled={pagina + 1 >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</Button>
+            </div>
+          </div>
+        </>
       )}
+
+      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title="Nuevo ajuste de stock">
+        <AjusteStockForm
+          onCancelar={() => setDrawerAbierto(false)}
+          onGuardado={() => {
+            setDrawerAbierto(false)
+            setPagina(0)
+            cargarHistorial()
+          }}
+        />
+      </Drawer>
     </div>
   )
 }

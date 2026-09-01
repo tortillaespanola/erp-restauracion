@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import DatePicker, { registerLocale } from 'react-datepicker'
 import { es } from 'date-fns/locale'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown, IconX } from '@tabler/icons-react'
 import 'react-datepicker/dist/react-datepicker.css'
 
 registerLocale('es', es)
@@ -238,4 +238,24 @@ export function LoadingState({ children = 'Cargando…' }) {
 
 export function SectionLabel({ children }) {
   return <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{children}</p>
+}
+
+// Panel lateral genérico (backdrop + slide-in desde la derecha) -- primer overlay del proyecto,
+// pensado para reutilizarse en cualquier acción contextual futura, no acoplado al ajuste de stock.
+export function Drawer({ open, onClose, title, children }) {
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative w-full max-w-md h-full bg-white shadow-xl flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-[#1C2938]">{title}</h2>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <IconX size={18} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+      </div>
+    </div>
+  )
 }

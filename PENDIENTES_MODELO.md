@@ -205,3 +205,15 @@ Lo que sí quedó pendiente: `direccion` (tanto en `empresa_config` como en `cli
 **Por qué no se resolvió ahora**: cambio de presentación de PDF, no de modelo de datos — estructurar `direccion` en campos separados no tiene ningún caso real que lo exija todavía (ni filtrado por ciudad/país, ni validación postal, ni necesidad de separar visualmente calle de ciudad en ningún documento).
 
 **Cuándo retomarlo**: si aparece un caso real que necesite los componentes de la dirección por separado (filtrar clientes por ciudad/país, validar código postal, maquetar una dirección a varias líneas en un documento), migrar `direccion` a columnas estructuradas en ese momento — en `empresa_config` y en `clientes` a la vez, para no quedar con los dos lados del mismo documento en formatos distintos.
+
+---
+
+## Notas de diseño confirmadas (no pendientes — comportamiento ya verificado)
+
+A diferencia de las entradas numeradas de arriba, esto no es una decisión aplazada a la espera de un caso real: es un comportamiento del modelo de datos ya verificado por diagnóstico directo contra la base real, que se deja documentado aquí para que no se pierda.
+
+### Ajustes de stock: escritura hoja, efecto retardado en el cálculo de disponible
+
+Un ajuste (INSERT en `ajustes_articulo` / `ajustes_semielaborado` / `ajustes_producto_final`) no modifica registros de producción o consumo existentes — es una escritura hoja, sin triggers propios. Sin embargo, SÍ afecta el cálculo de "disponible" que leen `check_consumo_produccion`, `check_consumo_produccion_pf`, `check_stock_producto_final` y los triggers de `incidencias_stock_*` la próxima vez que se intente consumir o vender de ese nivel. El efecto es retardado (se manifiesta en la siguiente operación que lea el stock), no inmediato en el momento del ajuste.
+
+Verificado por diagnóstico directo contra `information_schema.triggers`/`pg_proc` en la base real (cero triggers definidos sobre las tres tablas de ajuste). Relacionado con la entrada 11 (ausencia de validación de coherencia temporal en estas mismas tablas) y con la nota de memoria `feedback_estado_un_nivel` (un nivel de estado nunca debe leerse como si propagara el estado calculado de otro nivel). También documentado como `COMMENT ON VIEW` sobre `historial_ajustes_stock` en la migración `20260927_ajustes_stock_usuario_historial.sql`.

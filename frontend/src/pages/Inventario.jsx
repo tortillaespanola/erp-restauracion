@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad, formatPrecio } from '../lib/formatCantidad'
 import { IconChevronRight, IconChevronDown } from '@tabler/icons-react'
-import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer, LinkAction } from '../components/ui'
+import AjusteStockForm from '../components/AjusteStockForm'
 
 const datosVacios = {
   ingredientes: [], articuloIngrediente: [], stockArticulos: [], articuloProveedor: [],
@@ -27,6 +28,10 @@ function Inventario() {
   const [expandidosIngrediente, setExpandidosIngrediente] = useState(new Set())
   const [expandidosArticulo, setExpandidosArticulo] = useState(new Set())
   const [expandidosDupla, setExpandidosDupla] = useState(new Set())
+
+  // Ajuste rápido desde una fila de Inventario (CONTRATO_AJUSTE_RAPIDO_INVENTARIO.md, Parte A) --
+  // `null` = drawer cerrado, objeto = contexto fijo (artículo + lote) que precarga el formulario.
+  const [ajusteDrawer, setAjusteDrawer] = useState(null)
 
   async function cargarDatos() {
     setCargando(true)
@@ -484,6 +489,7 @@ function Inventario() {
                                                                       <th className="px-2 py-1 font-medium">Entrado</th>
                                                                       <th className="px-2 py-1 font-medium">Consumido</th>
                                                                       <th className="px-2 py-1 font-medium">Stock</th>
+                                                                      <th className="px-2 py-1 font-medium"></th>
                                                                     </tr>
                                                                   </thead>
                                                                   <tbody className="divide-y divide-gray-100">
@@ -508,6 +514,22 @@ function Inventario() {
                                                                           )}
                                                                         </td>
                                                                         <td className="px-2 py-1.5">{formatCantidad(lote.stock, art.unidad)} {art.unidad}</td>
+                                                                        <td className="px-2 py-1.5 text-right">
+                                                                          <LinkAction
+                                                                            className="text-xs"
+                                                                            onClick={() => setAjusteDrawer({
+                                                                              tipo: 'articulo',
+                                                                              itemId: art.articulo_id,
+                                                                              itemNombre: art.nombre,
+                                                                              itemUnidad: art.unidad,
+                                                                              loteId: lote.entradaMaterialId,
+                                                                              loteLabel: `${lote.codigoLote ? lote.codigoLote + ' · ' : ''}Recepción ${lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—'}`,
+                                                                              stockActual: lote.stock,
+                                                                            })}
+                                                                          >
+                                                                            Ajustar
+                                                                          </LinkAction>
+                                                                        </td>
                                                                       </tr>
                                                                     ))}
                                                                   </tbody>
@@ -541,6 +563,19 @@ function Inventario() {
           </Table>
         </Card>
       )}
+
+      <Drawer open={!!ajusteDrawer} onClose={() => setAjusteDrawer(null)} title="Ajustar stock">
+        {ajusteDrawer && (
+          <AjusteStockForm
+            fijo={ajusteDrawer}
+            onCancelar={() => setAjusteDrawer(null)}
+            onGuardado={() => {
+              setAjusteDrawer(null)
+              cargarDatos()
+            }}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }
