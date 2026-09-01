@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf } from '../lib/generarAlbaranVentaPdf'
+import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf, generarAlbaranVentaPdf } from '../lib/generarAlbaranVentaPdf'
 import { IconTrash } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
 
@@ -14,6 +15,9 @@ function unidadLineaVenta(linea) {
   return linea.productos_finales?.unidades_medida?.codigo ?? linea.articulos_compra?.unidad ?? 'ud'
 }
 
+const SELECT_ALBARAN_CON_RELACIONES =
+  '*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad))'
+
 // Fix: los avisos de stock mostraban "3.000" en vez de "3" para valores enteros -- redondea a 3
 // decimales (mismo tope ya usado en toda la UI, step="0.001") y quita los ceros sobrantes.
 function formatCantidad(n) {
@@ -23,6 +27,7 @@ function formatCantidad(n) {
 function AlbaranesVenta() {
   const [searchParams] = useSearchParams()
   const pedidoIdParam = searchParams.get('pedido_id')
+  const navigate = useNavigate()
 
   const [albaranes, setAlbaranes] = useState([])
   const [clientes, setClientes] = useState([])
@@ -44,7 +49,7 @@ function AlbaranesVenta() {
     const [resAlbaranes, resClientes, resProductos, resArticulos] = await Promise.all([
       supabase
         .from('albaranes_venta')
-        .select('*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad))')
+        .select(SELECT_ALBARAN_CON_RELACIONES)
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
@@ -246,6 +251,12 @@ function AlbaranesVenta() {
       return
     }
 
+    // Ventana placeholder abierta de forma síncrona con el clic (antes de
+    // cualquier await) -- si se abriera después, el bloqueador de popups del
+    // navegador la descartaría por no considerarla ya parte del gesto de
+    // usuario. Se navega a la URL real del PDF más abajo, una vez generado.
+    const pdfWindow = window.open('', '_blank')
+
     const { data: albaranCreado, error: errorAlbaran } = await supabase
       .from('albaranes_venta')
       .insert({
@@ -258,6 +269,7 @@ function AlbaranesVenta() {
       .single()
 
     if (errorAlbaran) {
+      pdfWindow?.close()
       alert('Error al crear el albarán: ' + errorAlbaran.message)
       return
     }
@@ -280,12 +292,39 @@ function AlbaranesVenta() {
 
     if (errorLineas) {
       await supabase.from('albaranes_venta').delete().eq('id', albaranCreado.id)
+      pdfWindow?.close()
       alert('Error al guardar las líneas: ' + errorLineas.message)
       return
     }
 
     resetForm()
     cargarDatos()
+
+    const { data: albaranCompleto, error: errorRecarga } = await supabase
+      .from('albaranes_venta')
+      .select(SELECT_ALBARAN_CON_RELACIONES)
+      .eq('id', albaranCreado.id)
+      .single()
+
+    if (errorRecarga) {
+      pdfWindow?.close()
+      toast.error('Albarán creado, pero no se pudo generar el PDF: ' + errorRecarga.message)
+      return
+    }
+
+    try {
+      const doc = await generarAlbaranVentaPdf(prepararDocumento(albaranCompleto))
+      doc.autoPrint()
+      if (pdfWindow) pdfWindow.location.href = doc.output('bloburl')
+    } catch (err) {
+      pdfWindow?.close()
+      toast.error('Albarán creado, pero no se pudo generar el PDF: ' + err.message)
+      return
+    }
+
+    toast.success('Albarán generado correctamente')
+
+    if (pedidoIdParam) navigate('/pedidos')
   }
 
   async function handleBorrar(id) {

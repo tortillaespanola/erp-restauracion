@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import Articulos from './pages/Articulos'
 import Ingredientes from './pages/Ingredientes'
@@ -23,6 +24,7 @@ import Configuracion from './pages/Configuracion'
 function App({ session, onLogout }) {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Layout session={session} onLogout={onLogout}>
         <Routes>
           <Route path="/" element={<Articulos />} />
