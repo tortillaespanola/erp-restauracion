@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, DateInput, SectionLabel, Badge, EmptyState, LoadingState } from '../components/ui'
 
 function FacturasVenta() {
   const [facturas, setFacturas] = useState([])
@@ -11,9 +11,7 @@ function FacturasVenta() {
   const [cargando, setCargando] = useState(true)
 
   const [clienteId, setClienteId] = useState('')
-  const [numeroFactura, setNumeroFactura] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
-  const [total, setTotal] = useState('')
   const [albaranesSeleccionados, setAlbaranesSeleccionados] = useState([])
 
   async function cargarDatos() {
@@ -53,14 +51,22 @@ function FacturasVenta() {
           .select('id, numero_albaran, fecha')
           .eq('cliente_id', clienteId)
           .order('fecha', { ascending: false }),
-        supabase.from('factura_venta_albaran').select('albaran_venta_id'),
+        // BLOQUE 4 (CONTRATO_FACTURAS_VENTA_ENDURECIMIENTO.md): se embebe facturas_venta.anulada
+        // para poder excluir del filtro las relaciones de una factura ya anulada -- sus albaranes
+        // deben volver a estar disponibles para una factura nueva, como si nunca se hubieran
+        // facturado.
+        supabase.from('factura_venta_albaran').select('albaran_venta_id, facturas_venta(anulada)'),
       ])
 
       if (resAlbaranes.error) {
         console.error(resAlbaranes.error)
         setAlbaranesDisponibles([])
       } else {
-        const idsYaFacturados = new Set((resYaFacturados.data || []).map((r) => r.albaran_venta_id))
+        const idsYaFacturados = new Set(
+          (resYaFacturados.data || [])
+            .filter((r) => !r.facturas_venta?.anulada)
+            .map((r) => r.albaran_venta_id)
+        )
         const disponibles = resAlbaranes.data.filter((a) => !idsYaFacturados.has(a.id))
         setAlbaranesDisponibles(disponibles)
       }
@@ -79,10 +85,24 @@ function FacturasVenta() {
 
   function resetForm() {
     setClienteId('')
-    setNumeroFactura('')
     setFecha(new Date().toISOString().slice(0, 10))
-    setTotal('')
     setAlbaranesSeleccionados([])
+  }
+
+  // BLOQUE 3 (CONTRATO_FACTURAS_VENTA_ENDURECIMIENTO.md): misma fórmula que ya usaba
+  // prepararDocumento para el PDF (cantidad × precio_unitario de las líneas de los albaranes
+  // incluidos), pero ahora se corre ANTES del INSERT para persistir el total real en
+  // facturas_venta.total, en vez de calcularlo solo al vuelo para mostrarlo en el PDF.
+  async function calcularTotalDeAlbaranes(albaranIds) {
+    const { data: lineas, error } = await supabase
+      .from('lineas_albaran_venta')
+      .select('cantidad, precio_unitario')
+      .in('albaran_venta_id', albaranIds)
+
+    const total = (lineas || []).reduce(
+      (sum, l) => sum + (l.precio_unitario ? l.cantidad * l.precio_unitario : 0), 0
+    )
+    return { total, error }
   }
 
   async function handleSubmit(e) {
@@ -93,13 +113,20 @@ function FacturasVenta() {
       return
     }
 
+    const { total: totalCalculado, error: errorTotal } = await calcularTotalDeAlbaranes(albaranesSeleccionados)
+    if (errorTotal) {
+      alert('Error al calcular el total de la factura: ' + errorTotal.message)
+      return
+    }
+
+    // numero_factura ya no se manda -- lo genera siempre el trigger BEFORE INSERT (Bloque 1),
+    // que además lo sobreescribiría igual aunque se mandara algo.
     const { data: facturaCreada, error: errorFactura } = await supabase
       .from('facturas_venta')
       .insert({
         cliente_id: parseInt(clienteId),
-        numero_factura: numeroFactura || null,
         fecha,
-        total: total ? parseFloat(total) : null,
+        total: totalCalculado,
       })
       .select()
       .single()
@@ -128,12 +155,15 @@ function FacturasVenta() {
     cargarDatos()
   }
 
-  async function handleBorrar(id) {
-    if (!confirm('¿Seguro que quieres borrar esta factura?')) return
+  // BLOQUE 4: anulación en vez de borrado físico -- nunca DELETE, así el numero_factura queda
+  // "quemado" para siempre y factura_venta_albaran conserva sus filas (los albaranes vuelven a
+  // estar disponibles, ver el filtro de cargarAlbaranesDelCliente más arriba). Sin reactivar.
+  async function handleAnular(id) {
+    if (!confirm('Esta acción anula la factura de forma permanente, no se puede deshacer. ¿Continuar?')) return
 
-    const { error } = await supabase.from('facturas_venta').delete().eq('id', id)
+    const { error } = await supabase.from('facturas_venta').update({ anulada: true }).eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert('Error al anular: ' + error.message)
       return
     }
     cargarDatos()
@@ -157,10 +187,6 @@ function FacturasVenta() {
       precioUnitario: l.precio_unitario,
     }))
 
-    const totalCalculado = lineas.reduce(
-      (sum, l) => sum + (l.precioUnitario ? l.cantidad * l.precioUnitario : 0), 0
-    )
-
     return {
       numero: f.numero_factura || `#${f.id}`,
       fecha: f.fecha,
@@ -170,7 +196,10 @@ function FacturasVenta() {
         cif: f.clientes?.cif,
       },
       lineas,
-      total: f.total ?? totalCalculado,
+      // BLOQUE 3: f.total ya viene persistido y fiable desde el INSERT (calcularTotalDeAlbaranes),
+      // nunca null para una factura nueva -- ya no hace falta recalcularlo ni un `?? totalCalculado`
+      // de respaldo, eso es justo lo que permitía la divergencia listado/PDF que cerramos aquí.
+      total: f.total,
     }
   }
 
@@ -182,7 +211,10 @@ function FacturasVenta() {
         <CardHeader title="Nueva factura" />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* BLOQUE 3: sin campo de Nº de factura (lo genera el trigger BEFORE INSERT, sección 1
+                del contrato -- se ve recién en el listado tras guardar) ni de Total manual (se
+                calcula siempre de las líneas reales, sección 2 del contrato). */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="Cliente">
                 <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
                   <option value="">Selecciona cliente</option>
@@ -191,17 +223,10 @@ function FacturasVenta() {
                   ))}
                 </Select>
               </Field>
-              <Field label="Nº de factura">
-                <Input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} />
-              </Field>
               <Field label="Fecha">
                 <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
-
-            <Field label="Total factura (con IVA) — opcional, se calcula solo si lo dejas vacío" className="md:w-1/3">
-              <Input type="number" step="0.01" placeholder="0.00" value={total} onChange={(e) => setTotal(e.target.value)} />
-            </Field>
 
             <div>
               <SectionLabel>Albaranes a incluir</SectionLabel>
@@ -240,11 +265,14 @@ function FacturasVenta() {
       ) : (
         <div className="flex flex-col gap-4">
           {facturas.map((f) => (
-            <Card key={f.id} className="p-4">
+            <Card key={f.id} className={`p-4 ${f.anulada ? 'opacity-60 bg-gray-50' : ''}`}>
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{f.clientes?.nombre ?? 'Sin cliente'}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-semibold text-[#1C2938] flex items-center gap-2 flex-wrap">
+                    {f.clientes?.nombre ?? 'Sin cliente'}
+                    {f.anulada && <Badge color="red">Anulada</Badge>}
+                  </p>
+                  <p className={`text-sm text-gray-500 ${f.anulada ? 'line-through' : ''}`}>
                     Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
                     {f.total != null && ` · ${f.total} €`}
                   </p>
@@ -252,7 +280,9 @@ function FacturasVenta() {
                 <div className="flex gap-3 items-start shrink-0">
                   <LinkAction tone="gray" onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))}>Imprimir</LinkAction>
                   <LinkAction tone="blue" onClick={async () => descargarPdf('Factura', await prepararDocumento(f))}>Descargar PDF</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(f.id)}>Borrar</LinkAction>
+                  {!f.anulada && (
+                    <LinkAction tone="red" onClick={() => handleAnular(f.id)}>Anular</LinkAction>
+                  )}
                 </div>
               </div>
 
