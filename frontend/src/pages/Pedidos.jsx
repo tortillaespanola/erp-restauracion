@@ -1,37 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { IconTrash, IconPlus } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, Badge, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import {
+  IconChevronRight, IconChevronDown, IconEdit, IconTruckDelivery, IconX,
+  IconAlertTriangle, IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus,
+} from '@tabler/icons-react'
+import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
+import PedidoForm from '../components/PedidoForm'
 
-const lineaVacia = { id: null, tipo: 'producto', producto_final_id: '', articulo_id: '', descripcion: '', cantidad: '', precio_unitario: '' }
+// BLOQUE 5 (CONTRATO_UX_PEDIDOS_VENTA.md): 20 por página, tal cual sugiere el contrato -- con el
+// volumen real (~137 pedidos hoy) da ~7 páginas, cómodo para números de página sin necesitar elipsis
+// ni un tamaño distinto.
+const PAGINA_TAMANO = 20
 
-const GRUPO_ESTADO = { pendiente: 0, en_produccion: 0, servido: 1, cancelado: 1 }
-
-function compararPedidos(a, b) {
-  const grupoA = GRUPO_ESTADO[a.estado] ?? 0
-  const grupoB = GRUPO_ESTADO[b.estado] ?? 0
-  if (grupoA !== grupoB) return grupoA - grupoB
-
-  // Cerrados (servido/cancelado): sin urgencia que ordenar, así que se usa
-  // fecha_entrega_prevista descendente como proxy de "cuándo se cerró" (en
-  // la carga de histórico coincide con la fecha real de entrega) — los
-  // recién cerrados quedan arriba del grupo en vez de mezclados por fecha
-  // de creación del pedido.
-  if (grupoA === 1) {
-    if (!a.fecha_entrega_prevista && !b.fecha_entrega_prevista) return 0
-    if (!a.fecha_entrega_prevista) return 1
-    if (!b.fecha_entrega_prevista) return -1
-    return b.fecha_entrega_prevista.localeCompare(a.fecha_entrega_prevista)
-  }
-
-  if (!a.fecha_entrega_prevista && !b.fecha_entrega_prevista) return 0
-  if (!a.fecha_entrega_prevista) return 1
-  if (!b.fecha_entrega_prevista) return -1
-  return a.fecha_entrega_prevista.localeCompare(b.fecha_entrega_prevista)
-}
-
+// BLOQUE 4 (CONTRATO_UX_PEDIDOS_VENTA.md): el orden por defecto (activos primero, cerrados al
+// fondo -- antes calculado en cliente con GRUPO_ESTADO/compararPedidos) ahora se resuelve en
+// servidor vía la columna generada pedidos_venta.grupo_estado (migración 20260928), necesaria para
+// ser coherente con la paginación por .range() del Bloque 5. Simplificación consciente frente al
+// comparador anterior: dentro del grupo "cerrado" ya no se ordena por fecha_entrega_prevista
+// descendente (recién cerrados arriba) -- ambos grupos usan la misma dirección ascendente, un
+// único .order() de servidor no puede invertir el sentido solo para un grupo.
 const ESTADO_BADGE = {
   pendiente: 'gray',
   en_produccion: 'amber',
@@ -54,14 +43,13 @@ function Pedidos() {
   const [articulosMercaderia, setArticulosMercaderia] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  const [clienteId, setClienteId] = useState('')
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
-  const [fechaEntrega, setFechaEntrega] = useState('')
-  const [notas, setNotas] = useState('')
-  const [lineas, setLineas] = useState([{ ...lineaVacia }])
+  // BLOQUE 6 (CONTRATO_UX_PEDIDOS_VENTA.md): un único estado para el drawer de alta/edición, mismo
+  // patrón que Inventario.jsx -- null = cerrado, 'nuevo' = alta, objeto pedido = edición precargada.
+  const [modoDrawer, setModoDrawer] = useState(null)
+  // Refs de la fila principal de cada pedido, indexadas por id -- para poder hacer scrollIntoView
+  // tras guardar desde el drawer sin depender de que la fila esté ya montada de antemano.
+  const filaRefs = useRef(new Map())
 
-  const [editandoId, setEditandoId] = useState(null)
-  const [lineasABorrar, setLineasABorrar] = useState([])
   // Aviso "tanda de la previsión sin stock suficiente": stock_disponible real de cada tanda con alguna
   // previsión asignada, cargado en un único batch (in produccion_id) tras conocer los pedidos -- nunca
   // una consulta por línea.
@@ -72,24 +60,91 @@ function Pedidos() {
   // de cada línea.
   const [sumaPrevistoPorProduccionId, setSumaPrevistoPorProduccionId] = useState(new Map())
 
+  // BLOQUE 3 (CONTRATO_UX_PEDIDOS_VENTA.md): un único id expandido a nivel de pantalla (no un Set
+  // por fila) para forzar comportamiento acordeón -- expandir un pedido colapsa cualquier otro.
+  const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  // BLOQUE 4: columna activa de ordenamiento (null = orden por defecto, ver comentario junto a
+  // ESTADO_BADGE) -- solo Fecha y Entrega prevista son ordenables, sección 1 del contrato.
+  const [orden, setOrden] = useState({ columna: null, direccion: 'asc' })
+
+  // BLOQUE 5: página activa (1-indexada) + total de pedidos que cumplen el filtro/orden actual,
+  // reportado por Supabase vía { count: 'exact' } -- necesario para pintar los números de página sin
+  // traer todas las filas.
+  const [pagina, setPagina] = useState(1)
+  const [totalPedidos, setTotalPedidos] = useState(0)
+  const totalPaginas = Math.max(1, Math.ceil(totalPedidos / PAGINA_TAMANO))
+
+  // Corrección tras probar en navegador: "Fecha" es la fecha de creación del pedido -- su
+  // convención natural (y la que tenía la query original, .order('fecha', { ascending: false })
+  // antes del Bloque 4) es "más reciente primero", así que su primer clic empieza en descendente.
+  // "Entrega prevista" es una fecha futura/de planificación -- "más próxima primero" (ascendente)
+  // sigue siendo el punto de partida natural para esa columna.
+  function direccionInicial(columna) {
+    return columna === 'fecha' ? 'desc' : 'asc'
+  }
+
+  function cambiarOrden(columna) {
+    setOrden((prev) => {
+      if (prev.columna !== columna) return { columna, direccion: direccionInicial(columna) }
+      if (prev.direccion === direccionInicial(columna)) {
+        return { columna, direccion: direccionInicial(columna) === 'asc' ? 'desc' : 'asc' }
+      }
+      return { columna: null, direccion: 'asc' }
+    })
+    setPagina(1) // cambiar de orden con la página 8 abierta dejaría una página vacía o repetida
+  }
+
+  function iconoOrden(columna) {
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
+  }
+
   async function cargarDatos() {
     setCargando(true)
 
+    let pedidosQuery = supabase
+      .from('pedidos_venta')
+      .select(`
+        *,
+        clientes(nombre),
+        lineas_pedido_venta(
+          id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario,
+          productos_finales(nombre),
+          articulos_compra(nombre, unidad),
+          lineas_albaran_venta(cantidad),
+          previsiones_distribucion_pf(cantidad_prevista, produccion_pf_id)
+        )
+      `, { count: 'exact' })
+
+    // Corrección tras probar en navegador: grupo_estado (activos arriba, servidos/cancelados al
+    // fondo) es un invariante permanente del listado, no solo el criterio "por defecto" -- tiene
+    // que ir SIEMPRE primero en el .order(), incluso cuando el usuario elige ordenar por una
+    // columna. La columna elegida (o, en su ausencia, fecha) actúa como desempate DENTRO de cada
+    // grupo, nunca reemplazando el agrupamiento. Un pedido ya producido/albaranado que sigue
+    // "activo" (pendiente/en_producción) debe seguir apareciendo en el grupo de arriba sin
+    // importar qué columna esté ordenada.
+    //
+    // Cambio de criterio de producto (documentado en CONTRATO_UX_PEDIDOS_VENTA.md, no es una
+    // regresión respecto al compararPedidos original): la segunda clave por defecto pasa de
+    // fecha_entrega_prevista ascendente a fecha descendente -- más reciente primero dentro de cada
+    // grupo, sin depender de nullsFirst porque `fecha` es NOT NULL en pedidos_venta.
+    pedidosQuery = pedidosQuery.order('grupo_estado', { ascending: true })
+    pedidosQuery = orden.columna
+      ? pedidosQuery.order(orden.columna, { ascending: orden.direccion === 'asc', nullsFirst: false })
+      : pedidosQuery.order('fecha', { ascending: false })
+    // Tiebreaker final por id: sin él, dos pedidos empatados en grupo_estado + la columna de orden
+    // no tienen un orden garantizado entre sí en Postgres, lo que podría repetir o saltarse filas
+    // al paginar con .range() entre una página y la siguiente.
+    pedidosQuery = pedidosQuery.order('id', { ascending: true })
+
+    // BLOQUE 5: .range() en vez de traer todos los pedidos -- el conteo total ({ count: 'exact' }
+    // arriba) ignora el range, así que sigue reflejando el total real para pintar las páginas.
+    const desde = (pagina - 1) * PAGINA_TAMANO
+    pedidosQuery = pedidosQuery.range(desde, desde + PAGINA_TAMANO - 1)
+
     const [resPedidos, resClientes, resProductos, resArticulos] = await Promise.all([
-      supabase
-        .from('pedidos_venta')
-        .select(`
-          *,
-          clientes(nombre),
-          lineas_pedido_venta(
-            id, producto_final_id, articulo_id, descripcion, cantidad, precio_unitario,
-            productos_finales(nombre),
-            articulos_compra(nombre, unidad),
-            lineas_albaran_venta(cantidad),
-            previsiones_distribucion_pf(cantidad_prevista, produccion_pf_id)
-          )
-        `)
-        .order('fecha', { ascending: false }),
+      pedidosQuery,
       supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('articulos_compra').select('id, nombre, unidad').eq('tipo_material', 'TRD').order('nombre'),
@@ -97,8 +152,9 @@ function Pedidos() {
 
     if (resPedidos.error) console.error(resPedidos.error)
     else {
-      const pedidosOrdenados = (resPedidos.data ?? []).sort(compararPedidos)
+      const pedidosOrdenados = resPedidos.data ?? []
       setPedidos(pedidosOrdenados)
+      setTotalPedidos(resPedidos.count ?? 0)
 
       // Reparto multi-tanda: previsiones_distribucion_pf se embebe ahora como array (ver comentario en
       // el render, más abajo) -- una línea puede aportar varias previsiones a la suma por tanda.
@@ -140,45 +196,7 @@ function Pedidos() {
 
   useEffect(() => {
     cargarDatos()
-  }, [])
-
-  function handleLineaChange(index, campo, valor) {
-    setLineas((prev) => {
-      const copia = [...prev]
-      copia[index] = { ...copia[index], [campo]: valor }
-      if (campo === 'tipo') {
-        copia[index].producto_final_id = ''
-        copia[index].articulo_id = ''
-        copia[index].descripcion = ''
-        if (valor === 'libre' && !copia[index].cantidad) {
-          copia[index].cantidad = '1'
-        }
-      }
-      return copia
-    })
-  }
-
-  function addLinea() {
-    setLineas((prev) => [...prev, { ...lineaVacia }])
-  }
-
-  function removeLinea(index) {
-    const linea = lineas[index]
-    if (linea.id) {
-      setLineasABorrar((prev) => [...prev, linea.id])
-    }
-    setLineas((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  function resetForm() {
-    setClienteId('')
-    setFecha(new Date().toISOString().slice(0, 10))
-    setFechaEntrega('')
-    setNotas('')
-    setLineas([{ ...lineaVacia }])
-    setEditandoId(null)
-    setLineasABorrar([])
-  }
+  }, [orden, pagina])
 
   async function handleEditar(pedido) {
     const lineaIds = pedido.lineas_pedido_venta.map((l) => l.id)
@@ -209,139 +227,48 @@ function Pedidos() {
       return
     }
 
-    setClienteId(String(pedido.cliente_id))
-    setFecha(pedido.fecha)
-    setFechaEntrega(pedido.fecha_entrega_prevista ?? '')
-    setNotas(pedido.notas ?? '')
-    setLineas(
-      pedido.lineas_pedido_venta.map((l) => ({
-        id: l.id,
-        tipo: l.producto_final_id ? 'producto' : l.articulo_id ? 'mercaderia' : 'libre',
-        producto_final_id: l.producto_final_id ? String(l.producto_final_id) : '',
-        articulo_id: l.articulo_id ? String(l.articulo_id) : '',
-        descripcion: l.descripcion ?? '',
-        cantidad: String(l.cantidad),
-        precio_unitario: l.precio_unitario != null ? String(l.precio_unitario) : '',
-      }))
-    )
-    setLineasABorrar([])
-    setEditandoId(pedido.id)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setModoDrawer(pedido)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  // BLOQUE 6: tras guardar desde el drawer, cierra, refresca y -- si el pedido guardado sigue
+  // presente en la página actual -- hace scroll hasta su fila. requestAnimationFrame da tiempo a que
+  // React confirme en el DOM las filas de cargarDatos() antes de buscar la ref (necesario sobre todo
+  // para un alta nueva, cuya fila no existía en el DOM hasta este refresco).
+  async function alGuardarPedido(idPedido) {
+    setModoDrawer(null)
+    await cargarDatos()
+    requestAnimationFrame(() => {
+      filaRefs.current.get(idPedido)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
 
-    if (fechaEntrega && fechaEntrega < fecha) {
-      alert('La fecha de entrega prevista no puede ser anterior a la fecha del pedido')
-      return
-    }
+  // BLOQUE 2 (CONTRATO_UX_PEDIDOS_VENTA.md): resumen para la columna Progreso -- misma fórmula de
+  // "servido >= cantidad pedida" y misma condición de aviso de stock insuficiente que ya usa la fila
+  // expandida (sección "Previsto"/"Servido" de más abajo), sin duplicarla ahí, solo agregada aquí.
+  function calcularProgresoPedido(p) {
+    let lineasServidas = 0
+    let algunaConAvisoStock = false
+    for (const linea of p.lineas_pedido_venta) {
+      const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
+      if (servido >= linea.cantidad) lineasServidas++
 
-    const lineasValidas = lineas.filter(
-      (l) => l.cantidad && (l.producto_final_id || l.articulo_id || l.descripcion)
-    )
-    if (lineasValidas.length === 0) {
-      alert('Añade al menos una línea con producto/mercadería/descripción y cantidad')
-      return
-    }
-
-    function calcularCamposLinea(l) {
-      return {
-        producto_final_id: l.tipo === 'producto' ? parseInt(l.producto_final_id) : null,
-        articulo_id: l.tipo === 'mercaderia' ? parseInt(l.articulo_id) : null,
-        descripcion: l.tipo === 'libre' ? l.descripcion : null,
-        cantidad: parseFloat(l.cantidad),
-        precio_unitario: l.precio_unitario ? parseFloat(l.precio_unitario) : null,
-      }
-    }
-
-    if (editandoId) {
-      const { error: errorUpdate } = await supabase
-        .from('pedidos_venta')
-        .update({
-          cliente_id: parseInt(clienteId),
-          fecha,
-          fecha_entrega_prevista: fechaEntrega || null,
-          notas: notas || null,
+      const previsiones = linea.previsiones_distribucion_pf || []
+      const tieneAvisoStock = previsiones
+        .filter((pd) => pd.produccion_pf_id != null && Number(pd.cantidad_prevista) > 0)
+        .some((pd) => {
+          const cantidadPd = Number(pd.cantidad_prevista)
+          const stockTanda = stockPorProduccionId.get(pd.produccion_pf_id)
+          const sumaOtras = (sumaPrevistoPorProduccionId.get(pd.produccion_pf_id) || 0) - cantidadPd
+          const disponibleNeto = stockTanda != null ? stockTanda - sumaOtras : null
+          return disponibleNeto != null && disponibleNeto < cantidadPd
         })
-        .eq('id', editandoId)
-
-      if (errorUpdate) {
-        alert('Error al actualizar el pedido: ' + errorUpdate.message)
-        return
-      }
-
-      if (lineasABorrar.length > 0) {
-        const { error: errorBorrar } = await supabase
-          .from('lineas_pedido_venta')
-          .delete()
-          .in('id', lineasABorrar)
-        if (errorBorrar) {
-          alert('Error al borrar líneas: ' + errorBorrar.message)
-          return
-        }
-      }
-
-      for (const l of lineasValidas.filter((l) => l.id)) {
-        const { error } = await supabase
-          .from('lineas_pedido_venta')
-          .update(calcularCamposLinea(l))
-          .eq('id', l.id)
-        if (error) {
-          alert('Error al actualizar una línea: ' + error.message)
-          return
-        }
-      }
-
-      const nuevas = lineasValidas.filter((l) => !l.id)
-      if (nuevas.length > 0) {
-        const { error } = await supabase
-          .from('lineas_pedido_venta')
-          .insert(nuevas.map((l) => ({ pedido_id: editandoId, ...calcularCamposLinea(l) })))
-        if (error) {
-          alert('Error al añadir nuevas líneas: ' + error.message)
-          return
-        }
-      }
-
-      resetForm()
-      cargarDatos()
-      return
+      if (tieneAvisoStock) algunaConAvisoStock = true
     }
+    return { totalLineas: p.lineas_pedido_venta.length, lineasServidas, algunaConAvisoStock }
+  }
 
-    const { data: pedidoCreado, error: errorPedido } = await supabase
-      .from('pedidos_venta')
-      .insert({
-        cliente_id: parseInt(clienteId),
-        fecha,
-        fecha_entrega_prevista: fechaEntrega || null,
-        notas: notas || null,
-      })
-      .select()
-      .single()
-
-    if (errorPedido) {
-      alert('Error al crear el pedido: ' + errorPedido.message)
-      return
-    }
-
-    const lineasParaInsertar = lineasValidas.map((l) => ({
-      pedido_id: pedidoCreado.id,
-      ...calcularCamposLinea(l),
-    }))
-
-    const { error: errorLineas } = await supabase
-      .from('lineas_pedido_venta')
-      .insert(lineasParaInsertar)
-
-    if (errorLineas) {
-      await supabase.from('pedidos_venta').delete().eq('id', pedidoCreado.id)
-      alert('Error al guardar las líneas: ' + errorLineas.message)
-      return
-    }
-
-    resetForm()
-    cargarDatos()
+  function toggleExpandido(id) {
+    setFilaExpandidaId((prev) => (prev === id ? null : id))
   }
 
   async function handleCancelar(id) {
@@ -358,218 +285,246 @@ function Pedidos() {
     <div>
       <PageHeader title="Pedidos" subtitle="Registra lo que pide un cliente, lanza la producción que haga falta, y créalo como albarán de venta cuando esté listo." />
 
-      <Card className="mb-6">
-        <CardHeader title={editandoId ? 'Editar pedido' : 'Nuevo pedido'} />
-        <CardBody>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Cliente">
-                <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
-                  <option value="">Selecciona cliente</option>
-                  {clientes.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Fecha">
-                <DateInput value={fecha} onChange={setFecha} required />
-              </Field>
-              <Field label="Fecha de entrega prevista (opcional)">
-                <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
-                {fechaEntrega && fechaEntrega < fecha && (
-                  <p className="text-red-600 text-xs mt-1">No puede ser anterior a la fecha del pedido</p>
-                )}
-              </Field>
-            </div>
-            <Field label="Notas (opcional)">
-              <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
-            </Field>
-
-            <div>
-              <SectionLabel>Líneas del pedido</SectionLabel>
-              <div className="flex flex-col gap-3">
-                {lineas.map((linea, index) => (
-                  <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
-                    <div className="flex gap-4 text-sm">
-                      <label className="flex items-center gap-1.5">
-                        <input type="radio" checked={linea.tipo === 'producto'}
-                          onChange={() => handleLineaChange(index, 'tipo', 'producto')} />
-                        Producto final
-                      </label>
-                      <label className="flex items-center gap-1.5">
-                        <input type="radio" checked={linea.tipo === 'mercaderia'}
-                          onChange={() => handleLineaChange(index, 'tipo', 'mercaderia')} />
-                        Mercadería
-                      </label>
-                      <label className="flex items-center gap-1.5">
-                        <input type="radio" checked={linea.tipo === 'libre'}
-                          onChange={() => handleLineaChange(index, 'tipo', 'libre')} />
-                        Otro / servicio
-                      </label>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
-                      {linea.tipo === 'producto' ? (
-                        <Select value={linea.producto_final_id}
-                          onChange={(e) => handleLineaChange(index, 'producto_final_id', e.target.value)}
-                          required>
-                          <option value="">Selecciona producto final</option>
-                          {productos.map((p) => (
-                            <option key={p.id} value={p.id}>{p.nombre}</option>
-                          ))}
-                        </Select>
-                      ) : linea.tipo === 'mercaderia' ? (
-                        <Select value={linea.articulo_id}
-                          onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                          required>
-                          <option value="">Selecciona artículo de mercadería</option>
-                          {articulosMercaderia.map((a) => (
-                            <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
-                          ))}
-                        </Select>
-                      ) : (
-                        <Input type="text" placeholder="Descripción (ej. Pan, Horas de showcooking extra...)"
-                          value={linea.descripcion}
-                          onChange={(e) => handleLineaChange(index, 'descripcion', e.target.value)}
-                          required />
-                      )}
-                      <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
-                        onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                        required title="Se redondeará a 3 decimales" />
-                      <Input type="number" step="0.01" placeholder="Precio" value={linea.precio_unitario}
-                        onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
-                      <button type="button" onClick={() => removeLinea(index)}
-                        className="text-gray-400 hover:text-red-600 justify-self-center">
-                        <IconTrash size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={addLinea}
-                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
-                <IconPlus size={15} /> Añadir línea
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar pedido'}</Button>
-              {editandoId && (
-                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar edición</Button>
-              )}
-            </div>
-          </form>
-        </CardBody>
-      </Card>
-
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-[#1C2938]">Listado</h2>
+        <Button onClick={() => setModoDrawer('nuevo')}>
+          <IconPlus size={15} /> Nuevo pedido
+        </Button>
+      </div>
 
       {cargando ? (
         <LoadingState />
       ) : pedidos.length === 0 ? (
         <Card><EmptyState>Todavía no hay pedidos registrados.</EmptyState></Card>
       ) : (
-        <div className="flex flex-col gap-4">
-          {pedidos.map((p) => (
-            <Card key={p.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-[#1C2938] flex items-center gap-2 flex-wrap">
-                    {p.clientes?.nombre ?? 'Sin cliente'}
-                    {p.codigo_pedido && <span className="text-xs font-mono text-gray-400">{p.codigo_pedido}</span>}
-                    <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {formatFecha(p.fecha)}{p.fecha_entrega_prevista && ` · entrega prevista ${formatFecha(p.fecha_entrega_prevista)}`}
-                  </p>
-                  {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
-                </div>
-                <div className="flex gap-3 shrink-0 items-start">
-                  {p.estado !== 'servido' && p.estado !== 'cancelado' && (
-                    <LinkAction tone="blue" onClick={() => handleEditar(p)}>Editar</LinkAction>
-                  )}
-                  {p.estado !== 'servido' && p.estado !== 'cancelado' && (
-                    <LinkAction tone="blue" onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)}>
-                      Crear albarán de venta
-                    </LinkAction>
-                  )}
-                  {p.estado !== 'servido' && p.estado !== 'cancelado' && (
-                    <LinkAction tone="red" onClick={() => handleCancelar(p.id)}>Cancelar</LinkAction>
-                  )}
-                </div>
-              </div>
-
-              <table className="w-full mt-3 text-sm">
-                <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-1.5 font-medium">Línea</th>
-                    <th className="py-1.5 font-medium">Pedido</th>
-                    <th className="py-1.5 font-medium">Previsto</th>
-                    <th className="py-1.5 font-medium">Servido</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {p.lineas_pedido_venta.map((linea) => {
-                    const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
-                    const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
-                    const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
-                    // Reparto multi-tanda: previsiones_distribucion_pf ya no tiene UNIQUE(linea_pedido_id)
-                    // a secas (ahora es UNIQUE(linea_pedido_id, produccion_pf_id), compuesto) -- PostgREST
-                    // solo infiere relación a-uno cuando el UNIQUE cubre EXACTAMENTE la columna del FK
-                    // usada en el embed; un UNIQUE compuesto no cuenta, así que pasa a embeberse como
-                    // array (confirmado por ausencia de cualquier UNIQUE de una sola columna sobre
-                    // linea_pedido_id en pg_constraint -- el índice parcial "sin tanda" tampoco cuenta,
-                    // creado como índice, no como constraint). Una línea puede tener varias previsiones
-                    // (una por tanda) -- se suman todas para "Previsto".
-                    const previsiones = linea.previsiones_distribucion_pf || []
-                    const previsto = previsiones.reduce((sum, pd) => sum + Number(pd.cantidad_prevista), 0)
-                    const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
-                    const completa = servido >= linea.cantidad
-                    // Aviso "tanda sin stock suficiente", por cada previsión con tanda asignada y
-                    // cantidad pendiente de verdad (previsto > 0) -- comparando contra el disponible NETO
-                    // de esa tanda (stock físico menos lo que OTRAS previsiones, de cualquier línea,
-                    // también reclaman de ella).
-                    const previsionesConAviso = previsiones
-                      .filter((pd) => pd.produccion_pf_id != null && Number(pd.cantidad_prevista) > 0)
-                      .map((pd) => {
-                        const cantidadPd = Number(pd.cantidad_prevista)
-                        const stockTanda = stockPorProduccionId.get(pd.produccion_pf_id)
-                        const sumaOtras = (sumaPrevistoPorProduccionId.get(pd.produccion_pf_id) || 0) - cantidadPd
-                        const disponibleNeto = stockTanda != null ? stockTanda - sumaOtras : null
-                        return { disponibleNeto, insuficiente: disponibleNeto != null && disponibleNeto < cantidadPd }
-                      })
-                      .filter((pd) => pd.insuficiente)
-                    const stockInsuficiente = previsionesConAviso.length > 0
-                    return (
-                      <tr key={linea.id}>
-                        <td className="py-1.5">
-                          {nombre}
-                          {tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
-                          {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
+        <Card className="overflow-hidden">
+          <div className="overflow-y-auto max-h-[70vh]">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-gray-50">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                  <th className="w-8 px-3 py-2.5"></th>
+                  <th className="px-3 py-2.5 font-medium">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                      Fecha {iconoOrden('fecha')}
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 font-medium">Cliente</th>
+                  <th className="px-3 py-2.5 font-medium">
+                    <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-gray-600">
+                      Entrega prevista {iconoOrden('fecha_entrega_prevista')}
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 font-medium">Estado</th>
+                  <th className="px-3 py-2.5 font-medium">Progreso</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidos.map((p) => {
+                  const expandido = filaExpandidaId === p.id
+                  const puedeGestionar = p.estado !== 'servido' && p.estado !== 'cancelado'
+                  const { totalLineas, lineasServidas, algunaConAvisoStock } = calcularProgresoPedido(p)
+                  const progresoCompleto = totalLineas > 0 && lineasServidas === totalLineas
+                  return (
+                    <Fragment key={p.id}>
+                      <tr
+                        ref={(el) => { if (el) filaRefs.current.set(p.id, el); else filaRefs.current.delete(p.id) }}
+                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        onClick={() => toggleExpandido(p.id)}
+                      >
+                        <td className="px-3 py-3">
+                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                            {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                          </button>
                         </td>
-                        <td className="py-1.5">{linea.cantidad} {unidad}</td>
-                        <td className={`py-1.5 ${stockInsuficiente ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                          {tipo === 'producto' ? (
-                            <>
-                              {previsto} {unidad}
-                              {stockInsuficiente && (
-                                <span className="text-xs">
-                                  {' '}({previsionesConAviso.map((pd) => `solo ${pd.disponibleNeto.toFixed(3)} disp.`).join('; ')} en la tanda asignada)
-                                </span>
-                              )}
-                            </>
-                          ) : '-'}
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
+                        <td className="px-3 py-3">
+                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? 'Sin cliente'}</div>
+                          {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
                         </td>
-                        <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">
+                          {p.fecha_entrega_prevista ? formatFecha(p.fecha_entrega_prevista) : '—'}
+                        </td>
+                        <td className="px-3 py-3">
+                          <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className={progresoCompleto ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                              {lineasServidas}/{totalLineas} líneas servidas
+                            </span>
+                            {algunaConAvisoStock && (
+                              <span title="Alguna línea tiene stock insuficiente en la tanda asignada">
+                                <IconAlertTriangle size={14} className="text-red-600" />
+                              </span>
+                            )}
+                          </div>
+                          {totalLineas > 0 && (
+                            <div className="mt-1 h-[3px] w-24 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${progresoCompleto ? 'bg-green-600' : 'bg-[#0854A0]'}`}
+                                style={{ width: `${(lineasServidas / totalLineas) * 100}%` }}
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                            {puedeGestionar && (
+                              <>
+                                <button type="button" title="Editar" onClick={() => handleEditar(p)} className="text-gray-400 hover:text-[#0854A0]">
+                                  <IconEdit size={16} />
+                                </button>
+                                <button type="button" title="Crear albarán de venta" onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-[#0854A0]">
+                                  <IconTruckDelivery size={16} />
+                                </button>
+                                <button type="button" title="Cancelar pedido" onClick={() => handleCancelar(p.id)} className="text-gray-400 hover:text-red-600">
+                                  <IconX size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </Card>
-          ))}
+                      <tr>
+                        <td colSpan={7} className="p-0">
+                          {/* BLOQUE 3: grid con altura animable (0fr <-> 1fr) en vez de montar/desmontar
+                              la fila -- así el expandir/colapsar tiene una transición CSS suave. */}
+                          <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                            <div className="overflow-hidden">
+                              <div className="bg-gray-50/60 px-3 py-3">
+                                {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
+                                <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                  <th className="py-1.5 font-medium">Línea</th>
+                                  <th className="py-1.5 font-medium">Pedido</th>
+                                  <th className="py-1.5 font-medium">Previsto</th>
+                                  <th className="py-1.5 font-medium">Servido</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100">
+                                {p.lineas_pedido_venta.map((linea) => {
+                                  const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
+                                  const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
+                                  const unidad = tipo === 'mercaderia' ? linea.articulos_compra?.unidad : ''
+                                  // Reparto multi-tanda: previsiones_distribucion_pf ya no tiene UNIQUE(linea_pedido_id)
+                                  // a secas (ahora es UNIQUE(linea_pedido_id, produccion_pf_id), compuesto) -- PostgREST
+                                  // solo infiere relación a-uno cuando el UNIQUE cubre EXACTAMENTE la columna del FK
+                                  // usada en el embed; un UNIQUE compuesto no cuenta, así que pasa a embeberse como
+                                  // array (confirmado por ausencia de cualquier UNIQUE de una sola columna sobre
+                                  // linea_pedido_id en pg_constraint -- el índice parcial "sin tanda" tampoco cuenta,
+                                  // creado como índice, no como constraint). Una línea puede tener varias previsiones
+                                  // (una por tanda) -- se suman todas para "Previsto".
+                                  const previsiones = linea.previsiones_distribucion_pf || []
+                                  const previsto = previsiones.reduce((sum, pd) => sum + Number(pd.cantidad_prevista), 0)
+                                  const servido = (linea.lineas_albaran_venta || []).reduce((sum, l) => sum + Number(l.cantidad), 0)
+                                  const completa = servido >= linea.cantidad
+                                  // Aviso "tanda sin stock suficiente", por cada previsión con tanda asignada y
+                                  // cantidad pendiente de verdad (previsto > 0) -- comparando contra el disponible NETO
+                                  // de esa tanda (stock físico menos lo que OTRAS previsiones, de cualquier línea,
+                                  // también reclaman de ella).
+                                  const previsionesConAviso = previsiones
+                                    .filter((pd) => pd.produccion_pf_id != null && Number(pd.cantidad_prevista) > 0)
+                                    .map((pd) => {
+                                      const cantidadPd = Number(pd.cantidad_prevista)
+                                      const stockTanda = stockPorProduccionId.get(pd.produccion_pf_id)
+                                      const sumaOtras = (sumaPrevistoPorProduccionId.get(pd.produccion_pf_id) || 0) - cantidadPd
+                                      const disponibleNeto = stockTanda != null ? stockTanda - sumaOtras : null
+                                      return { disponibleNeto, insuficiente: disponibleNeto != null && disponibleNeto < cantidadPd }
+                                    })
+                                    .filter((pd) => pd.insuficiente)
+                                  const stockInsuficiente = previsionesConAviso.length > 0
+                                  return (
+                                    <tr key={linea.id}>
+                                      <td className="py-1.5">
+                                        {nombre}
+                                        {tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
+                                        {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
+                                      </td>
+                                      <td className="py-1.5">{linea.cantidad} {unidad}</td>
+                                      <td className={`py-1.5 ${stockInsuficiente ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                                        {tipo === 'producto' ? (
+                                          <>
+                                            {previsto} {unidad}
+                                            {stockInsuficiente && (
+                                              <span className="text-xs">
+                                                {' '}({previsionesConAviso.map((pd) => `solo ${pd.disponibleNeto.toFixed(3)} disp.`).join('; ')} en la tanda asignada)
+                                              </span>
+                                            )}
+                                          </>
+                                        ) : '-'}
+                                      </td>
+                                      <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
+                                    </tr>
+                                  )
+                                })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {!cargando && totalPedidos > 0 && (
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-xs text-gray-400">
+            {totalPedidos} pedido{totalPedidos === 1 ? '' : 's'} · página {pagina} de {totalPaginas}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={pagina === 1}
+              onClick={() => setPagina((p) => p - 1)}
+            >
+              Anterior
+            </Button>
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setPagina(n)}
+                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+              >
+                {n}
+              </button>
+            ))}
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={pagina === totalPaginas}
+              onClick={() => setPagina((p) => p + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
         </div>
       )}
+
+      <Drawer
+        open={modoDrawer !== null}
+        onClose={() => setModoDrawer(null)}
+        title={modoDrawer !== null && typeof modoDrawer === 'object' ? 'Editar pedido' : 'Nuevo pedido'}
+      >
+        {modoDrawer !== null && (
+          <PedidoForm
+            pedido={typeof modoDrawer === 'object' ? modoDrawer : null}
+            clientes={clientes}
+            productos={productos}
+            articulosMercaderia={articulosMercaderia}
+            onGuardado={alGuardarPedido}
+            onCancelar={() => setModoDrawer(null)}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }
