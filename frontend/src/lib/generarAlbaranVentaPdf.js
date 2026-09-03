@@ -4,6 +4,41 @@ import { supabase } from './supabase'
 import { formatFecha } from './formatFecha'
 import { formatCantidad, formatPrecio } from './formatCantidad'
 
+// BLOQUE 6 (CONTRATO_UX_ALBARANES_VENTA.md): antes vivían solo en AlbaranesVenta.jsx -- movidas
+// aquí (sin cambios) porque ahora las necesitan dos sitios: las acciones del listado (Imprimir/
+// Descargar) y el autoPrint del formulario de alta, que se mudó a AlbaranVentaForm.jsx.
+export function nombreLineaVenta(linea) {
+  return linea.productos_finales?.nombre ?? linea.articulos_compra?.nombre ?? linea.descripcion
+}
+
+export function unidadLineaVenta(linea) {
+  return linea.productos_finales?.unidades_medida?.codigo ?? linea.articulos_compra?.unidad ?? 'ud'
+}
+
+// Traduce una fila de albaranes_venta (con sus relaciones embebidas) al shape plano que espera
+// generarAlbaranVentaPdf() -- { numero, fecha, tercero, lineas, total, notas }.
+export function prepararDocumentoAlbaranVenta(alb) {
+  return {
+    numero: alb.numero_albaran || `#${alb.id}`,
+    fecha: alb.fecha,
+    tercero: {
+      nombre: alb.clientes?.nombre,
+      direccion: alb.clientes?.direccion,
+      cif: alb.clientes?.cif,
+    },
+    lineas: alb.lineas_albaran_venta.map((l) => ({
+      concepto: nombreLineaVenta(l),
+      cantidad: l.cantidad,
+      unidad: unidadLineaVenta(l),
+      precioUnitario: l.precio_unitario,
+    })),
+    total: alb.lineas_albaran_venta.reduce(
+      (sum, l) => sum + (l.precio_unitario ? l.cantidad * l.precio_unitario : 0), 0
+    ),
+    notas: alb.notas,
+  }
+}
+
 import montserratRegularUrl from '../assets/fonts/Montserrat-Regular.ttf'
 import montserratBoldUrl from '../assets/fonts/Montserrat-Bold.ttf'
 import spaceMonoRegularUrl from '../assets/fonts/SpaceMono-Regular.ttf'
