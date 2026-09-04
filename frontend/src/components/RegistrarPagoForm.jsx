@@ -62,11 +62,35 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
   // Auto-aplicación (sección 5): coincidencia exacta con un solo documento -> ese documento
   // completo; si no, FIFO por fecha ascendente (documentos ya llega ordenado así desde
   // saldosVenta.js) hasta agotar el monto o los documentos.
+  //
+  // BUG REAL corregido (CONTRATO_PAGOS_VENTA.md sección 9, encontrado 2026-09-04): cuando el
+  // drawer se abre con documentoPreseleccionado (acceso rápido desde el icono de una factura/
+  // albarán concreto), ese documento tenía que competir igual que cualquier otro en la búsqueda
+  // de "coincidencia exacta contra TODA la lista" -- si otro documento del mismo cliente empataba
+  // en saldo y tenía fecha anterior, ganaba él (caso real: DN-260047 vs RE-2026-003, ambos 50
+  // CHF). La corrección distingue los dos casos desde el principio, no como un desempate a
+  // posteriori: con preselección, el documento pulsado manda siempre, sin pasar por la búsqueda
+  // genérica; sin preselección (alta libre desde Pagos.jsx), el comportamiento no cambia.
   useEffect(() => {
     if (tocadoManualmente) return
     const montoNum = Number(monto)
     if (documentos.length === 0 || !montoNum || montoNum <= 0) {
       setAplicaciones({})
+      return
+    }
+
+    if (documentoPreseleccionado) {
+      const doc = documentos.find(
+        (d) => d.tipo === documentoPreseleccionado.tipo && d.id === documentoPreseleccionado.id
+      )
+      // Si el documento preseleccionado ya no está en la lista (p. ej. se saldó por otra vía
+      // mientras tanto), no hay nada seguro que marcar automáticamente -- se deja vacío en vez de
+      // caer de vuelta a la búsqueda genérica, que es justo el comportamiento que causó el bug.
+      if (doc) {
+        setAplicaciones({ [claveDoc(doc)]: { checked: true, monto: Math.min(doc.saldo, montoNum).toFixed(2) } })
+      } else {
+        setAplicaciones({})
+      }
       return
     }
 
