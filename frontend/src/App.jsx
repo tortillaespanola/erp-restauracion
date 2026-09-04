@@ -19,6 +19,7 @@ import Pedidos from './pages/Pedidos'
 import Clientes from './pages/Clientes'
 import AlbaranesVenta from './pages/AlbaranesVenta'
 import FacturasVenta from './pages/FacturasVenta'
+import Pagos from './pages/Pagos'
 import Configuracion from './pages/Configuracion'
 
 function App({ session, onLogout }) {
@@ -47,6 +48,7 @@ function App({ session, onLogout }) {
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/albaranes-venta" element={<AlbaranesVenta />} />
           <Route path="/facturas-venta" element={<FacturasVenta />} />
+          <Route path="/pagos" element={<Pagos />} />
           <Route path="/configuracion" element={<Configuracion />} />
         </Routes>
       </Layout>

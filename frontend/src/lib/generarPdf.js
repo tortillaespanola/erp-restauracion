@@ -97,8 +97,8 @@ export async function generarDocumentoPdf(tipo, documento) {
     body: documento.lineas.map((l) => [
       l.concepto,
       l.cantidad,
-      l.precioUnitario != null ? `${l.precioUnitario.toFixed(2)} €` : '-',
-      l.precioUnitario != null ? `${(l.cantidad * l.precioUnitario).toFixed(2)} €` : '-',
+      l.precioUnitario != null ? `${l.precioUnitario.toFixed(2)} CHF` : '-',
+      l.precioUnitario != null ? `${(l.cantidad * l.precioUnitario).toFixed(2)} CHF` : '-',
     ]),
     theme: 'striped',
     headStyles: { fillColor: [30, 41, 59] },
@@ -111,7 +111,7 @@ export async function generarDocumentoPdf(tipo, documento) {
   if (documento.total != null) {
     doc.setFontSize(12)
     doc.setTextColor(20)
-    doc.text(`Total: ${Number(documento.total).toFixed(2)} €`, 195, yFinal, { align: 'right' })
+    doc.text(`Total: ${Number(documento.total).toFixed(2)} CHF`, 195, yFinal, { align: 'right' })
   }
 
   return doc

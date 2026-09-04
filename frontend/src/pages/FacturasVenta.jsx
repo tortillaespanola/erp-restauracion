@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, DateInput, SectionLabel, Badge, EmptyState, LoadingState } from '../components/ui'
+import { saldosDeFacturas, estadoPago, clientesParaDrawer } from '../lib/saldosVenta'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, DateInput, SectionLabel, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
+import RegistrarPagoForm from '../components/RegistrarPagoForm'
+
+const ESTADO_PAGO_BADGE = { pagada: 'green', parcial: 'amber', pendiente: 'gray' }
+const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
 
 function FacturasVenta() {
   const [facturas, setFacturas] = useState([])
   const [clientes, setClientes] = useState([])
+  const [clientesActivos, setClientesActivos] = useState([])
   const [albaranesDisponibles, setAlbaranesDisponibles] = useState([])
   const [cargando, setCargando] = useState(true)
 
@@ -14,24 +20,62 @@ function FacturasVenta() {
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [albaranesSeleccionados, setAlbaranesSeleccionados] = useState([])
 
+  // BLOQUE 6 (CONTRATO_PAGOS_VENTA.md): saldo pendiente por factura no anulada -- para el badge de
+  // estado de pago y para decidir si se muestra el icono de acceso rápido. clave = factura.id.
+  const [saldosPorFactura, setSaldosPorFactura] = useState(new Map())
+  // null = cerrado; { clienteId, documento: { tipo, id, saldo } } = abierto y preseleccionado.
+  const [pagoDrawer, setPagoDrawer] = useState(null)
+
   async function cargarDatos() {
     setCargando(true)
 
-    const [resFacturas, resClientes] = await Promise.all([
+    const [resFacturas, resClientes, resClientesActivos] = await Promise.all([
       supabase
         .from('facturas_venta')
         .select('*, clientes(nombre, direccion, cif), factura_venta_albaran(albaranes_venta(id, numero_albaran, fecha))')
         .order('fecha', { ascending: false }),
       supabase.from('clientes').select('id, nombre, direccion, cif').order('nombre'),
+      // Bloque 6: mismo filtro activo=true que Pedidos.jsx, para el selector de cliente del
+      // drawer de pago (distinto de `clientes`, que aquí no filtra porque es para el histórico).
+      supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
     ])
 
     if (resFacturas.error) console.error(resFacturas.error)
-    else setFacturas(resFacturas.data)
+    else {
+      const facturasCargadas = resFacturas.data || []
+      setFacturas(facturasCargadas)
+
+      // Bloque 6: albaranesPorFactura se deriva de la misma relación ya embebida arriba
+      // (factura_venta_albaran), sin ninguna consulta adicional -- misma técnica que "Pedido
+      // origen" en Albaranes, aquí reutilizada para saldosDeFacturas (Bloque 3).
+      const facturasNoAnuladas = facturasCargadas.filter((f) => !f.anulada)
+      const albaranesPorFactura = new Map(
+        facturasNoAnuladas.map((f) => [
+          f.id,
+          (f.factura_venta_albaran || []).map((rel) => rel.albaranes_venta?.id).filter(Boolean),
+        ])
+      )
+      try {
+        const saldos = await saldosDeFacturas(facturasNoAnuladas, albaranesPorFactura)
+        setSaldosPorFactura(saldos)
+      } catch (error) {
+        console.error('Error calculando saldos de facturas:', error)
+        setSaldosPorFactura(new Map())
+      }
+    }
 
     if (resClientes.error) console.error(resClientes.error)
     else setClientes(resClientes.data)
 
+    if (resClientesActivos.error) console.error(resClientesActivos.error)
+    else setClientesActivos(resClientesActivos.data || [])
+
     setCargando(false)
+  }
+
+  function alGuardarPago() {
+    setPagoDrawer(null)
+    cargarDatos()
   }
 
   useEffect(() => {
@@ -264,22 +308,38 @@ function FacturasVenta() {
         <Card><EmptyState>Todavía no hay facturas registradas.</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
-          {facturas.map((f) => (
+          {facturas.map((f) => {
+            // Bloque 6: solo tiene sentido estado de pago/icono de cobro para una factura viva --
+            // una anulada no tiene saldo en el mapa (se excluyó al calcularlo), su estado ya lo
+            // dice el badge "Anulada" de al lado.
+            const saldo = f.anulada ? null : saldosPorFactura.get(f.id)
+            const estado = saldo != null ? estadoPago(saldo, f.total) : null
+            const tieneSaldoPendiente = saldo != null && saldo > 0.005
+            return (
             <Card key={f.id} className={`p-4 ${f.anulada ? 'opacity-60 bg-gray-50' : ''}`}>
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-[#1C2938] flex items-center gap-2 flex-wrap">
                     {f.clientes?.nombre ?? 'Sin cliente'}
                     {f.anulada && <Badge color="red">Anulada</Badge>}
+                    {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{ESTADO_PAGO_LABEL[estado]}</Badge>}
                   </p>
                   <p className={`text-sm text-gray-500 ${f.anulada ? 'line-through' : ''}`}>
                     Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
-                    {f.total != null && ` · ${f.total} €`}
+                    {f.total != null && ` · ${f.total} CHF`}
                   </p>
                 </div>
                 <div className="flex gap-3 items-start shrink-0">
                   <LinkAction tone="gray" onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))}>Imprimir</LinkAction>
                   <LinkAction tone="blue" onClick={async () => descargarPdf('Factura', await prepararDocumento(f))}>Descargar PDF</LinkAction>
+                  {tieneSaldoPendiente && (
+                    <LinkAction
+                      tone="green"
+                      onClick={() => setPagoDrawer({ clienteId: f.cliente_id, clienteNombre: f.clientes?.nombre, documento: { tipo: 'factura', id: f.id, saldo } })}
+                    >
+                      Registrar cobro
+                    </LinkAction>
+                  )}
                   {!f.anulada && (
                     <LinkAction tone="red" onClick={() => handleAnular(f.id)}>Anular</LinkAction>
                   )}
@@ -295,9 +355,22 @@ function FacturasVenta() {
                       .join(', ')}
               </div>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
+
+      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title="Registrar pago">
+        {pagoDrawer !== null && (
+          <RegistrarPagoForm
+            clientes={clientesParaDrawer(clientesActivos, pagoDrawer)}
+            clienteIdInicial={pagoDrawer.clienteId}
+            documentoPreseleccionado={pagoDrawer.documento}
+            onGuardado={alGuardarPago}
+            onCancelar={() => setPagoDrawer(null)}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }

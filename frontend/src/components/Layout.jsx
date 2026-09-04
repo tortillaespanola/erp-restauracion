@@ -3,7 +3,7 @@ import {
   IconToolsKitchen2, IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
-  IconCarrot, IconStack2, IconBuildingWarehouse,
+  IconCarrot, IconStack2, IconBuildingWarehouse, IconCash,
 } from '@tabler/icons-react'
 
 const NAV_SECTIONS = [
@@ -37,6 +37,7 @@ const NAV_SECTIONS = [
       { to: '/clientes', label: 'Clientes', icon: IconUsers },
       { to: '/albaranes-venta', label: 'Albaranes venta', icon: IconTruck },
       { to: '/facturas-venta', label: 'Facturas venta', icon: IconFileDollar },
+      { to: '/pagos', label: 'Pagos', icon: IconCash },
     ],
   },
 ]
@@ -60,6 +61,7 @@ const TITULOS = {
   '/clientes': ['Clientes', 'Ventas · Clientes'],
   '/albaranes-venta': ['Albaranes de venta', 'Ventas · Albaranes venta'],
   '/facturas-venta': ['Facturas de venta', 'Ventas · Facturas venta'],
+  '/pagos': ['Pagos de venta', 'Ventas · Pagos'],
   '/configuracion': ['Configuración', 'Configuración de empresa'],
 }
 

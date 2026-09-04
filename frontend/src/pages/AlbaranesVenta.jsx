@@ -5,10 +5,23 @@ import { formatFecha } from '../lib/formatFecha'
 import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf, nombreLineaVenta, prepararDocumentoAlbaranVenta } from '../lib/generarAlbaranVentaPdf'
 import {
   IconTrash, IconChevronRight, IconChevronDown, IconPrinter, IconDownload, IconPlus,
-  IconArrowUp, IconArrowDown, IconArrowsSort,
+  IconArrowUp, IconArrowDown, IconArrowsSort, IconCash,
 } from '@tabler/icons-react'
 import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
 import AlbaranVentaForm from '../components/AlbaranVentaForm'
+import RegistrarPagoForm from '../components/RegistrarPagoForm'
+import { saldosDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
+
+const ESTADO_PAGO_BADGE = { pagada: 'green', parcial: 'amber', pendiente: 'gray' }
+const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
+
+// Bloque 6 (CONTRATO_PAGOS_VENTA.md): total de un albarán a partir de sus líneas ya embebidas en
+// la query principal -- misma fórmula que totalesPorAlbaran en saldosVenta.js, sin otra consulta.
+function totalAlbaran(alb) {
+  return (alb.lineas_albaran_venta || []).reduce(
+    (sum, l) => sum + (l.precio_unitario ? l.cantidad * l.precio_unitario : 0), 0
+  )
+}
 
 // BLOQUE 3 (CONTRATO_UX_ALBARANES_VENTA.md): códigos de pedido distintos entre las líneas del
 // albarán -- 0 códigos = ninguna línea tiene origen, 1 = todas comparten pedido, 2+ = "Varios".
@@ -41,9 +54,16 @@ function AlbaranesVenta() {
 
   const [albaranes, setAlbaranes] = useState([])
   const [clientes, setClientes] = useState([])
+  const [clientesActivos, setClientesActivos] = useState([])
   const [productos, setProductos] = useState([])
   const [articulosMercaderia, setArticulosMercaderia] = useState([])
   const [cargando, setCargando] = useState(true)
+
+  // BLOQUE 6: saldo pendiente por albarán SUELTO (los ya facturados no entran aquí) -- para el
+  // badge de estado de pago y el icono de acceso rápido. Clave = albaran_venta.id.
+  const [saldosPorAlbaran, setSaldosPorAlbaran] = useState(new Map())
+  // null = cerrado; { clienteId, documento: { tipo, id, saldo } } = abierto y preseleccionado.
+  const [pagoDrawer, setPagoDrawer] = useState(null)
 
   // BLOQUE 6 (CONTRATO_UX_ALBARANES_VENTA.md): un único booleano para el drawer -- a diferencia de
   // Pedidos, aquí no hay modo edición, así que no hace falta guardar "qué" se está editando, solo
@@ -106,21 +126,46 @@ function AlbaranesVenta() {
     const desde = (pagina - 1) * PAGINA_TAMANO
     albaranesQuery = albaranesQuery.range(desde, desde + PAGINA_TAMANO - 1)
 
-    const [resAlbaranes, resClientes, resProductos, resArticulos] = await Promise.all([
+    const [resAlbaranes, resClientes, resClientesActivos, resProductos, resArticulos] = await Promise.all([
       albaranesQuery,
       supabase.from('clientes').select('id, nombre').order('nombre'),
+      // Bloque 6: mismo filtro activo=true que Pedidos.jsx, para el selector de cliente del
+      // drawer de pago (distinto de `clientes`, usado por AlbaranVentaForm y que no filtra).
+      supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
       supabase.from('productos_finales').select('id, nombre, precio_venta').order('nombre'),
       supabase.from('articulos_compra').select('id, nombre, unidad').eq('tipo_material', 'TRD').order('nombre'),
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
     else {
-      setAlbaranes(resAlbaranes.data)
+      const albaranesCargados = resAlbaranes.data || []
+      setAlbaranes(albaranesCargados)
       setTotalAlbaranes(resAlbaranes.count ?? 0)
+
+      // Bloque 6: mismo criterio "facturado" ya usado en el render (objeto/null si tiene relación
+      // vigente, ver comentario del Bloque 2 más abajo) para aislar los sueltos, únicos candidatos
+      // a saldo pendiente de cobro directo.
+      const idsSueltos = albaranesCargados
+        .filter((alb) => {
+          const rel = alb.factura_venta_albaran
+          const facturado = Array.isArray(rel) ? rel.length > 0 : rel != null
+          return !facturado
+        })
+        .map((alb) => alb.id)
+      try {
+        const saldos = await saldosDeAlbaranesSueltos(idsSueltos)
+        setSaldosPorAlbaran(saldos)
+      } catch (error) {
+        console.error('Error calculando saldos de albaranes:', error)
+        setSaldosPorAlbaran(new Map())
+      }
     }
 
     if (resClientes.error) console.error(resClientes.error)
     else setClientes(resClientes.data)
+
+    if (resClientesActivos.error) console.error(resClientesActivos.error)
+    else setClientesActivos(resClientesActivos.data || [])
 
     if (resProductos.error) console.error(resProductos.error)
     else setProductos(resProductos.data)
@@ -134,6 +179,11 @@ function AlbaranesVenta() {
   useEffect(() => {
     cargarDatos()
   }, [orden, pagina])
+
+  function alGuardarPago() {
+    setPagoDrawer(null)
+    cargarDatos()
+  }
 
 
   async function handleBorrar(id) {
@@ -214,6 +264,11 @@ function AlbaranesVenta() {
                   const relFactura = alb.factura_venta_albaran
                   const facturado = Array.isArray(relFactura) ? relFactura.length > 0 : relFactura != null
                   const codigosPedido = codigosPedidoOrigen(alb)
+                  // Bloque 6: badge/icono de pago SOLO para sueltos -- un albarán ya facturado
+                  // refleja su estado de pago en la factura, no aquí, para no duplicar/contradecir.
+                  const saldo = facturado ? null : saldosPorAlbaran.get(alb.id)
+                  const estado = saldo != null ? estadoPago(saldo, totalAlbaran(alb)) : null
+                  const tieneSaldoPendiente = saldo != null && saldo > EPSILON
                   return (
                     <Fragment key={alb.id}>
                       <tr
@@ -241,9 +296,12 @@ function AlbaranesVenta() {
                           )}
                         </td>
                         <td className="px-3 py-3">
-                          <Badge color={facturado ? 'green' : 'gray'}>
-                            {facturado ? 'Facturado' : 'Pendiente de facturar'}
-                          </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge color={facturado ? 'green' : 'gray'}>
+                              {facturado ? 'Facturado' : 'Pendiente de facturar'}
+                            </Badge>
+                            {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{ESTADO_PAGO_LABEL[estado]}</Badge>}
+                          </div>
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
@@ -253,6 +311,15 @@ function AlbaranesVenta() {
                             <button type="button" title="Descargar PDF" onClick={() => descargarAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-[#0854A0]">
                               <IconDownload size={16} />
                             </button>
+                            {tieneSaldoPendiente && (
+                              <button
+                                type="button" title="Registrar cobro"
+                                onClick={() => setPagoDrawer({ clienteId: alb.cliente_id, clienteNombre: alb.clientes?.nombre, documento: { tipo: 'albaran', id: alb.id, saldo } })}
+                                className="text-gray-400 hover:text-green-700"
+                              >
+                                <IconCash size={16} />
+                              </button>
+                            )}
                             <button type="button" title="Borrar" onClick={() => handleBorrar(alb.id)} className="text-gray-400 hover:text-red-600">
                               <IconTrash size={16} />
                             </button>
@@ -347,6 +414,18 @@ function AlbaranesVenta() {
             articulosMercaderia={articulosMercaderia}
             onGuardado={alGuardarAlbaran}
             onCancelar={() => setDrawerAbierto(false)}
+          />
+        )}
+      </Drawer>
+
+      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title="Registrar pago">
+        {pagoDrawer !== null && (
+          <RegistrarPagoForm
+            clientes={clientesParaDrawer(clientesActivos, pagoDrawer)}
+            clienteIdInicial={pagoDrawer.clienteId}
+            documentoPreseleccionado={pagoDrawer.documento}
+            onGuardado={alGuardarPago}
+            onCancelar={() => setPagoDrawer(null)}
           />
         )}
       </Drawer>
