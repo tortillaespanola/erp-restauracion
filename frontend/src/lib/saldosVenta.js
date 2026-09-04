@@ -86,6 +86,25 @@ export async function saldosDeAlbaranesSueltos(albaranIds) {
   return saldos
 }
 
+// BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): mismo saldo que saldosDeAlbaranesSueltos, pero devolviendo
+// el estado de pago ya resuelto (pagada/parcial/pendiente) por albarán -- para poder filtrar por
+// "Cobro" en AlbaranesVenta.jsx sin recalcular la fórmula de saldo una tercera vez (ya la tiene
+// totalAlbaran() en AlbaranesVenta.jsx para el badge, y saldosDeAlbaranesSueltos() aquí mismo).
+export async function estadosPagoDeAlbaranesSueltos(albaranIds) {
+  if (albaranIds.length === 0) return new Map()
+  const [totales, { aplicadoAlbaran }] = await Promise.all([
+    totalesPorAlbaran(albaranIds),
+    aplicadoPorDocumento([], albaranIds),
+  ])
+  const estados = new Map()
+  for (const id of albaranIds) {
+    const total = totales.get(id) || 0
+    const saldo = total - (aplicadoAlbaran.get(id) || 0)
+    estados.set(id, estadoPago(saldo, total))
+  }
+  return estados
+}
+
 // Para un conjunto de facturas no anuladas, su saldo pendiente = total − aplicado directo a la
 // factura − aplicado a los albaranes que agrupa (sección 4 del contrato: mirar hacia abajo a
 // través de factura_venta_albaran, misma técnica que "Pedido origen" en Albaranes, aquí sumando

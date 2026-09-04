@@ -7,13 +7,26 @@ import {
   IconTrash, IconChevronRight, IconChevronDown, IconPrinter, IconDownload, IconPlus,
   IconArrowUp, IconArrowDown, IconArrowsSort, IconCash,
 } from '@tabler/icons-react'
-import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
+import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
 import AlbaranVentaForm from '../components/AlbaranVentaForm'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
-import { saldosDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
+import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
 const ESTADO_PAGO_BADGE = { pagada: 'green', parcial: 'amber', pendiente: 'gray' }
 const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
+
+// BLOQUE 2 (CONTRATO_FILTROS_VENTA.md), sección 3: dos dimensiones de estado independientes, no
+// mezclables en un único MultiSelect -- Facturación (¿tiene relación en factura_venta_albaran?) y
+// Cobro (estado de pago calculado, solo aplica a albaranes sueltos).
+const FACTURACION_OPCIONES = [
+  { value: 'pendiente', label: 'Pendiente de facturar' },
+  { value: 'facturado', label: 'Facturado' },
+]
+const COBRO_OPCIONES = [
+  { value: 'pagada', label: 'Pagada' },
+  { value: 'parcial', label: 'Parcial' },
+  { value: 'pendiente', label: 'Pendiente' },
+]
 
 // Bloque 6 (CONTRATO_PAGOS_VENTA.md): total de un albarán a partir de sus líneas ya embebidas en
 // la query principal -- misma fórmula que totalesPorAlbaran en saldosVenta.js, sin otra consulta.
@@ -101,6 +114,30 @@ function AlbaranesVenta() {
     setPagina(1) // cambiar de orden con otra página abierta dejaría una página vacía o repetida
   }
 
+  // BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): filtro de Cliente reutiliza `clientes` (ya sin filtro
+  // de activo, ver Promise.all de cargarDatos -- lo usa AlbaranVentaForm para la misma lista), sin
+  // necesidad de una query aparte.
+  const [filtroClienteId, setFiltroClienteId] = useState('')
+  const [filtroFacturacion, setFiltroFacturacion] = useState([])
+  const [filtroCobro, setFiltroCobro] = useState([])
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const hayFiltrosActivos = !!filtroClienteId || filtroFacturacion.length > 0 || filtroCobro.length > 0 || !!filtroFechaDesde || !!filtroFechaHasta
+
+  function cambiarFiltroCliente(id) { setFiltroClienteId(id); setPagina(1) }
+  function cambiarFiltroFacturacion(valores) { setFiltroFacturacion(valores); setPagina(1) }
+  function cambiarFiltroCobro(valores) { setFiltroCobro(valores); setPagina(1) }
+  function cambiarFiltroFechaDesde(v) { setFiltroFechaDesde(v); setPagina(1) }
+  function cambiarFiltroFechaHasta(v) { setFiltroFechaHasta(v); setPagina(1) }
+  function limpiarFiltros() {
+    setFiltroClienteId('')
+    setFiltroFacturacion([])
+    setFiltroCobro([])
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPagina(1)
+  }
+
   function iconoOrden(columna) {
     if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
@@ -109,9 +146,68 @@ function AlbaranesVenta() {
   async function cargarDatos() {
     setCargando(true)
 
+    // BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): Facturación y Cobro no son columnas propias de
+    // albaranes_venta -- Facturación depende de si hay relación en factura_venta_albaran, Cobro es
+    // un saldo calculado (solo para sueltos). Sin una vista como facturas_venta_con_saldo (aquí no
+    // hacía falta ninguna hasta ahora, esta pantalla no ordena/agrupa por estado), se resuelve con
+    // un precómputo ligero en dos pasos: 1) un id+relación de TODOS los albaranes (sin datos
+    // pesados, mismo volumen ~92 filas que ya maneja esta pantalla) para separar facturados de
+    // sueltos: 2) para Cobro, el estado de pago de los sueltos vía estadosPagoDeAlbaranesSueltos()
+    // (saldosVenta.js), la misma fórmula que ya usa el badge, sin duplicarla. El resultado es una
+    // lista de ids que se aplica con .in() a la query principal ANTES de order/range -- solo se
+    // ejecuta si alguno de los dos filtros de estado está activo.
+    let idsPermitidosPorEstado = null // null = sin restricción por estado
+    if (filtroFacturacion.length > 0 || filtroCobro.length > 0) {
+      const { data: todosAlbaranes, error: errorTodos } = await supabase
+        .from('albaranes_venta')
+        .select('id, factura_venta_albaran(factura_venta_id)')
+
+      if (errorTodos) {
+        console.error('Error precalculando filtros de estado de albaranes:', errorTodos)
+        idsPermitidosPorEstado = []
+      } else {
+        const idsFacturados = []
+        const idsSueltos = []
+        for (const alb of todosAlbaranes) {
+          const rel = alb.factura_venta_albaran
+          const facturado = Array.isArray(rel) ? rel.length > 0 : rel != null
+          if (facturado) idsFacturados.push(alb.id)
+          else idsSueltos.push(alb.id)
+        }
+
+        // filtroFacturacion.length === 2 (ambos valores tildados) equivale a "sin restricción" --
+        // mismo criterio que filtroFacturacion.length === 0, no hace falta distinguirlos.
+        let idsPorFacturacion = null
+        if (filtroFacturacion.length === 1) {
+          idsPorFacturacion = filtroFacturacion[0] === 'facturado' ? idsFacturados : idsSueltos
+        }
+
+        let idsPorCobro = null
+        if (filtroCobro.length > 0) {
+          const estados = await estadosPagoDeAlbaranesSueltos(idsSueltos)
+          idsPorCobro = idsSueltos.filter((id) => filtroCobro.includes(estados.get(id)))
+        }
+
+        // AND entre las dos dimensiones (sección 3 del contrato: independientes y combinables) --
+        // intersección si las dos están activas a la vez.
+        idsPermitidosPorEstado = idsPorFacturacion && idsPorCobro
+          ? idsPorFacturacion.filter((id) => idsPorCobro.includes(id))
+          : (idsPorFacturacion ?? idsPorCobro ?? [])
+      }
+    }
+
     let albaranesQuery = supabase
       .from('albaranes_venta')
       .select(SELECT_ALBARAN_CON_RELACIONES, { count: 'exact' })
+
+    if (filtroClienteId) albaranesQuery = albaranesQuery.eq('cliente_id', filtroClienteId)
+    if (filtroFechaDesde) albaranesQuery = albaranesQuery.gte('fecha', filtroFechaDesde)
+    if (filtroFechaHasta) albaranesQuery = albaranesQuery.lte('fecha', filtroFechaHasta)
+    // -1 como centinela cuando la intersección de estado queda vacía -- fuerza 0 filas en vez de
+    // mandar un .in() con array vacío (semántica ambigua en PostgREST).
+    if (idsPermitidosPorEstado !== null) {
+      albaranesQuery = albaranesQuery.in('id', idsPermitidosPorEstado.length > 0 ? idsPermitidosPorEstado : [-1])
+    }
 
     // BLOQUE 5: a diferencia de Pedidos, aquí no hay columna de agrupamiento por estado -- el
     // orden por defecto es simplemente fecha descendente, sin paso intermedio de migración.
@@ -178,7 +274,7 @@ function AlbaranesVenta() {
 
   useEffect(() => {
     cargarDatos()
-  }, [orden, pagina])
+  }, [orden, pagina, filtroClienteId, filtroFacturacion, filtroCobro, filtroFechaDesde, filtroFechaHasta])
 
   function alGuardarPago() {
     setPagoDrawer(null)
@@ -231,10 +327,42 @@ function AlbaranesVenta() {
         </Button>
       </div>
 
+      {/* BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): dos MultiSelect de estado independientes
+          (Facturación / Cobro, sección 3 del contrato) -- nunca mezclados en uno solo. */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+        <Field label="Cliente" className="w-48">
+          <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
+            <option value="">Todos</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Facturación" className="w-48">
+          <MultiSelect options={FACTURACION_OPCIONES} selected={filtroFacturacion} onChange={cambiarFiltroFacturacion} placeholder="Todos" />
+        </Field>
+        <Field label="Cobro" className="w-48">
+          <MultiSelect options={COBRO_OPCIONES} selected={filtroCobro} onChange={cambiarFiltroCobro} placeholder="Todos" />
+        </Field>
+        <Field label="Desde" className="w-40">
+          <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
+        </Field>
+        <Field label="Hasta" className="w-40">
+          <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
+        </Field>
+        {hayFiltrosActivos && (
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+        )}
+      </div>
+
       {cargando ? (
         <LoadingState />
       ) : albaranes.length === 0 ? (
-        <Card><EmptyState>Todavía no hay albaranes de venta registrados.</EmptyState></Card>
+        <Card>
+          <EmptyState>
+            {hayFiltrosActivos ? 'Ningún albarán coincide con los filtros aplicados.' : 'Todavía no hay albaranes de venta registrados.'}
+          </EmptyState>
+        </Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">

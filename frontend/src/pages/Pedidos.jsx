@@ -6,7 +6,7 @@ import {
   IconChevronRight, IconChevronDown, IconEdit, IconTruckDelivery, IconX,
   IconAlertTriangle, IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus,
 } from '@tabler/icons-react'
-import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
+import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
 import PedidoForm from '../components/PedidoForm'
 
 // BLOQUE 5 (CONTRATO_UX_PEDIDOS_VENTA.md): 20 por página, tal cual sugiere el contrato -- con el
@@ -35,6 +35,11 @@ const ESTADO_LABEL = {
   cancelado: 'Cancelado',
 }
 
+// BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): mismas opciones que ESTADO_LABEL, en formato
+// {value, label} para el MultiSelect -- una sola fuente de verdad para el texto del badge y el
+// texto del filtro, sin duplicar la lista de estados en dos sitios.
+const ESTADO_FILTRO_OPCIONES = Object.entries(ESTADO_LABEL).map(([value, label]) => ({ value, label }))
+
 function Pedidos() {
   const navigate = useNavigate()
   const [pedidos, setPedidos] = useState([])
@@ -42,6 +47,31 @@ function Pedidos() {
   const [productos, setProductos] = useState([])
   const [articulosMercaderia, setArticulosMercaderia] = useState([])
   const [cargando, setCargando] = useState(true)
+
+  // BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): lista de TODOS los clientes (activos e inactivos) para
+  // el <Select> del filtro -- distinta de `clientes` (activo=true), que sigue siendo solo para el
+  // formulario de alta/edición dentro del drawer. Un cliente inactivo puede tener pedidos
+  // históricos que se quieran consultar igual.
+  const [clientesFiltro, setClientesFiltro] = useState([])
+  const [filtroClienteId, setFiltroClienteId] = useState('')
+  const [filtroEstados, setFiltroEstados] = useState([])
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const hayFiltrosActivos = !!filtroClienteId || filtroEstados.length > 0 || !!filtroFechaDesde || !!filtroFechaHasta
+
+  // Cualquier cambio de filtro resetea a la página 1 (sección 1 del contrato) -- mismo criterio
+  // que ya usa cambiarOrden más abajo, aquí generalizado a los cuatro filtros.
+  function cambiarFiltroCliente(id) { setFiltroClienteId(id); setPagina(1) }
+  function cambiarFiltroEstados(valores) { setFiltroEstados(valores); setPagina(1) }
+  function cambiarFiltroFechaDesde(v) { setFiltroFechaDesde(v); setPagina(1) }
+  function cambiarFiltroFechaHasta(v) { setFiltroFechaHasta(v); setPagina(1) }
+  function limpiarFiltros() {
+    setFiltroClienteId('')
+    setFiltroEstados([])
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPagina(1)
+  }
 
   // BLOQUE 6 (CONTRATO_UX_PEDIDOS_VENTA.md): un único estado para el drawer de alta/edición, mismo
   // patrón que Inventario.jsx -- null = cerrado, 'nuevo' = alta, objeto pedido = edición precargada.
@@ -129,6 +159,15 @@ function Pedidos() {
     // regresión respecto al compararPedidos original): la segunda clave por defecto pasa de
     // fecha_entrega_prevista ascendente a fecha descendente -- más reciente primero dentro de cada
     // grupo, sin depender de nullsFirst porque `fecha` es NOT NULL en pedidos_venta.
+    // BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): filtros server-side, aplicados ANTES del .order() ya
+    // existente -- no tocan la cadena de orden/agrupamiento/paginación de abajo, solo acotan qué
+    // filas entran en ella. Cliente y estado con AND entre sí; varios estados a la vez son OR
+    // (.in()); rango de fechas con .gte()/.lte() cuando se informan.
+    if (filtroClienteId) pedidosQuery = pedidosQuery.eq('cliente_id', filtroClienteId)
+    if (filtroEstados.length > 0) pedidosQuery = pedidosQuery.in('estado', filtroEstados)
+    if (filtroFechaDesde) pedidosQuery = pedidosQuery.gte('fecha', filtroFechaDesde)
+    if (filtroFechaHasta) pedidosQuery = pedidosQuery.lte('fecha', filtroFechaHasta)
+
     pedidosQuery = pedidosQuery.order('grupo_estado', { ascending: true })
     pedidosQuery = orden.columna
       ? pedidosQuery.order(orden.columna, { ascending: orden.direccion === 'asc', nullsFirst: false })
@@ -143,9 +182,12 @@ function Pedidos() {
     const desde = (pagina - 1) * PAGINA_TAMANO
     pedidosQuery = pedidosQuery.range(desde, desde + PAGINA_TAMANO - 1)
 
-    const [resPedidos, resClientes, resProductos, resArticulos] = await Promise.all([
+    const [resPedidos, resClientes, resClientesFiltro, resProductos, resArticulos] = await Promise.all([
       pedidosQuery,
       supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
+      // BLOQUE 1: sin filtro de activo -- el <Select> del filtro necesita poder elegir un cliente
+      // inactivo con pedidos históricos.
+      supabase.from('clientes').select('id, nombre').order('nombre'),
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('articulos_compra').select('id, nombre, unidad').eq('tipo_material', 'TRD').order('nombre'),
     ])
@@ -185,6 +227,9 @@ function Pedidos() {
     if (resClientes.error) console.error(resClientes.error)
     else setClientes(resClientes.data)
 
+    if (resClientesFiltro.error) console.error(resClientesFiltro.error)
+    else setClientesFiltro(resClientesFiltro.data || [])
+
     if (resProductos.error) console.error(resProductos.error)
     else setProductos(resProductos.data)
 
@@ -196,7 +241,7 @@ function Pedidos() {
 
   useEffect(() => {
     cargarDatos()
-  }, [orden, pagina])
+  }, [orden, pagina, filtroClienteId, filtroEstados, filtroFechaDesde, filtroFechaHasta])
 
   async function handleEditar(pedido) {
     const lineaIds = pedido.lineas_pedido_venta.map((l) => l.id)
@@ -292,10 +337,40 @@ function Pedidos() {
         </Button>
       </div>
 
+      {/* BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): barra de filtros server-side -- Cliente (todos,
+          activos e inactivos), Estado (MultiSelect, OR entre valores), rango de fechas. Se
+          combinan con AND entre sí en cargarDatos(). */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+        <Field label="Cliente" className="w-48">
+          <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
+            <option value="">Todos</option>
+            {clientesFiltro.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Estado" className="w-56">
+          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder="Todos" />
+        </Field>
+        <Field label="Desde" className="w-40">
+          <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
+        </Field>
+        <Field label="Hasta" className="w-40">
+          <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
+        </Field>
+        {hayFiltrosActivos && (
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+        )}
+      </div>
+
       {cargando ? (
         <LoadingState />
       ) : pedidos.length === 0 ? (
-        <Card><EmptyState>Todavía no hay pedidos registrados.</EmptyState></Card>
+        <Card>
+          <EmptyState>
+            {hayFiltrosActivos ? 'Ningún pedido coincide con los filtros aplicados.' : 'Todavía no hay pedidos registrados.'}
+          </EmptyState>
+        </Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">

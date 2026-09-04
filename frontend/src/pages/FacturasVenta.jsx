@@ -7,7 +7,7 @@ import {
   IconChevronRight, IconChevronDown, IconPrinter, IconDownload, IconCoin, IconBan,
   IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus,
 } from '@tabler/icons-react'
-import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer } from '../components/ui'
+import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import FacturaVentaForm from '../components/FacturaVentaForm'
 
@@ -16,6 +16,15 @@ const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pe
 
 // BLOQUE 5 (CONTRATO_UX_FACTURAS_VENTA.md): 20 por página, mismo tamaño que Pedidos/Albaranes.
 const PAGINA_TAMANO = 20
+
+// BLOQUE 3 (CONTRATO_FILTROS_VENTA.md), sección 4: incluye "Anulada" además de los tres estados
+// de pago del badge -- es un estado propio de la factura, no del saldo.
+const ESTADO_FILTRO_OPCIONES = [
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'parcial', label: 'Parcial' },
+  { value: 'pagada', label: 'Pagada' },
+  { value: 'anulada', label: 'Anulada' },
+]
 
 function FacturasVenta() {
   const [facturas, setFacturas] = useState([])
@@ -71,8 +80,55 @@ function FacturasVenta() {
   const [totalFacturas, setTotalFacturas] = useState(0)
   const totalPaginas = Math.max(1, Math.ceil(totalFacturas / PAGINA_TAMANO))
 
+  // BLOQUE 3 (CONTRATO_FILTROS_VENTA.md): filtro de Cliente reutiliza `clientes` (ya sin filtro de
+  // activo, ver Promise.all de cargarDatos -- lo usa FacturaVentaForm para la misma lista).
+  const [filtroClienteId, setFiltroClienteId] = useState('')
+  const [filtroEstados, setFiltroEstados] = useState([])
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const hayFiltrosActivos = !!filtroClienteId || filtroEstados.length > 0 || !!filtroFechaDesde || !!filtroFechaHasta
+
+  function cambiarFiltroCliente(id) { setFiltroClienteId(id); setPagina(1) }
+  function cambiarFiltroEstados(valores) { setFiltroEstados(valores); setPagina(1) }
+  function cambiarFiltroFechaDesde(v) { setFiltroFechaDesde(v); setPagina(1) }
+  function cambiarFiltroFechaHasta(v) { setFiltroFechaHasta(v); setPagina(1) }
+  function limpiarFiltros() {
+    setFiltroClienteId('')
+    setFiltroEstados([])
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPagina(1)
+  }
+
   async function cargarDatos() {
     setCargando(true)
+
+    // BLOQUE 3 (CONTRATO_FILTROS_VENTA.md): el estado de pago no es una columna de
+    // facturas_venta_con_saldo (solo saldo_pendiente/anulada/total, resueltos en Bloque 1) -- no
+    // hay forma de comparar saldo_pendiente contra total (dos columnas, no un literal) con un
+    // filtro simple de PostgREST, así que se resuelve igual que Facturación/Cobro en
+    // AlbaranesVenta.jsx (Bloque 2): un precómputo ligero trayendo solo id/total/saldo/anulada de
+    // TODAS las facturas (volumen bajo, mismo criterio), clasificando en cliente con la misma
+    // estadoPago() de siempre, para obtener una lista de ids que se aplica con .in() a la query
+    // principal. Solo se ejecuta si el filtro de Estado está activo.
+    let idsPermitidosPorEstado = null // null = sin restricción por estado
+    if (filtroEstados.length > 0) {
+      const { data: todasFacturas, error: errorTodas } = await supabase
+        .from('facturas_venta_con_saldo')
+        .select('id, total, saldo_pendiente, anulada')
+
+      if (errorTodas) {
+        console.error('Error precalculando el filtro de estado de facturas:', errorTodas)
+        idsPermitidosPorEstado = []
+      } else {
+        idsPermitidosPorEstado = todasFacturas
+          .filter((f) => {
+            if (f.anulada) return filtroEstados.includes('anulada')
+            return filtroEstados.includes(estadoPago(Number(f.saldo_pendiente), f.total))
+          })
+          .map((f) => f.id)
+      }
+    }
 
     // BLOQUE 4 (CONTRATO_UX_FACTURAS_VENTA.md): se consulta la vista facturas_venta_con_saldo
     // (Bloque 1) en vez de la tabla cruda -- expone saldo_pendiente y prioridad_grupo ya resueltos
@@ -83,6 +139,16 @@ function FacturasVenta() {
     let facturasQuery = supabase
       .from('facturas_venta_con_saldo')
       .select('*, clientes(nombre, direccion, cif), factura_venta_albaran(albaranes_venta(id, numero_albaran, fecha))', { count: 'exact' })
+
+    // BLOQUE 3: Cliente y rango de fechas, AND entre sí y con el filtro de Estado de arriba.
+    if (filtroClienteId) facturasQuery = facturasQuery.eq('cliente_id', filtroClienteId)
+    if (filtroFechaDesde) facturasQuery = facturasQuery.gte('fecha', filtroFechaDesde)
+    if (filtroFechaHasta) facturasQuery = facturasQuery.lte('fecha', filtroFechaHasta)
+    // -1 como centinela cuando la lista de ids permitidos queda vacía -- fuerza 0 filas en vez de
+    // mandar un .in() con array vacío (semántica ambigua en PostgREST).
+    if (idsPermitidosPorEstado !== null) {
+      facturasQuery = facturasQuery.in('id', idsPermitidosPorEstado.length > 0 ? idsPermitidosPorEstado : [-1])
+    }
 
     // prioridad_grupo (0 Pendiente/Parcial, 1 Pagada, 2 Anulada) es SIEMPRE la primera clave de
     // .order() -- invariante permanente, igual que grupo_estado en pedidos_venta (corrección
@@ -132,7 +198,7 @@ function FacturasVenta() {
 
   useEffect(() => {
     cargarDatos()
-  }, [orden, pagina])
+  }, [orden, pagina, filtroClienteId, filtroEstados, filtroFechaDesde, filtroFechaHasta])
 
   // BLOQUE 6: tras guardar desde el drawer, cierra, refresca y -- si la factura guardada sigue
   // presente en la página actual -- hace scroll hasta su fila. requestAnimationFrame da tiempo a
@@ -206,10 +272,39 @@ function FacturasVenta() {
         </Button>
       </div>
 
+      {/* BLOQUE 3 (CONTRATO_FILTROS_VENTA.md): barra de filtros server-side -- Cliente, Estado
+          (contra facturas_venta_con_saldo, ver cargarDatos), rango de fechas. */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+        <Field label="Cliente" className="w-48">
+          <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
+            <option value="">Todos</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Estado" className="w-56">
+          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder="Todos" />
+        </Field>
+        <Field label="Desde" className="w-40">
+          <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
+        </Field>
+        <Field label="Hasta" className="w-40">
+          <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
+        </Field>
+        {hayFiltrosActivos && (
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+        )}
+      </div>
+
       {cargando ? (
         <LoadingState />
       ) : facturas.length === 0 ? (
-        <Card><EmptyState>Todavía no hay facturas registradas.</EmptyState></Card>
+        <Card>
+          <EmptyState>
+            {hayFiltrosActivos ? 'Ninguna factura coincide con los filtros aplicados.' : 'Todavía no hay facturas registradas.'}
+          </EmptyState>
+        </Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
