@@ -37,7 +37,10 @@ Reutilizar el patrón de `AlbaranesVenta.jsx` (BLOQUE 4):
 - Botones de acción dentro de la fila con `stopPropagation()`.
 
 Columnas de la fila principal:
-`Fecha | Semielaborado | Cantidad producida | Estado de consumo (Badge) | ⌄`
+`Fecha | Semielaborado | Cantidad producida | Notas | Estado de consumo (Badge) | ⌄`
+
+> Confirmado tras revisión en frontend: las notas de producción van **como
+> columna en la fila principal**, no dentro del detalle expandible.
 
 ### 1.4 Paginación
 Reutilizar el patrón de `FacturasVenta.jsx`: estado `pagina` / `PAGINA_TAMANO`,
@@ -104,7 +107,10 @@ Mismo tratamiento que el punto 1.3 de Semielaborados:
 - Filtrado por el producto seleccionado en 2.1.
 
 Columnas de la fila principal:
-`Fecha | Producto | Cantidad producida | Estado de despacho (Badge) | ⌄`
+`Fecha | Producto | Cantidad producida | Notas | Estado de despacho (Badge) | ⌄`
+
+> Mismo criterio que en Semielaborados: notas como columna en la fila
+> principal, no en el detalle expandible.
 
 ### 2.4 Estado de despacho (nuevo indicador)
 **Confirmado: basado en `previsiones_distribucion_pf` (previsto/repartido a

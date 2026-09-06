@@ -655,6 +655,7 @@ function Producciones() {
                   <th className="px-3 py-2.5 font-medium">Fecha</th>
                   <th className="px-3 py-2.5 font-medium">Semielaborado</th>
                   <th className="px-3 py-2.5 font-medium">Cantidad producida</th>
+                  <th className="px-3 py-2.5 font-medium">Notas</th>
                   <th className="px-3 py-2.5 font-medium">Estado de consumo</th>
                   <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
                 </tr>
@@ -1238,6 +1239,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
           {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
         </td>
         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} {produccion.semielaborados?.unidad}</td>
+        <td className="px-3 py-3 text-gray-500 italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
@@ -1247,7 +1249,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
         </td>
       </tr>
       <tr>
-        <td colSpan={6} className="p-0">
+        <td colSpan={7} className="p-0">
           {/* Mismo truco de altura animable (grid-template-rows 0fr<->1fr) que AlbaranesVenta.jsx
               BLOQUE 4 -- la fila de detalle queda siempre montada, solo colapsada. */}
           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -1261,8 +1263,6 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                   />
                 ) : (
                   <>
-                    {produccion.notas && <p className="text-sm text-gray-500 italic mb-2">{produccion.notas}</p>}
-
                     {/* Punto 1.6.1: ingredientes consumidos por esta producción (aguas arriba) -- la
                         misma tabla que ya existía, sin cambios de fondo, solo movida aquí dentro. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
