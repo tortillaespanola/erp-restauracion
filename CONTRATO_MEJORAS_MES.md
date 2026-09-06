@@ -54,10 +54,18 @@ consulta propia a nivel de página visible:
 ```
 SUM(consumo_produccion.cantidad)    WHERE produccion_origen_id IN (ids visibles)  GROUP BY produccion_origen_id
 SUM(consumo_produccion_pf.cantidad) WHERE produccion_origen_id IN (ids visibles)  GROUP BY produccion_origen_id
+SUM(ajustes_semielaborado.cantidad) WHERE produccion_id        IN (ids visibles)  GROUP BY produccion_id
 ```
 
-`consumido = suma_consumo_produccion + suma_consumo_produccion_pf`
-`% = consumido / cantidad_producida`
+> **Corrección post-implementación (caso real WIP-MIXKZ-260060):** la primera
+> versión del badge no incluía `ajustes_semielaborado`, lo que hacía que un
+> lote con ajuste manual (p. ej. corrección de merma) mostrara "Parcial X%"
+> aunque su `stock_disponible` real fuera 0. Fórmula corregida, replicando el
+> signo de la vista `stock_lotes_semielaborado` (un ajuste negativo reduce
+> stock igual que un consumo; uno positivo lo aumenta):
+
+`consumido = suma_consumo_produccion + suma_consumo_produccion_pf - suma_ajustes_semielaborado`
+`% = consumido / cantidad_producida`, acotado entre 0% y 100%
 
 Badge (`components/ui.jsx`, reutilizar tal cual):
 - `0%` → `Badge color="gray"` → "No consumido"
@@ -65,7 +73,7 @@ Badge (`components/ui.jsx`, reutilizar tal cual):
 - `% >= 100%` → `Badge color="green"` → "Completo"
 
 ### 1.6 Contenido de la fila expandible
-Debe mostrar **dos bloques**, ambos ya calculables con datos existentes:
+Debe mostrar **tres bloques**, todos ya calculables con datos existentes:
 1. **Ingredientes consumidos por esta producción** (aguas arriba) — la tabla
    que ya existe hoy dentro de `ProduccionCerrada` (`consumo_produccion` del
    propio registro), sin cambios de fondo, solo movida al detalle expandible.
@@ -73,6 +81,10 @@ Debe mostrar **dos bloques**, ambos ya calculables con datos existentes:
    tirado de este lote: filas de `consumo_produccion` y `consumo_produccion_pf`
    donde `produccion_origen_id` = id de esta tanda, con fecha, destino y
    cantidad.
+3. **Ajustes de stock** (nuevo, corrección post-implementación) — filas de
+   `ajustes_semielaborado` para esta tanda: cantidad, motivo, fecha. Sin este
+   bloque, un lote con ajuste manual muestra "Completo"/"Parcial" sin
+   explicar por qué — sería opaco justo en el caso que motivó la corrección.
 
 ---
 
@@ -91,8 +103,12 @@ en `Producciones.jsx`:
 > Nota: esto amplía ligeramente lo pedido originalmente ("que solo aparezca el
 > producto que estoy produciendo") añadiendo la posibilidad de cambiar de
 > producto sin salir de la pantalla, igual que ya existe en Semielaborados.
-> Confirmar que este comportamiento es el deseado antes de pedir la
-> implementación a Code.
+>
+> **Implementado como**: no se añadió un desplegable nuevo — se reutilizó el
+> selector ya existente de "Iniciar nueva producción" como filtro dual
+> (elegir qué producir / filtrar stock e historial), exactamente el mismo
+> patrón de un único selector con doble función que ya tiene `semielaboradoId`
+> en Semielaborados. Confirmado como el diseño correcto, no una desviación.
 
 ### 2.2 Stock actual de productos finales
 La tabla (`stock_productos_finales`, hoy sin filtro) pasa a filtrar por el

@@ -10,15 +10,20 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Fiel
 const PAGINA_TAMANO = 20
 
 // CONTRATO_MEJORAS_MES.md, punto 1.5: estado de consumo de una tanda de semielaborado -- no toca
-// stock_lotes_semielaborado, se calcula aparte a partir de consumo_produccion/consumo_produccion_pf
-// ya agregados por produccion_origen_id (ver cargarHistorial). Mismo criterio de tolerancia (EPS)
-// que el resto del proyecto (ej. `necesario > disponible + 0.0001` en validarStockReceta.js).
+// stock_lotes_semielaborado, se calcula aparte a partir de consumo_produccion/consumo_produccion_pf/
+// ajustes_semielaborado ya agregados por produccion_origen_id/produccion_id (ver cargarHistorial).
+// Mismo criterio de tolerancia (EPS) que el resto del proyecto (ej. `necesario > disponible + 0.0001`
+// en validarStockReceta.js). Corrección post-implementación (caso real WIP-MIXKZ-260060): `consumido`
+// ya llega con los ajustes restados (ver cargarHistorial) -- puede superar `cantidadProducida` (un
+// ajuste negativo grande) o quedar por debajo de 0 (uno positivo grande), por eso el % se acota
+// explícitamente entre 0 y 100 antes de decidir el badge.
 const EPS = 0.0005
 function estadoConsumo(cantidadProducida, consumido) {
   const cantidad = Number(cantidadProducida) || 0
   const cons = Number(consumido) || 0
   if (cons <= EPS) return { color: 'gray', texto: 'No consumido' }
-  const pct = cantidad > 0 ? (cons / cantidad) * 100 : 100
+  const pctBruto = cantidad > 0 ? (cons / cantidad) * 100 : 100
+  const pct = Math.max(0, Math.min(100, pctBruto))
   if (pct >= 100 - EPS) return { color: 'green', texto: 'Completo' }
   return { color: 'amber', texto: `Parcial — ${pct.toFixed(0)}%` }
 }
@@ -383,14 +388,16 @@ function Producciones() {
     setHistorial(dataHistorial || [])
     setTotalHistorial(count ?? 0)
 
-    // Punto 1.5: consumido aguas abajo de cada tanda VISIBLE en esta página -- dos consultas propias
-    // (no toca stock_lotes_semielaborado), agregadas en cliente por produccion_origen_id. Punto 1.6.2:
-    // se reutiliza el mismo resultado para el detalle "Consumido por" de la fila expandible, sin una
-    // segunda consulta.
+    // Punto 1.5: consumido aguas abajo de cada tanda VISIBLE en esta página -- tres consultas propias
+    // (no toca stock_lotes_semielaborado), agregadas en cliente por produccion_origen_id/produccion_id.
+    // Punto 1.6.2/1.6.3: se reutiliza el mismo resultado para los detalles "Consumido por" y "Ajustes
+    // de stock" de la fila expandible, sin una segunda consulta. Corrección post-implementación (caso
+    // real WIP-MIXKZ-260060): la primera versión no restaba ajustes_semielaborado, mostrando "Parcial"
+    // en lotes cuyo stock_disponible real ya era 0 por una corrección manual.
     const idsVisibles = (dataHistorial || []).map((p) => p.id)
     const mapaConsumido = new Map()
     if (idsVisibles.length > 0) {
-      const [resConsumo, resConsumoPF] = await Promise.all([
+      const [resConsumo, resConsumoPF, resAjustes] = await Promise.all([
         supabase
           .from('consumo_produccion')
           .select('produccion_origen_id, cantidad, producciones_semielaborado!consumo_produccion_produccion_id_fkey(fecha, semielaborados(nombre))')
@@ -399,19 +406,28 @@ function Producciones() {
           .from('consumo_produccion_pf')
           .select('produccion_origen_id, cantidad, producciones_producto_final!consumo_produccion_pf_produccion_pf_id_fkey(fecha, productos_finales(nombre))')
           .in('produccion_origen_id', idsVisibles),
+        supabase
+          .from('ajustes_semielaborado')
+          .select('produccion_id, cantidad, motivo, fecha')
+          .in('produccion_id', idsVisibles),
       ])
 
       if (resConsumo.error) console.error('Error cargando consumo aguas abajo (semielaborado):', resConsumo.error)
       if (resConsumoPF.error) console.error('Error cargando consumo aguas abajo (producto final):', resConsumoPF.error)
+      if (resAjustes.error) console.error('Error cargando ajustes de stock:', resAjustes.error)
 
-      const acumular = (id, cantidad, filaDetalle) => {
-        const entrada = mapaConsumido.get(id) ?? { consumido: 0, detalle: [] }
-        entrada.consumido += Number(cantidad)
-        entrada.detalle.push(filaDetalle)
-        mapaConsumido.set(id, entrada)
+      const obtener = (id) => {
+        let entrada = mapaConsumido.get(id)
+        if (!entrada) {
+          entrada = { consumido: 0, detalle: [], ajustesTotal: 0, ajustesDetalle: [] }
+          mapaConsumido.set(id, entrada)
+        }
+        return entrada
       }
       for (const c of resConsumo.data || []) {
-        acumular(c.produccion_origen_id, c.cantidad, {
+        const entrada = obtener(c.produccion_origen_id)
+        entrada.consumido += Number(c.cantidad)
+        entrada.detalle.push({
           tipo: 'semielaborado',
           nombre: c.producciones_semielaborado?.semielaborados?.nombre,
           fecha: c.producciones_semielaborado?.fecha,
@@ -419,12 +435,23 @@ function Producciones() {
         })
       }
       for (const c of resConsumoPF.data || []) {
-        acumular(c.produccion_origen_id, c.cantidad, {
+        const entrada = obtener(c.produccion_origen_id)
+        entrada.consumido += Number(c.cantidad)
+        entrada.detalle.push({
           tipo: 'producto_final',
           nombre: c.producciones_producto_final?.productos_finales?.nombre,
           fecha: c.producciones_producto_final?.fecha,
           cantidad: Number(c.cantidad),
         })
+      }
+      // Punto 1.5 (fórmula corregida): consumido neto = consumo registrado - ajustes -- mismo signo que
+      // la vista stock_lotes_semielaborado (`+ ajustes`), aquí en su complemento: un ajuste negativo
+      // (merma/corrección a la baja) SUMA a "consumido" (menos queda por consumir); uno positivo resta.
+      for (const a of resAjustes.data || []) {
+        const entrada = obtener(a.produccion_id)
+        entrada.consumido -= Number(a.cantidad)
+        entrada.ajustesTotal += Number(a.cantidad)
+        entrada.ajustesDetalle.push({ cantidad: Number(a.cantidad), motivo: a.motivo, fecha: a.fecha })
       }
     }
     setConsumidoPorTanda(mapaConsumido)
@@ -1219,6 +1246,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
   const consumido = consumidoInfo?.consumido || 0
   const { color, texto } = estadoConsumo(produccion.cantidad_producida, consumido)
   const detalleConsumidoPor = consumidoInfo?.detalle || []
+  const detalleAjustes = consumidoInfo?.ajustesDetalle || []
 
   function iniciarEdicion() {
     setEditando(true)
@@ -1289,9 +1317,9 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     {/* Punto 1.6.2: consumido por (aguas abajo) -- nuevo, a partir de consumidoInfo. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Consumido por</p>
                     {detalleConsumidoPor.length === 0 ? (
-                      <p className="text-sm text-gray-400">Sin consumo registrado todavía.</p>
+                      <p className="text-sm text-gray-400 mb-3">Sin consumo registrado todavía.</p>
                     ) : (
-                      <table className="w-full text-sm">
+                      <table className="w-full text-sm mb-3">
                         <tbody className="divide-y divide-gray-100">
                           {detalleConsumidoPor.map((d, i) => (
                             <tr key={i}>
@@ -1301,6 +1329,28 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                               </td>
                               <td className="py-1.5 text-gray-500">{d.fecha ? formatFecha(d.fecha) : '—'}</td>
                               <td className="py-1.5">{d.cantidad} {produccion.semielaborados?.unidad}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {/* Punto 1.6.3 (corrección post-implementación, caso real WIP-MIXKZ-260060): ajustes
+                        de stock -- sin este bloque, un lote corregido manualmente aparece "Completo" sin
+                        explicar por qué el consumo por producción no llega al 100%. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ajustes de stock</p>
+                    {detalleAjustes.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin ajustes registrados.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-100">
+                          {detalleAjustes.map((a, i) => (
+                            <tr key={i}>
+                              <td className="py-1.5 text-gray-500">{a.motivo || '(sin motivo)'}</td>
+                              <td className="py-1.5 text-gray-500">{a.fecha ? formatFecha(a.fecha) : '—'}</td>
+                              <td className={`py-1.5 ${Number(a.cantidad) < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                                {Number(a.cantidad) > 0 ? '+' : ''}{a.cantidad} {produccion.semielaborados?.unidad}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
