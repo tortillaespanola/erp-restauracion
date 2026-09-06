@@ -1,9 +1,29 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { IconTrash, IconWand, IconCircleCheck } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+
+// CONTRATO_MEJORAS_MES.md, punto 2: mismos criterios que Producciones.jsx (punto 1) -- 20 por
+// página, y el mismo umbral de tolerancia para el badge de estado.
+const PAGINA_TAMANO = 20
+const EPS = 0.0005
+
+// Punto 2.4: estado de despacho de una tanda de producto final -- basado en
+// previsiones_distribucion_pf (previsto/repartido a pedido), NO en lineas_albaran_venta (facturado
+// real), decisión ya cerrada en el contrato. Mismos 3 colores/umbrales que estadoConsumo en
+// Producciones.jsx, con etiquetas propias de despacho -- se mantiene como copia aparte (no una
+// función compartida) porque son dos conceptos de negocio distintos que hoy comparten forma por
+// coincidencia, no por relación.
+function estadoDespacho(cantidadProducida, previsto) {
+  const cantidad = Number(cantidadProducida) || 0
+  const prev = Number(previsto) || 0
+  if (prev <= EPS) return { color: 'gray', texto: 'No despachado' }
+  const pct = cantidad > 0 ? (prev / cantidad) * 100 : 100
+  if (pct >= 100 - EPS) return { color: 'green', texto: 'Despachado' }
+  return { color: 'amber', texto: `Parcial — ${pct.toFixed(0)}%` }
+}
 
 // Trae TODOS los lotes disponibles de cada tipo (artículo/semielaborado),
 // sin filtrar por receta — entrada #9: se permite elegir cualquiera,
@@ -182,18 +202,38 @@ function ProduccionProductosFinales() {
   const [searchParams] = useSearchParams()
   const [productos, setProductos] = useState([])
   const [abiertas, setAbiertas] = useState([])
-  const [cerradas, setCerradas] = useState([])
   const [stockTotal, setStockTotal] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const pedidoId = searchParams.get('pedido_id')
   const tandaId = searchParams.get('tanda_id')
+  // CONTRATO_MEJORAS_MES.md, punto 2.1: mismo desplegable de siempre ("Iniciar nueva producción"),
+  // reutilizado también como filtro de Stock actual (2.2) e Historial (2.3) -- mismo patrón de un
+  // único desplegable con doble propósito que semielaboradoId en Producciones.jsx, no uno nuevo.
   const [productoId, setProductoId] = useState(searchParams.get('producto_final_id') ?? '')
   const [fechaInicio, setFechaInicio] = useState(() => new Date().toISOString().slice(0, 10))
   // Addenda "traslado del patrón de estimación a Producto final": mismo campo `cantidadPlan` de
   // Producciones.jsx -- valor inicial opcional que se persiste como cantidad_objetivo al iniciar, sin
   // el cual la tarjeta de "Producción en curso" no tendría con qué calcular la estimación por línea.
   const [cantidadPlan, setCantidadPlan] = useState(searchParams.get('cantidad') || '')
+
+  // Punto 2.3: historial general de producciones cerradas, paginado server-side, filtrado por
+  // productoId solo si hay uno seleccionado -- mismo tratamiento que el punto 1 de Producciones.jsx.
+  const [historial, setHistorial] = useState([])
+  const [cargandoHistorial, setCargandoHistorial] = useState(true)
+  const [historialPagina, setHistorialPagina] = useState(1)
+  const [totalHistorial, setTotalHistorial] = useState(0)
+  const totalPaginasHistorial = Math.max(1, Math.ceil(totalHistorial / PAGINA_TAMANO))
+  // Punto 2.4/2.5: previsto (para el badge) + detalle de reparto a pedidos de cada tanda VISIBLE en
+  // la página actual -- Map id -> { previsto, detalle: [{linea_pedido_id, cantidad_prevista, cliente,
+  // codigoPedido, fechaEntrega}] }, recalculado en cada carga de página.
+  const [despachoPorTanda, setDespachoPorTanda] = useState(new Map())
+  // Punto 2.3 (mismo criterio que 1.3): un único id expandido a la vez.
+  const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  function toggleExpandido(id) {
+    setFilaExpandidaId((prev) => (prev === id ? null : id))
+  }
 
   // Si solo hace falta un producto final para esta tanda, se preselecciona — igual que en
   // Producciones.jsx con el semielaborado.
@@ -219,10 +259,9 @@ function ProduccionProductosFinales() {
       )
     `
 
-    const [resProd, resAbiertas, resCerradas, resStock] = await Promise.all([
+    const [resProd, resAbiertas, resStock] = await Promise.all([
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
       supabase.from('producciones_producto_final').select(selectCompleto).eq('estado', 'abierta').order('fecha', { ascending: false }),
-      supabase.from('producciones_producto_final').select(selectCompleto).eq('estado', 'cerrada').order('fecha', { ascending: false }),
       supabase.from('stock_productos_finales').select('*'),
     ])
 
@@ -231,9 +270,6 @@ function ProduccionProductosFinales() {
 
     if (resAbiertas.error) console.error(resAbiertas.error)
     else setAbiertas(resAbiertas.data)
-
-    if (resCerradas.error) console.error(resCerradas.error)
-    else setCerradas(resCerradas.data)
 
     if (resStock.error) console.error(resStock.error)
     else setStockTotal(resStock.data)
@@ -244,6 +280,98 @@ function ProduccionProductosFinales() {
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  // Punto 2.2: stock actual filtrado por productoId -- "Todos" (vacío) se comporta como hoy, sin
+  // filtro. Cálculo en cliente sobre stockTotal ya cargado (tabla pequeña), sin una consulta aparte.
+  const stockFiltrado = useMemo(() => {
+    if (!productoId) return stockTotal
+    return stockTotal.filter((s) => s.producto_final_id === parseInt(productoId))
+  }, [stockTotal, productoId])
+
+  // Punto 2.3: historial paginado server-side (mismo patrón .range() + { count: 'exact' } que
+  // Producciones.jsx/FacturasVenta.jsx), filtrado por productoId solo si hay uno seleccionado. El
+  // select de cada fila reutiliza el mismo embed de consumo_produccion_pf que antes traía
+  // cargarDatos() para `cerradas` -- el bloque de ingredientes consumidos no cambia de fondo, solo de
+  // sitio (detalle expandible).
+  async function cargarHistorial() {
+    setCargandoHistorial(true)
+
+    let historialQuery = supabase
+      .from('producciones_producto_final')
+      .select(
+        `
+        *,
+        productos_finales(nombre),
+        pedidos_venta(codigo_pedido),
+        consumo_produccion_pf!consumo_produccion_pf_produccion_pf_id_fkey(
+          id, cantidad,
+          entrada_material_id, produccion_origen_id,
+          entrada_material(articulo_id, articulos_compra(nombre, unidad)),
+          producciones_semielaborado!consumo_produccion_pf_produccion_origen_id_fkey(semielaborado_id, semielaborados(nombre, unidad))
+        )
+      `,
+        { count: 'exact' }
+      )
+      .eq('estado', 'cerrada')
+
+    if (productoId) historialQuery = historialQuery.eq('producto_final_id', parseInt(productoId))
+
+    historialQuery = historialQuery.order('fecha', { ascending: false }).order('id', { ascending: true })
+    const desde = (historialPagina - 1) * PAGINA_TAMANO
+    historialQuery = historialQuery.range(desde, desde + PAGINA_TAMANO - 1)
+
+    const { data: dataHistorial, error: errorHistorial, count } = await historialQuery
+    if (errorHistorial) {
+      console.error('Error cargando el historial de producciones:', errorHistorial)
+      setHistorial([])
+      setTotalHistorial(0)
+      setDespachoPorTanda(new Map())
+      setCargandoHistorial(false)
+      return
+    }
+
+    setHistorial(dataHistorial || [])
+    setTotalHistorial(count ?? 0)
+
+    // Punto 2.4/2.5: previsto + detalle de reparto de cada tanda VISIBLE en esta página, a partir de
+    // previsiones_distribucion_pf -- mismo patrón que sumaPrevistoPorTanda en PedidosDelDia.jsx, pero
+    // indexado por tanda cerrada en vez de por producto agregado. linea_pedido_id tiene una única FK
+    // (sin ambigüedad, no hace falta hint `!fkey`), se embebe cliente/código/fecha de entrega para que
+    // el detalle sea legible (no una lista de ids sueltos) -- mismo criterio que "Consumido por" en
+    // Producciones.jsx.
+    const idsVisibles = (dataHistorial || []).map((p) => p.id)
+    const mapaDespacho = new Map()
+    if (idsVisibles.length > 0) {
+      const { data: previsiones, error: errorPrevisiones } = await supabase
+        .from('previsiones_distribucion_pf')
+        .select(
+          'produccion_pf_id, linea_pedido_id, cantidad_prevista, lineas_pedido_venta(pedidos_venta(codigo_pedido, fecha_entrega_prevista, clientes(nombre)))'
+        )
+        .in('produccion_pf_id', idsVisibles)
+
+      if (errorPrevisiones) console.error('Error cargando previsiones de distribución:', errorPrevisiones)
+
+      for (const p of previsiones || []) {
+        const entrada = mapaDespacho.get(p.produccion_pf_id) ?? { previsto: 0, detalle: [] }
+        entrada.previsto += Number(p.cantidad_prevista)
+        entrada.detalle.push({
+          linea_pedido_id: p.linea_pedido_id,
+          cantidad_prevista: Number(p.cantidad_prevista),
+          cliente: p.lineas_pedido_venta?.pedidos_venta?.clientes?.nombre,
+          codigoPedido: p.lineas_pedido_venta?.pedidos_venta?.codigo_pedido,
+          fechaEntrega: p.lineas_pedido_venta?.pedidos_venta?.fecha_entrega_prevista,
+        })
+        mapaDespacho.set(p.produccion_pf_id, entrada)
+      }
+    }
+    setDespachoPorTanda(mapaDespacho)
+
+    setCargandoHistorial(false)
+  }
+
+  useEffect(() => {
+    cargarHistorial()
+  }, [productoId, historialPagina])
 
   async function iniciarProduccion(e) {
     e.preventDefault()
@@ -289,8 +417,10 @@ function ProduccionProductosFinales() {
       alert('Error al borrar: ' + error.message)
       return
     }
-    cargarDatos()
+    cargarHistorial()
   }
+
+  const productoSeleccionado = productos.find((p) => String(p.id) === productoId)
 
   return (
     <div>
@@ -310,7 +440,11 @@ function ProduccionProductosFinales() {
           )}
           <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
             <Field label="Iniciar nueva producción">
-              <Select value={productoId} onChange={(e) => setProductoId(e.target.value)} required>
+              <Select
+                value={productoId}
+                onChange={(e) => { setProductoId(e.target.value); setHistorialPagina(1) }}
+                required
+              >
                 <option value="">Selecciona qué vas a producir</option>
                 {productos.map((p) => (
                   <option key={p.id} value={p.id}>{p.nombre}</option>
@@ -345,7 +479,12 @@ function ProduccionProductosFinales() {
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Stock actual de productos finales</h2>
+      {/* CONTRATO_MEJORAS_MES.md, punto 2.2: la tabla se mantiene SIEMPRE visible (a diferencia del
+          "Stock disponible" de Producciones.jsx) -- con "Todos" se comporta como hoy, mostrando todos
+          los productos; con un producto seleccionado, filtra a ese único producto. */}
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+        {productoSeleccionado ? `Stock actual de ${productoSeleccionado.nombre}` : 'Stock actual de productos finales'}
+      </h2>
       {cargando ? (
         <LoadingState />
       ) : (
@@ -356,7 +495,7 @@ function ProduccionProductosFinales() {
               <Th>Stock</Th>
             </Thead>
             <tbody className="divide-y divide-gray-100">
-              {stockTotal.map((s) => (
+              {stockFiltrado.map((s) => (
                 <tr key={s.producto_final_id} className="hover:bg-blue-50/40">
                   <Td className="font-medium">{s.nombre}</Td>
                   <Td>{Number(s.stock).toFixed(3)}</Td>
@@ -367,19 +506,83 @@ function ProduccionProductosFinales() {
         </Card>
       )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Historial de producciones cerradas</h2>
-      {cerradas.length === 0 ? (
-        <Card><EmptyState>Todavía no hay producciones cerradas.</EmptyState></Card>
+      {/* Punto 2.3: historial siempre visible, paginado y con acordeón -- mismo tratamiento que el
+          punto 1 de Producciones.jsx. */}
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+        {productoSeleccionado ? `Historial de producciones cerradas de ${productoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
+      </h2>
+      {cargandoHistorial ? (
+        <LoadingState />
+      ) : historial.length === 0 ? (
+        <Card className="mb-8">
+          <EmptyState>
+            {productoId ? 'Todavía no hay producciones cerradas de este producto.' : 'Todavía no hay producciones cerradas.'}
+          </EmptyState>
+        </Card>
       ) : (
-        <div className="flex flex-col gap-4">
-          {cerradas.map((p) => (
-            <ProduccionCerrada
-              key={p.id}
-              produccion={p}
-              onCambio={cargarDatos}
-              onBorrar={() => handleBorrarCerrada(p.id)}
-            />
-          ))}
+        <Card className="overflow-hidden mb-3">
+          <div className="overflow-y-auto max-h-[70vh]">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-gray-50">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                  <th className="w-8 px-3 py-2.5"></th>
+                  <th className="px-3 py-2.5 font-medium">Fecha</th>
+                  <th className="px-3 py-2.5 font-medium">Producto</th>
+                  <th className="px-3 py-2.5 font-medium">Cantidad producida</th>
+                  <th className="px-3 py-2.5 font-medium">Notas</th>
+                  <th className="px-3 py-2.5 font-medium">Estado de despacho</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historial.map((p) => (
+                  <ProduccionCerrada
+                    key={p.id}
+                    produccion={p}
+                    expandido={filaExpandidaId === p.id}
+                    onToggleExpandir={() => toggleExpandido(p.id)}
+                    despachoInfo={despachoPorTanda.get(p.id)}
+                    onCambio={cargarHistorial}
+                    onBorrar={() => handleBorrarCerrada(p.id)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {!cargandoHistorial && totalHistorial > 0 && (
+        <div className="flex items-center justify-between mb-8">
+          <p className="text-xs text-gray-400">
+            {totalHistorial} producci{totalHistorial === 1 ? 'ón' : 'ones'} · página {historialPagina} de {totalPaginasHistorial}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={historialPagina === 1}
+              onClick={() => setHistorialPagina((p) => p - 1)}
+            >
+              Anterior
+            </Button>
+            {Array.from({ length: totalPaginasHistorial }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setHistorialPagina(n)}
+                className={`w-7 h-7 text-xs rounded-md ${n === historialPagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+              >
+                {n}
+              </button>
+            ))}
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={historialPagina === totalPaginasHistorial}
+              onClick={() => setHistorialPagina((p) => p + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -847,52 +1050,119 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
   )
 }
 
-function ProduccionCerrada({ produccion, onCambio, onBorrar }) {
+// CONTRATO_MEJORAS_MES.md, punto 2.3/2.5: fila de tabla con acordeón (mismo patrón que
+// ProduccionCerrada en Producciones.jsx / AlbaranesVenta.jsx BLOQUE 4) en vez de la <Card> apilada
+// anterior. `expandido`/`onToggleExpandir` vienen del padre; `editando` sigue siendo estado LOCAL de
+// esta fila, igual que en Producciones.jsx.
+function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoInfo, onCambio, onBorrar }) {
   const [editando, setEditando] = useState(false)
+  const abierto = expandido || editando
 
-  if (!editando) {
-    return (
-      <Card className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-semibold text-[#1C2938]">
-              {produccion.cantidad_producida} uds. de {produccion.productos_finales?.nombre}
-              {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
-            </p>
-            <p className="text-sm text-gray-500">
-              {formatFecha(produccion.fecha)}
-              {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
-            </p>
-            {produccion.notas && <p className="text-sm text-gray-400 italic">{produccion.notas}</p>}
-          </div>
-          <div className="flex gap-3 shrink-0">
-            <LinkAction tone="blue" onClick={() => setEditando(true)}>Editar</LinkAction>
-            <LinkAction tone="red" onClick={onBorrar}>Borrar</LinkAction>
-          </div>
-        </div>
-        <table className="w-full mt-3 text-sm">
-          <tbody className="divide-y divide-gray-100">
-            {produccion.consumo_produccion_pf.map((c) => {
-              const { nombre, unidad } = nombreIngredienteDeLinea(c)
-              return (
-                <tr key={c.id}>
-                  <td className="py-1.5 text-gray-500">Consumido: {nombre}</td>
-                  <td className="py-1.5">{c.cantidad} {unidad}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </Card>
-    )
+  // Punto 2.4: badge de estado de despacho -- despachoInfo llega del padre (cargarHistorial), ya
+  // agregado por produccion_pf_id a partir de previsiones_distribucion_pf.
+  const previsto = despachoInfo?.previsto || 0
+  const { color, texto } = estadoDespacho(produccion.cantidad_producida, previsto)
+  const detalleReparto = despachoInfo?.detalle || []
+
+  function iniciarEdicion() {
+    setEditando(true)
+    if (!expandido) onToggleExpandir()
   }
 
   return (
-    <ProduccionCerradaEdicion
-      produccion={produccion}
-      onCancelar={() => setEditando(false)}
-      onGuardado={() => { setEditando(false); onCambio() }}
-    />
+    <Fragment>
+      <tr className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer" onClick={onToggleExpandir}>
+        <td className="px-3 py-3">
+          <button type="button" className="text-gray-400 hover:text-gray-600">
+            {abierto ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+          </button>
+        </td>
+        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(produccion.fecha)}</td>
+        <td className="px-3 py-3 font-medium text-[#1C2938]">
+          {produccion.productos_finales?.nombre}
+          {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+          {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">Pedido {produccion.pedidos_venta.codigo_pedido}</span>}
+        </td>
+        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} uds.</td>
+        <td className="px-3 py-3 text-gray-500 italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
+        <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
+        <td className="px-3 py-3">
+          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+            <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">Editar</LinkAction>
+            <LinkAction tone="red" onClick={onBorrar} className="text-xs">Borrar</LinkAction>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colSpan={7} className="p-0">
+          <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              <div className="bg-gray-50/60 px-3 py-3">
+                {editando ? (
+                  <ProduccionCerradaEdicion
+                    produccion={produccion}
+                    onCancelar={() => setEditando(false)}
+                    onGuardado={() => { setEditando(false); onCambio() }}
+                  />
+                ) : (
+                  <>
+                    {/* Ingredientes consumidos por esta producción -- misma tabla que ya existía, sin
+                        cambios de fondo, solo movida aquí dentro. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Ingredientes consumidos por esta producción
+                    </p>
+                    {produccion.consumo_produccion_pf.length === 0 ? (
+                      <p className="text-sm text-gray-400 mb-3">Sin consumo registrado.</p>
+                    ) : (
+                      <table className="w-full text-sm mb-3">
+                        <tbody className="divide-y divide-gray-100">
+                          {produccion.consumo_produccion_pf.map((c) => {
+                            const { nombre, unidad } = nombreIngredienteDeLinea(c)
+                            return (
+                              <tr key={c.id}>
+                                <td className="py-1.5 text-gray-500">{nombre}</td>
+                                <td className="py-1.5">{c.cantidad} {unidad}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {/* Punto 2.5: repartido a pedidos -- nuevo, a partir de despachoInfo. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Repartido a pedidos</p>
+                    {detalleReparto.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin reparto previsto todavía.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                            <th className="py-1.5 font-medium">Cliente</th>
+                            <th className="py-1.5 font-medium">Pedido</th>
+                            <th className="py-1.5 font-medium">Entrega prevista</th>
+                            <th className="py-1.5 font-medium">Previsto</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {detalleReparto.map((d, i) => (
+                            <tr key={i}>
+                              <td className="py-1.5 text-gray-500">{d.cliente ?? 'Sin cliente'}</td>
+                              <td className="py-1.5 text-gray-500 font-mono text-xs">{d.codigoPedido ?? `#${d.linea_pedido_id}`}</td>
+                              <td className="py-1.5 text-gray-500">{d.fechaEntrega ? formatFecha(d.fechaEntrega) : 'sin fecha'}</td>
+                              <td className="py-1.5">{d.cantidad_prevista.toFixed(3)} uds.</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </Fragment>
   )
 }
 
