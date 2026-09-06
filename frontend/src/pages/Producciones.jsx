@@ -1,10 +1,27 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
-import { IconTrash, IconWand, IconCircleCheck } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+
+// CONTRATO_MEJORAS_MES.md, punto 1.4: 20 por página, mismo tamaño que Pedidos/Albaranes/Facturas.
+const PAGINA_TAMANO = 20
+
+// CONTRATO_MEJORAS_MES.md, punto 1.5: estado de consumo de una tanda de semielaborado -- no toca
+// stock_lotes_semielaborado, se calcula aparte a partir de consumo_produccion/consumo_produccion_pf
+// ya agregados por produccion_origen_id (ver cargarHistorial). Mismo criterio de tolerancia (EPS)
+// que el resto del proyecto (ej. `necesario > disponible + 0.0001` en validarStockReceta.js).
+const EPS = 0.0005
+function estadoConsumo(cantidadProducida, consumido) {
+  const cantidad = Number(cantidadProducida) || 0
+  const cons = Number(consumido) || 0
+  if (cons <= EPS) return { color: 'gray', texto: 'No consumido' }
+  const pct = cantidad > 0 ? (cons / cantidad) * 100 : 100
+  if (pct >= 100 - EPS) return { color: 'green', texto: 'Completo' }
+  return { color: 'amber', texto: `Parcial — ${pct.toFixed(0)}%` }
+}
 
 // Nivel 'semielaborado' de necesidades_pedidos() sobre los pedidos de una tanda — usado tanto para
 // preseleccionar qué semielaborado producir (si solo hace falta uno) como para sugerir cuánto, en
@@ -202,8 +219,24 @@ function Producciones() {
 
   const [semielaborados, setSemielaborados] = useState([])
   const [abiertas, setAbiertas] = useState([])
-  const [cerradas, setCerradas] = useState([])
   const [cargando, setCargando] = useState(true)
+
+  // CONTRATO_MEJORAS_MES.md, punto 1: historial general de producciones cerradas, paginado
+  // server-side -- ya no depende de haber seleccionado un semielaborado (punto 1.1/1.2).
+  const [historial, setHistorial] = useState([])
+  const [cargandoHistorial, setCargandoHistorial] = useState(true)
+  const [historialPagina, setHistorialPagina] = useState(1)
+  const [totalHistorial, setTotalHistorial] = useState(0)
+  const totalPaginasHistorial = Math.max(1, Math.ceil(totalHistorial / PAGINA_TAMANO))
+  // Punto 1.5: consumido "aguas abajo" de cada tanda visible en la página actual -- Map id ->
+  // { consumido, detalle: [{tipo, nombre, fecha, cantidad}] }, recalculado en cada carga de página.
+  const [consumidoPorTanda, setConsumidoPorTanda] = useState(new Map())
+  // Punto 1.3: un único id expandido a la vez (acordeón), mismo patrón que AlbaranesVenta.jsx BLOQUE 4.
+  const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  function toggleExpandido(id) {
+    setFilaExpandidaId((prev) => (prev === id ? null : id))
+  }
 
   // Vista 2 (addenda "Rediseño de tablas informativas"): stock de la cadena transitiva completa del
   // semielaborado seleccionado en "Iniciar nueva producción" -- reactivo al cambio de selección, sin
@@ -287,10 +320,9 @@ function Producciones() {
       )
     `
 
-    const [resSemi, resAbiertas, resCerradas] = await Promise.all([
+    const [resSemi, resAbiertas] = await Promise.all([
       supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
       supabase.from('producciones_semielaborado').select(selectCompleto).eq('estado', 'abierta').order('fecha', { ascending: false }),
-      supabase.from('producciones_semielaborado').select(selectCompleto).eq('estado', 'cerrada').order('fecha', { ascending: false }),
     ])
 
     if (resSemi.error) console.error(resSemi.error)
@@ -299,15 +331,110 @@ function Producciones() {
     if (resAbiertas.error) console.error(resAbiertas.error)
     else setAbiertas(resAbiertas.data)
 
-    if (resCerradas.error) console.error(resCerradas.error)
-    else setCerradas(resCerradas.data)
-
     setCargando(false)
   }
 
   useEffect(() => {
     cargarDatos()
   }, [])
+
+  // CONTRATO_MEJORAS_MES.md, punto 1: historial paginado server-side (mismo patrón .range() +
+  // { count: 'exact' } que FacturasVenta.jsx/AlbaranesVenta.jsx), filtrado por semielaboradoId solo
+  // si hay uno seleccionado ("Todos" = sin filtro, punto 1.2). El select de cada fila reutiliza
+  // EXACTAMENTE el mismo embed de consumo_produccion que antes traía cargarDatos() para `cerradas`
+  // -- el bloque 1 del detalle expandible (ingredientes consumidos por esta producción) no cambia de
+  // fondo, solo de sitio (punto 1.6.1).
+  async function cargarHistorial() {
+    setCargandoHistorial(true)
+
+    let historialQuery = supabase
+      .from('producciones_semielaborado')
+      .select(
+        `
+        *,
+        semielaborados(nombre, unidad),
+        consumo_produccion!consumo_produccion_produccion_id_fkey(
+          id, cantidad,
+          entrada_material_id, produccion_origen_id,
+          entrada_material(articulo_id, articulos_compra(nombre, unidad)),
+          producciones_semielaborado!consumo_produccion_produccion_origen_id_fkey(semielaborado_id, semielaborados(nombre, unidad))
+        )
+      `,
+        { count: 'exact' }
+      )
+      .eq('estado', 'cerrada')
+
+    if (semielaboradoId) historialQuery = historialQuery.eq('semielaborado_id', parseInt(semielaboradoId))
+
+    historialQuery = historialQuery.order('fecha', { ascending: false }).order('id', { ascending: true })
+    const desde = (historialPagina - 1) * PAGINA_TAMANO
+    historialQuery = historialQuery.range(desde, desde + PAGINA_TAMANO - 1)
+
+    const { data: dataHistorial, error: errorHistorial, count } = await historialQuery
+    if (errorHistorial) {
+      console.error('Error cargando el historial de producciones:', errorHistorial)
+      setHistorial([])
+      setTotalHistorial(0)
+      setConsumidoPorTanda(new Map())
+      setCargandoHistorial(false)
+      return
+    }
+
+    setHistorial(dataHistorial || [])
+    setTotalHistorial(count ?? 0)
+
+    // Punto 1.5: consumido aguas abajo de cada tanda VISIBLE en esta página -- dos consultas propias
+    // (no toca stock_lotes_semielaborado), agregadas en cliente por produccion_origen_id. Punto 1.6.2:
+    // se reutiliza el mismo resultado para el detalle "Consumido por" de la fila expandible, sin una
+    // segunda consulta.
+    const idsVisibles = (dataHistorial || []).map((p) => p.id)
+    const mapaConsumido = new Map()
+    if (idsVisibles.length > 0) {
+      const [resConsumo, resConsumoPF] = await Promise.all([
+        supabase
+          .from('consumo_produccion')
+          .select('produccion_origen_id, cantidad, producciones_semielaborado!consumo_produccion_produccion_id_fkey(fecha, semielaborados(nombre))')
+          .in('produccion_origen_id', idsVisibles),
+        supabase
+          .from('consumo_produccion_pf')
+          .select('produccion_origen_id, cantidad, producciones_producto_final!consumo_produccion_pf_produccion_pf_id_fkey(fecha, productos_finales(nombre))')
+          .in('produccion_origen_id', idsVisibles),
+      ])
+
+      if (resConsumo.error) console.error('Error cargando consumo aguas abajo (semielaborado):', resConsumo.error)
+      if (resConsumoPF.error) console.error('Error cargando consumo aguas abajo (producto final):', resConsumoPF.error)
+
+      const acumular = (id, cantidad, filaDetalle) => {
+        const entrada = mapaConsumido.get(id) ?? { consumido: 0, detalle: [] }
+        entrada.consumido += Number(cantidad)
+        entrada.detalle.push(filaDetalle)
+        mapaConsumido.set(id, entrada)
+      }
+      for (const c of resConsumo.data || []) {
+        acumular(c.produccion_origen_id, c.cantidad, {
+          tipo: 'semielaborado',
+          nombre: c.producciones_semielaborado?.semielaborados?.nombre,
+          fecha: c.producciones_semielaborado?.fecha,
+          cantidad: Number(c.cantidad),
+        })
+      }
+      for (const c of resConsumoPF.data || []) {
+        acumular(c.produccion_origen_id, c.cantidad, {
+          tipo: 'producto_final',
+          nombre: c.producciones_producto_final?.productos_finales?.nombre,
+          fecha: c.producciones_producto_final?.fecha,
+          cantidad: Number(c.cantidad),
+        })
+      }
+    }
+    setConsumidoPorTanda(mapaConsumido)
+
+    setCargandoHistorial(false)
+  }
+
+  useEffect(() => {
+    cargarHistorial()
+  }, [semielaboradoId, historialPagina])
 
   async function iniciarProduccion(e) {
     e.preventDefault()
@@ -371,17 +498,10 @@ function Producciones() {
       alert('Error al borrar: ' + error.message)
       return
     }
-    cargarDatos()
+    cargarHistorial()
   }
 
   const semielaboradoSeleccionado = semielaborados.find((s) => String(s.id) === semielaboradoId)
-
-  // Historial acotado al semielaborado seleccionado (punto 2 del contrato) -- derivado sin consulta
-  // adicional, `cerradas` ya trae `semielaborado_id` de la carga inicial.
-  const cerradasDelSeleccionado = useMemo(() => {
-    if (!semielaboradoId) return []
-    return cerradas.filter((p) => p.semielaborado_id === parseInt(semielaboradoId))
-  }, [cerradas, semielaboradoId])
 
   // Fix "filtrado de Producciones en curso": mismo criterio, sin selección se ven todas (sin cambios).
   const abiertasFiltradas = useMemo(() => {
@@ -434,7 +554,7 @@ function Producciones() {
             <Field label="Iniciar nueva producción">
               <Select
                 value={semielaboradoId}
-                onChange={(e) => { setSemielaboradoId(e.target.value); setCantidadPlan('') }}
+                onChange={(e) => { setSemielaboradoId(e.target.value); setCantidadPlan(''); setHistorialPagina(1) }}
                 required
               >
                 <option value="">Selecciona qué vas a producir</option>
@@ -473,12 +593,14 @@ function Producciones() {
         </CardBody>
       </Card>
 
-      {/* Fix de corrección + fix de filtrado (addenda "Cantidad objetivo y estimación"): Stock
-          disponible / Historial solo tienen sentido con un semielaborado seleccionado arriba -- se
-          ocultan por completo (ni título ni mensaje de "sin selección") si no lo hay. Con selección,
-          el orden es Stock disponible -> Producciones en curso (ya filtradas a ese semielaborado) ->
-          Historial. Sin selección, solo se ve Producciones en curso, sin filtrar. */}
-      {semielaboradoId ? (
+      {/* CONTRATO_MEJORAS_MES.md, punto 1.1/1.2: Stock disponible solo tiene sentido con un
+          semielaborado seleccionado (es la cadena de receta de ESE semielaborado) -- se sigue
+          ocultando sin selección, sin cambios respecto al comportamiento anterior. Producciones en
+          curso también sigue el mismo criterio de siempre (filtradas si hay selección, todas si no).
+          El Historial, en cambio, ya NO depende de la selección -- se ve siempre, paginado, filtrado
+          solo si se ha elegido un semielaborado concreto (punto 1.1: "aplica al historial general
+          completo, no solo a una vista filtrada"). */}
+      {semielaboradoId && (
         <>
           <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
             {semielaboradoSeleccionado ? `Stock disponible para ${semielaboradoSeleccionado.nombre}` : 'Stock disponible'}
@@ -507,31 +629,86 @@ function Producciones() {
               </Table>
             </Card>
           )}
-
-          {bloqueProduccionesEnCurso(abiertasFiltradas, 'No hay ninguna producción en curso de este semielaborado.')}
-
-          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
-            {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
-          </h2>
-          {cargando ? (
-            <LoadingState />
-          ) : cerradasDelSeleccionado.length === 0 ? (
-            <Card className="mb-8"><EmptyState>Todavía no hay producciones cerradas de este semielaborado.</EmptyState></Card>
-          ) : (
-            <div className="flex flex-col gap-4 mb-8">
-              {cerradasDelSeleccionado.map((p) => (
-                <ProduccionCerrada
-                  key={p.id}
-                  produccion={p}
-                  onCambio={cargarDatos}
-                  onBorrar={() => handleBorrarCerrada(p.id)}
-                />
-              ))}
-            </div>
-          )}
         </>
+      )}
+
+      {bloqueProduccionesEnCurso(abiertasFiltradas, semielaboradoId ? 'No hay ninguna producción en curso de este semielaborado.' : null)}
+
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+        {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
+      </h2>
+      {cargandoHistorial ? (
+        <LoadingState />
+      ) : historial.length === 0 ? (
+        <Card className="mb-8">
+          <EmptyState>
+            {semielaboradoId ? 'Todavía no hay producciones cerradas de este semielaborado.' : 'Todavía no hay producciones cerradas.'}
+          </EmptyState>
+        </Card>
       ) : (
-        bloqueProduccionesEnCurso(abiertas, null)
+        <Card className="overflow-hidden mb-3">
+          <div className="overflow-y-auto max-h-[70vh]">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-gray-50">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                  <th className="w-8 px-3 py-2.5"></th>
+                  <th className="px-3 py-2.5 font-medium">Fecha</th>
+                  <th className="px-3 py-2.5 font-medium">Semielaborado</th>
+                  <th className="px-3 py-2.5 font-medium">Cantidad producida</th>
+                  <th className="px-3 py-2.5 font-medium">Estado de consumo</th>
+                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historial.map((p) => (
+                  <ProduccionCerrada
+                    key={p.id}
+                    produccion={p}
+                    expandido={filaExpandidaId === p.id}
+                    onToggleExpandir={() => toggleExpandido(p.id)}
+                    consumidoInfo={consumidoPorTanda.get(p.id)}
+                    onCambio={cargarHistorial}
+                    onBorrar={() => handleBorrarCerrada(p.id)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {!cargandoHistorial && totalHistorial > 0 && (
+        <div className="flex items-center justify-between mb-8">
+          <p className="text-xs text-gray-400">
+            {totalHistorial} producci{totalHistorial === 1 ? 'ón' : 'ones'} · página {historialPagina} de {totalPaginasHistorial}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={historialPagina === 1}
+              onClick={() => setHistorialPagina((p) => p - 1)}
+            >
+              Anterior
+            </Button>
+            {Array.from({ length: totalPaginasHistorial }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setHistorialPagina(n)}
+                className={`w-7 h-7 text-xs rounded-md ${n === historialPagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+              >
+                {n}
+              </button>
+            ))}
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={historialPagina === totalPaginasHistorial}
+              onClick={() => setHistorialPagina((p) => p + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -1027,49 +1204,116 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
   )
 }
 
-function ProduccionCerrada({ produccion, onCambio, onBorrar }) {
+// CONTRATO_MEJORAS_MES.md, punto 1.3/1.6: fila de tabla con acordeón (mismo patrón que
+// AlbaranesVenta.jsx BLOQUE 4) en vez de la <Card> apilada anterior. `expandido`/`onToggleExpandir`
+// vienen del padre (acordeón de una sola fila a la vez); `editando` sigue siendo estado LOCAL de
+// esta fila, exactamente igual que antes -- entrar en edición fuerza la fila abierta (`abierto =
+// expandido || editando`) sin depender de si el padre ya la había expandido primero.
+function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoInfo, onCambio, onBorrar }) {
   const [editando, setEditando] = useState(false)
+  const abierto = expandido || editando
 
-  if (!editando) {
-    return (
-      <Card className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-semibold text-[#1C2938]">
-              {produccion.cantidad_producida} {produccion.semielaborados?.unidad} de {produccion.semielaborados?.nombre}
-              {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
-            </p>
-            <p className="text-sm text-gray-500">{formatFecha(produccion.fecha)}</p>
-            {produccion.notas && <p className="text-sm text-gray-400 italic">{produccion.notas}</p>}
-          </div>
-          <div className="flex gap-3 shrink-0">
-            <LinkAction tone="blue" onClick={() => setEditando(true)}>Editar</LinkAction>
-            <LinkAction tone="red" onClick={onBorrar}>Borrar</LinkAction>
-          </div>
-        </div>
-        <table className="w-full mt-3 text-sm">
-          <tbody className="divide-y divide-gray-100">
-            {produccion.consumo_produccion.map((c) => {
-              const { nombre, unidad } = nombreIngredienteDeLinea(c)
-              return (
-                <tr key={c.id}>
-                  <td className="py-1.5 text-gray-500">Consumido: {nombre}</td>
-                  <td className="py-1.5">{c.cantidad} {unidad}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </Card>
-    )
+  // Punto 1.5: badge de estado de consumo -- consumidoInfo llega del padre (cargarHistorial), ya
+  // agregado por produccion_origen_id a partir de consumo_produccion + consumo_produccion_pf.
+  const consumido = consumidoInfo?.consumido || 0
+  const { color, texto } = estadoConsumo(produccion.cantidad_producida, consumido)
+  const detalleConsumidoPor = consumidoInfo?.detalle || []
+
+  function iniciarEdicion() {
+    setEditando(true)
+    if (!expandido) onToggleExpandir()
   }
 
   return (
-    <ProduccionCerradaEdicion
-      produccion={produccion}
-      onCancelar={() => setEditando(false)}
-      onGuardado={() => { setEditando(false); onCambio() }}
-    />
+    <Fragment>
+      <tr className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer" onClick={onToggleExpandir}>
+        <td className="px-3 py-3">
+          <button type="button" className="text-gray-400 hover:text-gray-600">
+            {abierto ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+          </button>
+        </td>
+        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(produccion.fecha)}</td>
+        <td className="px-3 py-3 font-medium text-[#1C2938]">
+          {produccion.semielaborados?.nombre}
+          {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+        </td>
+        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} {produccion.semielaborados?.unidad}</td>
+        <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
+        <td className="px-3 py-3">
+          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+            <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">Editar</LinkAction>
+            <LinkAction tone="red" onClick={onBorrar} className="text-xs">Borrar</LinkAction>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colSpan={6} className="p-0">
+          {/* Mismo truco de altura animable (grid-template-rows 0fr<->1fr) que AlbaranesVenta.jsx
+              BLOQUE 4 -- la fila de detalle queda siempre montada, solo colapsada. */}
+          <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              <div className="bg-gray-50/60 px-3 py-3">
+                {editando ? (
+                  <ProduccionCerradaEdicion
+                    produccion={produccion}
+                    onCancelar={() => setEditando(false)}
+                    onGuardado={() => { setEditando(false); onCambio() }}
+                  />
+                ) : (
+                  <>
+                    {produccion.notas && <p className="text-sm text-gray-500 italic mb-2">{produccion.notas}</p>}
+
+                    {/* Punto 1.6.1: ingredientes consumidos por esta producción (aguas arriba) -- la
+                        misma tabla que ya existía, sin cambios de fondo, solo movida aquí dentro. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Ingredientes consumidos por esta producción
+                    </p>
+                    {produccion.consumo_produccion.length === 0 ? (
+                      <p className="text-sm text-gray-400 mb-3">Sin consumo registrado.</p>
+                    ) : (
+                      <table className="w-full text-sm mb-3">
+                        <tbody className="divide-y divide-gray-100">
+                          {produccion.consumo_produccion.map((c) => {
+                            const { nombre, unidad } = nombreIngredienteDeLinea(c)
+                            return (
+                              <tr key={c.id}>
+                                <td className="py-1.5 text-gray-500">{nombre}</td>
+                                <td className="py-1.5">{c.cantidad} {unidad}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {/* Punto 1.6.2: consumido por (aguas abajo) -- nuevo, a partir de consumidoInfo. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Consumido por</p>
+                    {detalleConsumidoPor.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin consumo registrado todavía.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-100">
+                          {detalleConsumidoPor.map((d, i) => (
+                            <tr key={i}>
+                              <td className="py-1.5 text-gray-500">
+                                {d.nombre ?? '(sin nombre)'}{' '}
+                                <span className="text-gray-400">({d.tipo === 'semielaborado' ? 'semielaborado' : 'producto final'})</span>
+                              </td>
+                              <td className="py-1.5 text-gray-500">{d.fecha ? formatFecha(d.fecha) : '—'}</td>
+                              <td className="py-1.5">{d.cantidad} {produccion.semielaborados?.unidad}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </Fragment>
   )
 }
 
