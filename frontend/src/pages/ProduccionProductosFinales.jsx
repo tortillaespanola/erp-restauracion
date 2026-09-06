@@ -15,12 +15,16 @@ const EPS = 0.0005
 // real), decisión ya cerrada en el contrato. Mismos 3 colores/umbrales que estadoConsumo en
 // Producciones.jsx, con etiquetas propias de despacho -- se mantiene como copia aparte (no una
 // función compartida) porque son dos conceptos de negocio distintos que hoy comparten forma por
-// coincidencia, no por relación.
+// coincidencia, no por relación. Corrección preventiva (mismo hueco detectado en Semielaborados,
+// punto 1.5): `previsto` ya llega con ajustes_producto_final restados (ver cargarHistorial) -- puede
+// superar `cantidadProducida` o quedar por debajo de 0, por eso el % se acota explícitamente entre 0
+// y 100 antes de decidir el badge, mismo criterio que estadoConsumo.
 function estadoDespacho(cantidadProducida, previsto) {
   const cantidad = Number(cantidadProducida) || 0
   const prev = Number(previsto) || 0
   if (prev <= EPS) return { color: 'gray', texto: 'No despachado' }
-  const pct = cantidad > 0 ? (prev / cantidad) * 100 : 100
+  const pctBruto = cantidad > 0 ? (prev / cantidad) * 100 : 100
+  const pct = Math.max(0, Math.min(100, pctBruto))
   if (pct >= 100 - EPS) return { color: 'green', texto: 'Despachado' }
   return { color: 'amber', texto: `Parcial — ${pct.toFixed(0)}%` }
 }
@@ -338,21 +342,38 @@ function ProduccionProductosFinales() {
     // indexado por tanda cerrada en vez de por producto agregado. linea_pedido_id tiene una única FK
     // (sin ambigüedad, no hace falta hint `!fkey`), se embebe cliente/código/fecha de entrega para que
     // el detalle sea legible (no una lista de ids sueltos) -- mismo criterio que "Consumido por" en
-    // Producciones.jsx.
+    // Producciones.jsx. Corrección preventiva (mismo hueco detectado en Semielaborados, punto 1.5):
+    // se resta también ajustes_producto_final -- hoy siempre 0 filas en el sistema, pero el cálculo
+    // queda listo desde el diseño inicial, sin esperar a que se registre el primero con datos reales.
     const idsVisibles = (dataHistorial || []).map((p) => p.id)
     const mapaDespacho = new Map()
     if (idsVisibles.length > 0) {
-      const { data: previsiones, error: errorPrevisiones } = await supabase
-        .from('previsiones_distribucion_pf')
-        .select(
-          'produccion_pf_id, linea_pedido_id, cantidad_prevista, lineas_pedido_venta(pedidos_venta(codigo_pedido, fecha_entrega_prevista, clientes(nombre)))'
-        )
-        .in('produccion_pf_id', idsVisibles)
+      const [resPrevisiones, resAjustes] = await Promise.all([
+        supabase
+          .from('previsiones_distribucion_pf')
+          .select(
+            'produccion_pf_id, linea_pedido_id, cantidad_prevista, lineas_pedido_venta(pedidos_venta(codigo_pedido, fecha_entrega_prevista, clientes(nombre)))'
+          )
+          .in('produccion_pf_id', idsVisibles),
+        supabase
+          .from('ajustes_producto_final')
+          .select('produccion_pf_id, cantidad, motivo_categoria, motivo_detalle, fecha')
+          .in('produccion_pf_id', idsVisibles),
+      ])
 
-      if (errorPrevisiones) console.error('Error cargando previsiones de distribución:', errorPrevisiones)
+      if (resPrevisiones.error) console.error('Error cargando previsiones de distribución:', resPrevisiones.error)
+      if (resAjustes.error) console.error('Error cargando ajustes de stock:', resAjustes.error)
 
-      for (const p of previsiones || []) {
-        const entrada = mapaDespacho.get(p.produccion_pf_id) ?? { previsto: 0, detalle: [] }
+      const obtener = (id) => {
+        let entrada = mapaDespacho.get(id)
+        if (!entrada) {
+          entrada = { previsto: 0, detalle: [], ajustesTotal: 0, ajustesDetalle: [] }
+          mapaDespacho.set(id, entrada)
+        }
+        return entrada
+      }
+      for (const p of resPrevisiones.data || []) {
+        const entrada = obtener(p.produccion_pf_id)
         entrada.previsto += Number(p.cantidad_prevista)
         entrada.detalle.push({
           linea_pedido_id: p.linea_pedido_id,
@@ -361,7 +382,19 @@ function ProduccionProductosFinales() {
           codigoPedido: p.lineas_pedido_venta?.pedidos_venta?.codigo_pedido,
           fechaEntrega: p.lineas_pedido_venta?.pedidos_venta?.fecha_entrega_prevista,
         })
-        mapaDespacho.set(p.produccion_pf_id, entrada)
+      }
+      // Punto 2.4 (fórmula corregida): repartido neto = previsto - ajustes -- mismo criterio de signo
+      // que Producciones.jsx: un ajuste negativo (unidades defectuosas dadas de baja) SUMA a
+      // "repartido" (menos queda por despachar de lo que realmente existe); uno positivo resta.
+      for (const a of resAjustes.data || []) {
+        const entrada = obtener(a.produccion_pf_id)
+        entrada.previsto -= Number(a.cantidad)
+        entrada.ajustesTotal += Number(a.cantidad)
+        entrada.ajustesDetalle.push({
+          cantidad: Number(a.cantidad),
+          motivo: [a.motivo_categoria, a.motivo_detalle].filter(Boolean).join(' — '),
+          fecha: a.fecha,
+        })
       }
     }
     setDespachoPorTanda(mapaDespacho)
@@ -1063,6 +1096,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
   const previsto = despachoInfo?.previsto || 0
   const { color, texto } = estadoDespacho(produccion.cantidad_producida, previsto)
   const detalleReparto = despachoInfo?.detalle || []
+  const detalleAjustes = despachoInfo?.ajustesDetalle || []
 
   function iniciarEdicion() {
     setEditando(true)
@@ -1132,9 +1166,9 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
                     {/* Punto 2.5: repartido a pedidos -- nuevo, a partir de despachoInfo. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Repartido a pedidos</p>
                     {detalleReparto.length === 0 ? (
-                      <p className="text-sm text-gray-400">Sin reparto previsto todavía.</p>
+                      <p className="text-sm text-gray-400 mb-3">Sin reparto previsto todavía.</p>
                     ) : (
-                      <table className="w-full text-sm">
+                      <table className="w-full text-sm mb-3">
                         <thead>
                           <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
                             <th className="py-1.5 font-medium">Cliente</th>
@@ -1150,6 +1184,28 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
                               <td className="py-1.5 text-gray-500 font-mono text-xs">{d.codigoPedido ?? `#${d.linea_pedido_id}`}</td>
                               <td className="py-1.5 text-gray-500">{d.fechaEntrega ? formatFecha(d.fechaEntrega) : 'sin fecha'}</td>
                               <td className="py-1.5">{d.cantidad_prevista.toFixed(3)} uds.</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {/* Punto 2.5 (corrección preventiva, mismo criterio que Semielaborados 1.6.3):
+                        ajustes de stock -- casi siempre vacío hoy (0 filas en el sistema a la fecha del
+                        contrato), pero listo para cuando se registre el primero. */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ajustes de stock</p>
+                    {detalleAjustes.length === 0 ? (
+                      <p className="text-sm text-gray-400">Sin ajustes registrados.</p>
+                    ) : (
+                      <table className="w-full text-sm">
+                        <tbody className="divide-y divide-gray-100">
+                          {detalleAjustes.map((a, i) => (
+                            <tr key={i}>
+                              <td className="py-1.5 text-gray-500">{a.motivo || '(sin motivo)'}</td>
+                              <td className="py-1.5 text-gray-500">{a.fecha ? formatFecha(a.fecha) : '—'}</td>
+                              <td className={`py-1.5 ${Number(a.cantidad) < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                                {Number(a.cantidad) > 0 ? '+' : ''}{a.cantidad} uds.
+                              </td>
                             </tr>
                           ))}
                         </tbody>

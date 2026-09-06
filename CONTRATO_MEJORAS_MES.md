@@ -139,12 +139,20 @@ Cálculo por página visible, mismo patrón que `sumaPrevistoPorTanda` en
 producto agregado:
 
 ```
-SUM(previsiones_distribucion_pf.cantidad_prevista)
-  WHERE produccion_pf_id IN (ids de tandas visibles)
-  GROUP BY produccion_pf_id
+SUM(previsiones_distribucion_pf.cantidad_prevista) WHERE produccion_pf_id IN (ids visibles) GROUP BY produccion_pf_id
+SUM(ajustes_producto_final.cantidad)                WHERE produccion_pf_id IN (ids visibles) GROUP BY produccion_pf_id
 ```
 
-`% = previsto_para_esta_tanda / cantidad_producida`
+> **Corrección preventiva (mismo hueco detectado en Semielaborados, punto
+> 1.5):** `ajustes_producto_final` es un mecanismo real y ya alcanzable
+> desde `AjusteStockForm.jsx`/`AjustesStock.jsx` sobre tandas de producto
+> final — hoy sin filas, pero expuesto al mismo error: un ajuste manual
+> (p. ej. unidades defectuosas dadas de baja) dejaría el badge mostrando
+> "Parcial X%" sobre stock que ya no existe. Se corrige desde el diseño
+> inicial, sin esperar a que ocurra con datos reales.
+
+`repartido = previsiones_distribucion_pf.cantidad_prevista - ajustes_producto_final.cantidad` (sumados por tanda)
+`% = repartido / cantidad_producida`, acotado entre 0% y 100%
 
 Mismo Badge que en 1.5:
 - `0%` → gray → "No despachado"
@@ -152,9 +160,15 @@ Mismo Badge que en 1.5:
 - `% >= 100%` → green → "Despachado"
 
 ### 2.5 Contenido de la fila expandible
-Detalle de a qué pedidos/líneas se ha repartido esta tanda: filas de
-`previsiones_distribucion_pf` donde `produccion_pf_id` = id de la tanda, con
-`linea_pedido_id`, cantidad prevista y fecha.
+Debe mostrar **dos bloques**:
+1. **Repartido a pedidos** — filas de `previsiones_distribucion_pf` donde
+   `produccion_pf_id` = id de la tanda, con `linea_pedido_id`, cantidad
+   prevista y fecha.
+2. **Ajustes de stock** (preventivo, mismo criterio que en Semielaborados
+   1.6) — filas de `ajustes_producto_final` para esa tanda: cantidad,
+   motivo (`motivo_categoria`/`motivo_detalle`) y fecha. Hoy estará casi
+   siempre vacío (0 filas en el sistema a fecha de este contrato), pero
+   debe estar listo para cuando se registre el primero.
 
 ---
 
