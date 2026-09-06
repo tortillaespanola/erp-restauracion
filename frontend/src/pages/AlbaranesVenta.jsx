@@ -6,14 +6,51 @@ import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf, nombreLineaVenta, pr
 import {
   IconTrash, IconChevronRight, IconChevronDown, IconPrinter, IconDownload, IconPlus,
   IconArrowUp, IconArrowDown, IconArrowsSort, IconCash,
+  IconCircleCheck, IconClock, IconAlertTriangle, IconCircleHalf2,
 } from '@tabler/icons-react'
 import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
 import AlbaranVentaForm from '../components/AlbaranVentaForm'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
-const ESTADO_PAGO_BADGE = { pagada: 'green', parcial: 'amber', pendiente: 'gray' }
 const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
+
+// Rediseño visual Facturación/Cobro: mismo patrón config-por-clave + componente de render que
+// EstadoCelda en PedidosDelDia.jsx (icon/color/label por clave). Facturación distingue pendiente
+// por tipo de cliente (empresa = amarillo, más urgente por la obligación de facturar; particular =
+// gris) -- Cobro usa los mismos 3 colores tanto si el estado es propio del albarán (suelto) como si
+// se hereda de su factura (facturado), nunca gris: "pendiente" pasa a rojo en este rediseño.
+const ESTADO_FACTURACION_ICONO = {
+  facturado: { icon: IconCircleCheck, color: 'text-green-600', label: 'Facturado' },
+  pendiente_particular: { icon: IconClock, color: 'text-gray-400', label: 'Pendiente de facturar' },
+  pendiente_empresa: { icon: IconAlertTriangle, color: 'text-amber-600', label: 'Pendiente de facturar' },
+}
+const ESTADO_COBRO_ICONO = {
+  pagada: { icon: IconCircleCheck, color: 'text-green-600' },
+  parcial: { icon: IconCircleHalf2, color: 'text-amber-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-red-600' },
+}
+
+function EstadoIcono({ cfg, label }) {
+  const Icon = cfg.icon
+  return (
+    <span title={label ?? cfg.label} className={`inline-flex ${cfg.color}`}>
+      <Icon size={18} />
+    </span>
+  )
+}
+
+// Bug corregido (encontrado antes de este rediseño): una factura ANULADA no debe contar como
+// facturación viva -- el albarán vuelve a estar disponible para re-facturar (ya establecido en
+// CONTRATO_UX_ALBARANES_VENTA.md), pero el cálculo de `facturado` nunca se había actualizado para
+// reflejarlo. Único punto de verdad, reutilizado tanto en cargarDatos (idsSueltos/saldosPorAlbaran)
+// como en el render de la tabla -- antes había dos copias del mismo `rel != null` sin comprobar
+// `anulada`, que ahora quedarían inconsistentes entre sí si solo se corrigiera una.
+function facturaVivaDe(alb) {
+  const rel = alb.factura_venta_albaran
+  const facturaAsociada = Array.isArray(rel) ? rel[0] : rel
+  return facturaAsociada != null && facturaAsociada.facturas_venta_con_saldo?.anulada === false
+}
 
 // BLOQUE 2 (CONTRATO_FILTROS_VENTA.md), sección 3: dos dimensiones de estado independientes, no
 // mezclables en un único MultiSelect -- Facturación (¿tiene relación en factura_venta_albaran?) y
@@ -50,12 +87,18 @@ function codigosPedidoOrigen(alb) {
 // BLOQUE 2 (CONTRATO_UX_ALBARANES_VENTA.md): factura_venta_albaran embebido para saber si el
 // albarán está facturado sin una query aparte por fila -- basta con mirar si el array llega vacío.
 // factura_venta_albaran es una tabla puente sin columna `id` propia (solo factura_venta_id +
-// albaran_venta_id, ver FacturasVenta.jsx) -- se pide factura_venta_id explícitamente.
+// albaran_venta_id, ver FacturasVenta.jsx). Rediseño Facturación/Cobro: en vez de pedir solo
+// factura_venta_id, se embebe la VISTA facturas_venta_con_saldo (no la tabla) a través de esa
+// misma relación -- confirmado que PostgREST la detecta igual que a través de la tabla (mismo
+// hallazgo ya documentado en el Bloque 1 de CONTRATO_UX_FACTURAS_VENTA.md). Da en un solo viaje:
+// numero_factura y anulada (para saber si la factura sigue viva) y saldo_pendiente/total (para
+// heredar el color de Cobro sin una query aparte). clientes.tipo añadido para el color de
+// Facturación pendiente (particular=gris, empresa=amarillo).
 // BLOQUE 3: linea_pedido_id + lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))
 // embebido para resolver el/los pedido(s) de origen de cada línea sin una query aparte -- misma
 // query principal, un solo viaje de ida y vuelta.
 const SELECT_ALBARAN_CON_RELACIONES =
-  '*, clientes(nombre, direccion, cif), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad), linea_pedido_id, lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))), factura_venta_albaran(factura_venta_id)'
+  '*, clientes(nombre, direccion, cif, tipo), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad), linea_pedido_id, lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))), factura_venta_albaran(facturas_venta_con_saldo(numero_factura, anulada, saldo_pendiente, total))'
 
 // BLOQUE 5 (CONTRATO_UX_ALBARANES_VENTA.md): 20 por página, igual que Pedidos -- volumen similar
 // (~92 albaranes hoy), da ~5 páginas, cómodo para números de página sin elipsis.
@@ -158,9 +201,12 @@ function AlbaranesVenta() {
     // ejecuta si alguno de los dos filtros de estado está activo.
     let idsPermitidosPorEstado = null // null = sin restricción por estado
     if (filtroFacturacion.length > 0 || filtroCobro.length > 0) {
+      // Fix (mismo bug ya corregido en facturaVivaDe/render): una factura ANULADA no cuenta como
+      // facturación viva, así que este precómputo necesita `anulada` de la vista, no solo saber si
+      // existe relación -- si no, el filtro Facturación/Cobro quedaría contradiciendo al icono.
       const { data: todosAlbaranes, error: errorTodos } = await supabase
         .from('albaranes_venta')
-        .select('id, factura_venta_albaran(factura_venta_id)')
+        .select('id, factura_venta_albaran(facturas_venta_con_saldo(anulada))')
 
       if (errorTodos) {
         console.error('Error precalculando filtros de estado de albaranes:', errorTodos)
@@ -169,8 +215,7 @@ function AlbaranesVenta() {
         const idsFacturados = []
         const idsSueltos = []
         for (const alb of todosAlbaranes) {
-          const rel = alb.factura_venta_albaran
-          const facturado = Array.isArray(rel) ? rel.length > 0 : rel != null
+          const facturado = facturaVivaDe(alb)
           if (facturado) idsFacturados.push(alb.id)
           else idsSueltos.push(alb.id)
         }
@@ -238,15 +283,11 @@ function AlbaranesVenta() {
       setAlbaranes(albaranesCargados)
       setTotalAlbaranes(resAlbaranes.count ?? 0)
 
-      // Bloque 6: mismo criterio "facturado" ya usado en el render (objeto/null si tiene relación
-      // vigente, ver comentario del Bloque 2 más abajo) para aislar los sueltos, únicos candidatos
-      // a saldo pendiente de cobro directo.
+      // Bloque 6 + fix de facturaVivaDe: mismo criterio "facturado" ya usado en el render (única
+      // fuente de verdad ahora, ver arriba) para aislar los sueltos, únicos candidatos a saldo
+      // pendiente de cobro directo -- un albarán cuya factura fue anulada vuelve a entrar aquí.
       const idsSueltos = albaranesCargados
-        .filter((alb) => {
-          const rel = alb.factura_venta_albaran
-          const facturado = Array.isArray(rel) ? rel.length > 0 : rel != null
-          return !facturado
-        })
+        .filter((alb) => !facturaVivaDe(alb))
         .map((alb) => alb.id)
       try {
         const saldos = await saldosDeAlbaranesSueltos(idsSueltos)
@@ -378,7 +419,8 @@ function AlbaranesVenta() {
                   <th className="px-3 py-2.5 font-medium">Nº Albarán</th>
                   <th className="px-3 py-2.5 font-medium">Cliente</th>
                   <th className="px-3 py-2.5 font-medium">Pedido origen</th>
-                  <th className="px-3 py-2.5 font-medium">Facturado</th>
+                  <th className="px-3 py-2.5 font-medium text-center">Facturación</th>
+                  <th className="px-3 py-2.5 font-medium text-center">Cobro</th>
                   <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
                 </tr>
               </thead>
@@ -389,14 +431,37 @@ function AlbaranesVenta() {
                   // sobre albaran_venta_id (un albarán solo puede estar en una factura), así que
                   // PostgREST lo embebe como objeto único (o null), NUNCA como array -- asumir array
                   // aquí hacía que `facturado` diera siempre false, tuviese o no factura de verdad.
-                  const relFactura = alb.factura_venta_albaran
-                  const facturado = Array.isArray(relFactura) ? relFactura.length > 0 : relFactura != null
+                  // Corregido además para no contar una factura ANULADA como facturación viva (ver
+                  // facturaVivaDe arriba).
+                  const facturado = facturaVivaDe(alb)
+                  const facturaAsociada = Array.isArray(alb.factura_venta_albaran) ? alb.factura_venta_albaran[0] : alb.factura_venta_albaran
                   const codigosPedido = codigosPedidoOrigen(alb)
-                  // Bloque 6: badge/icono de pago SOLO para sueltos -- un albarán ya facturado
-                  // refleja su estado de pago en la factura, no aquí, para no duplicar/contradecir.
+                  // Bloque 6: saldo/estado de pago propio SOLO para sueltos -- un albarán ya
+                  // facturado (con factura viva) refleja su cobro en la factura, no aquí.
                   const saldo = facturado ? null : saldosPorAlbaran.get(alb.id)
                   const estado = saldo != null ? estadoPago(saldo, totalAlbaran(alb)) : null
                   const tieneSaldoPendiente = saldo != null && saldo > EPSILON
+
+                  // Rediseño Facturación/Cobro: Facturación distingue "pendiente" por tipo de
+                  // cliente (empresa = amarillo, obligación legal de facturar; particular = gris).
+                  const claveFacturacion = facturado
+                    ? 'facturado'
+                    : (alb.clientes?.tipo === 'empresa' ? 'pendiente_empresa' : 'pendiente_particular')
+
+                  // Cobro: si hay factura viva, se hereda SU estado (facturas_venta_con_saldo, misma
+                  // fórmula de tolerancia que estadoPago ya usa en FacturasVenta.jsx) en vez del
+                  // saldo propio del albarán -- el tooltip deja explícito que es el cobro de la
+                  // factura, no del albarán, para no confundir con un albarán suelto sin cobrar.
+                  let claveCobro = null
+                  let tooltipCobro = null
+                  if (facturado) {
+                    const f = facturaAsociada.facturas_venta_con_saldo
+                    claveCobro = estadoPago(Number(f.saldo_pendiente), Number(f.total))
+                    tooltipCobro = `${ESTADO_PAGO_LABEL[claveCobro]} (factura ${f.numero_factura})`
+                  } else if (estado) {
+                    claveCobro = estado
+                    tooltipCobro = ESTADO_PAGO_LABEL[claveCobro]
+                  }
                   return (
                     <Fragment key={alb.id}>
                       <tr
@@ -423,13 +488,11 @@ function AlbaranesVenta() {
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge color={facturado ? 'green' : 'gray'}>
-                              {facturado ? 'Facturado' : 'Pendiente de facturar'}
-                            </Badge>
-                            {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{ESTADO_PAGO_LABEL[estado]}</Badge>}
-                          </div>
+                        <td className="px-3 py-3 text-center">
+                          <EstadoIcono cfg={ESTADO_FACTURACION_ICONO[claveFacturacion]} />
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {claveCobro && <EstadoIcono cfg={ESTADO_COBRO_ICONO[claveCobro]} label={tooltipCobro} />}
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
@@ -455,7 +518,7 @@ function AlbaranesVenta() {
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           {/* BLOQUE 4: grid con altura animable (0fr <-> 1fr) en vez de montar/desmontar
                               la fila -- así el expandir/colapsar tiene una transición CSS suave. */}
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
