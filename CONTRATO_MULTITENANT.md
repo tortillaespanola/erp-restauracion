@@ -140,6 +140,14 @@ no solo en las más usadas por el frontend.
 ya funcionando) y debería ir en paralelo o justo después de la Tarea 2, antes de dar por
 cerrado el contrato — no es opcional ni de "fase futura".
 
+**Regla operativa derivada (documentar, no una tarea en sí):** a partir de que el
+`DEFAULT` dependa de `negocio_actual()`, cualquier migración o script de seed que inserte
+en estas 42 tablas sin especificar `negocio_id` explícito fallará, porque esas
+migraciones corren como superusuario/sin JWT y `auth.uid()` es `NULL` en ese contexto.
+Es el comportamiento correcto ("fallar ruidoso, nunca silencioso"), pero implica que
+toda migración/seed futura debe pasar `negocio_id` a mano — incluido el futuro script
+de población de la empresa demo de catering.
+
 ---
 
 ## Plan de verificación final (antes de tocar producción)
