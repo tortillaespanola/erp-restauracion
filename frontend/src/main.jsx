@@ -3,11 +3,16 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import AuthGate from './components/AuthGate.jsx'
+import NegocioProvider from './context/NegocioContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthGate>
-      {(session, onLogout) => <App session={session} onLogout={onLogout} />}
+      {(session, onLogout) => (
+        <NegocioProvider>
+          <App session={session} onLogout={onLogout} />
+        </NegocioProvider>
+      )}
     </AuthGate>
   </StrictMode>,
 )
