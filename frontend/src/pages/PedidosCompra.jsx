@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
@@ -13,14 +14,9 @@ const ESTADO_BADGE = {
   cancelado: 'red',
 }
 
-const ESTADO_LABEL = {
-  pendiente: 'Pendiente',
-  recibido: 'Recibido',
-  cancelado: 'Cancelado',
-}
-
 function PedidosCompra() {
   const navigate = useNavigate()
+  const { t } = useTranslation(['common', 'enums'])
   const [pedidos, setPedidos] = useState([])
   const [proveedores, setProveedores] = useState([])
   const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
@@ -298,7 +294,7 @@ function PedidosCompra() {
                   <p className="font-semibold text-[#1C2938] flex items-center gap-2 flex-wrap">
                     {p.proveedores?.nombre_comercial ?? 'Sin proveedor'}
                     {p.codigo_pedido && <span className="text-xs font-mono text-gray-400">{p.codigo_pedido}</span>}
-                    <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
+                    <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{t(`enums:estado_pedido_compra.${p.estado}`, { defaultValue: p.estado })}</Badge>
                   </p>
                   <p className="text-sm text-gray-500">
                     {formatFecha(p.fecha)}{p.fecha_entrega_prevista && ` · entrega prevista ${formatFecha(p.fecha_entrega_prevista)}`}

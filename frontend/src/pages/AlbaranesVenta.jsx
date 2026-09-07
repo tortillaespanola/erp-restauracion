@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { descargarAlbaranVentaPdf, imprimirAlbaranVentaPdf, nombreLineaVenta, prepararDocumentoAlbaranVenta } from '../lib/generarAlbaranVentaPdf'
@@ -13,17 +14,19 @@ import AlbaranVentaForm from '../components/AlbaranVentaForm'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
-const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
-
+// CONTRATO_I18N.md, Fase 0: icon/color son independientes del idioma y se quedan aquí -- la
+// etiqueta se resuelve con t('enums:estado_facturacion.*'/'enums:estado_pago.*') en el render,
+// ver enums.json. Antes cada entrada llevaba también un `label` en español fijo.
+//
 // Rediseño visual Facturación/Cobro: mismo patrón config-por-clave + componente de render que
-// EstadoCelda en PedidosDelDia.jsx (icon/color/label por clave). Facturación distingue pendiente
+// EstadoCelda en PedidosDelDia.jsx (icon/color por clave). Facturación distingue pendiente
 // por tipo de cliente (empresa = amarillo, más urgente por la obligación de facturar; particular =
 // gris) -- Cobro usa los mismos 3 colores tanto si el estado es propio del albarán (suelto) como si
 // se hereda de su factura (facturado), nunca gris: "pendiente" pasa a rojo en este rediseño.
 const ESTADO_FACTURACION_ICONO = {
-  facturado: { icon: IconCircleCheck, color: 'text-green-600', label: 'Facturado' },
-  pendiente_particular: { icon: IconClock, color: 'text-gray-400', label: 'Pendiente de facturar' },
-  pendiente_empresa: { icon: IconAlertTriangle, color: 'text-amber-600', label: 'Pendiente de facturar' },
+  facturado: { icon: IconCircleCheck, color: 'text-green-600' },
+  pendiente_particular: { icon: IconClock, color: 'text-gray-400' },
+  pendiente_empresa: { icon: IconAlertTriangle, color: 'text-amber-600' },
 }
 const ESTADO_COBRO_ICONO = {
   pagada: { icon: IconCircleCheck, color: 'text-green-600' },
@@ -34,7 +37,7 @@ const ESTADO_COBRO_ICONO = {
 function EstadoIcono({ cfg, label }) {
   const Icon = cfg.icon
   return (
-    <span title={label ?? cfg.label} className={`inline-flex ${cfg.color}`}>
+    <span title={label} className={`inline-flex ${cfg.color}`}>
       <Icon size={18} />
     </span>
   )
@@ -55,15 +58,6 @@ function facturaVivaDe(alb) {
 // BLOQUE 2 (CONTRATO_FILTROS_VENTA.md), sección 3: dos dimensiones de estado independientes, no
 // mezclables en un único MultiSelect -- Facturación (¿tiene relación en factura_venta_albaran?) y
 // Cobro (estado de pago calculado, solo aplica a albaranes sueltos).
-const FACTURACION_OPCIONES = [
-  { value: 'pendiente', label: 'Pendiente de facturar' },
-  { value: 'facturado', label: 'Facturado' },
-]
-const COBRO_OPCIONES = [
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'parcial', label: 'Parcial' },
-  { value: 'pendiente', label: 'Pendiente' },
-]
 
 // Bloque 6 (CONTRATO_PAGOS_VENTA.md): total de un albarán a partir de sus líneas ya embebidas en
 // la query principal -- misma fórmula que totalesPorAlbaran en saldosVenta.js, sin otra consulta.
@@ -107,6 +101,12 @@ const PAGINA_TAMANO = 20
 function AlbaranesVenta() {
   const [searchParams] = useSearchParams()
   const pedidoIdParam = searchParams.get('pedido_id')
+  const { t } = useTranslation(['common', 'enums'])
+  const FACTURACION_OPCIONES = [
+    { value: 'pendiente', label: t('enums:estado_facturacion.pendiente_facturar') },
+    { value: 'facturado', label: t('enums:estado_facturacion.facturado') },
+  ]
+  const COBRO_OPCIONES = ['pagada', 'parcial', 'pendiente'].map((value) => ({ value, label: t(`enums:estado_pago.${value}`) }))
 
   const [albaranes, setAlbaranes] = useState([])
   const [clientes, setClientes] = useState([])
@@ -457,10 +457,10 @@ function AlbaranesVenta() {
                   if (facturado) {
                     const f = facturaAsociada.facturas_venta_con_saldo
                     claveCobro = estadoPago(Number(f.saldo_pendiente), Number(f.total))
-                    tooltipCobro = `${ESTADO_PAGO_LABEL[claveCobro]} (factura ${f.numero_factura})`
+                    tooltipCobro = `${t(`enums:estado_pago.${claveCobro}`)} (factura ${f.numero_factura})`
                   } else if (estado) {
                     claveCobro = estado
-                    tooltipCobro = ESTADO_PAGO_LABEL[claveCobro]
+                    tooltipCobro = t(`enums:estado_pago.${claveCobro}`)
                   }
                   return (
                     <Fragment key={alb.id}>
@@ -489,7 +489,10 @@ function AlbaranesVenta() {
                           )}
                         </td>
                         <td className="px-3 py-3 text-center">
-                          <EstadoIcono cfg={ESTADO_FACTURACION_ICONO[claveFacturacion]} />
+                          <EstadoIcono
+                            cfg={ESTADO_FACTURACION_ICONO[claveFacturacion]}
+                            label={t(`enums:estado_facturacion.${claveFacturacion === 'facturado' ? 'facturado' : 'pendiente_facturar'}`)}
+                          />
                         </td>
                         <td className="px-3 py-3 text-center">
                           {claveCobro && <EstadoIcono cfg={ESTADO_COBRO_ICONO[claveCobro]} label={tooltipCobro} />}

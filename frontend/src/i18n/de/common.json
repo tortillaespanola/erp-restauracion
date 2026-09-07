@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "sections": {
+      "compras": "Einkauf",
+      "produccion": "Produktion",
+      "ventas": "Verkauf"
+    },
+    "items": {
+      "pedidos_compra": "Bestellungen",
+      "proveedores": "Lieferanten",
+      "articulos": "Artikel",
+      "albaranes_compra": "Lieferscheine Einkauf",
+      "facturas_compra": "Rechnungen Einkauf",
+      "pedidos_del_dia": "Tagesproduktion",
+      "inventario": "Lagerbestand",
+      "ingredientes": "Zutaten",
+      "semielaborados": "Halbfertigprodukte",
+      "producciones": "Produktionen",
+      "ajustes_stock": "Bestandskorrekturen",
+      "productos": "Fertigprodukte",
+      "produccion_productos": "Produktion Fertigprodukte",
+      "pedidos": "Bestellungen",
+      "clientes": "Kunden",
+      "albaranes_venta": "Lieferscheine Verkauf",
+      "facturas_venta": "Rechnungen Verkauf",
+      "pagos": "Zahlungen"
+    }
+  },
+  "titles": {
+    "pedidos_compra": { "title": "Bestellungen", "breadcrumb": "Einkauf · Bestellungen" },
+    "proveedores": { "title": "Lieferanten", "breadcrumb": "Einkauf · Lieferanten" },
+    "articulos": { "title": "Einkaufsartikel", "breadcrumb": "Einkauf · Artikel" },
+    "albaranes_compra": { "title": "Lieferscheine Einkauf", "breadcrumb": "Einkauf · Lieferscheine Einkauf" },
+    "facturas_compra": { "title": "Rechnungen Einkauf", "breadcrumb": "Einkauf · Rechnungen Einkauf" },
+    "pedidos_del_dia": { "title": "Tagesproduktion", "breadcrumb": "Produktion · Tagesproduktion" },
+    "inventario": { "title": "Lagerbestand", "breadcrumb": "Produktion · Lagerbestand" },
+    "cierre_tanda": { "title": "Chargenabschluss / Lieferung", "breadcrumb": "Produktion · Chargenabschluss" },
+    "ingredientes": { "title": "Zutaten", "breadcrumb": "Produktion · Zutaten" },
+    "semielaborados": { "title": "Halbfertigprodukte", "breadcrumb": "Produktion · Halbfertigprodukte" },
+    "producciones": { "title": "Produktionen", "breadcrumb": "Produktion · Produktionen" },
+    "ajustes_stock": { "title": "Bestandskorrekturen", "breadcrumb": "Produktion · Bestandskorrekturen" },
+    "productos": { "title": "Fertigprodukte", "breadcrumb": "Produktion · Fertigprodukte" },
+    "produccion_productos": { "title": "Produktion der Fertigprodukte", "breadcrumb": "Produktion · Produktion Fertigprodukte" },
+    "pedidos": { "title": "Bestellungen", "breadcrumb": "Verkauf · Bestellungen" },
+    "clientes": { "title": "Kunden", "breadcrumb": "Verkauf · Kunden" },
+    "albaranes_venta": { "title": "Lieferscheine Verkauf", "breadcrumb": "Verkauf · Lieferscheine Verkauf" },
+    "facturas_venta": { "title": "Rechnungen Verkauf", "breadcrumb": "Verkauf · Rechnungen Verkauf" },
+    "pagos": { "title": "Verkaufszahlungen", "breadcrumb": "Verkauf · Zahlungen" },
+    "configuracion": { "title": "Einstellungen", "breadcrumb": "Firmeneinstellungen" }
+  },
+  "actions": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "add": "Hinzufügen",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "search_placeholder": "Suchen...",
+    "logout": "Abmelden",
+    "settings": "Einstellungen",
+    "loading": "Lädt...",
+    "default_user": "Benutzer"
+  }
+}

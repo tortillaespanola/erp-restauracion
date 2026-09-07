@@ -1,21 +1,20 @@
 import { useState, useEffect, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatMoneda } from '../lib/formatCantidad'
 import { IconChevronRight, IconChevronDown, IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, Badge, EmptyState, LoadingState, Button, Drawer, LinkAction } from '../components/ui'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
+import { useNegocio } from '../context/useNegocio'
 
 // BLOQUE 4 (CONTRATO_PAGOS_VENTA.md): mismo tamaño de página que Pedidos/Albaranes -- volumen
 // bajo hoy (módulo nuevo), pero consistente con el resto del proyecto.
 const PAGINA_TAMANO = 20
 
-const METODO_LABEL = {
-  efectivo: 'Efectivo',
-  twint: 'Twint',
-  tarjeta: 'Tarjeta',
-  transferencia: 'Transferencia',
-}
-
+// CONTRATO_I18N.md, Fase 0: etiqueta resuelta con t('enums:metodo_pago.<clave>') -- ver
+// enums.json. Antes METODO_LABEL tenía el texto español fijo, duplicado además en
+// RegistrarPagoForm.jsx (mismo enum, mismo arreglo, consolidado ahí también).
 const METODO_BADGE = {
   efectivo: 'green',
   twint: 'blue',
@@ -33,6 +32,8 @@ function documentoDeAplicacion(pa) {
 }
 
 function Pagos() {
+  const { t } = useTranslation(['common', 'enums'])
+  const { negocio } = useNegocio()
   const [pagos, setPagos] = useState([])
   const [clientes, setClientes] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -190,14 +191,14 @@ function Pagos() {
                             {p.anulada && <Badge color="red">Anulada</Badge>}
                           </div>
                         </td>
-                        <td className={`px-3 py-3 whitespace-nowrap text-gray-600 ${p.anulada ? 'line-through' : ''}`}>{Number(p.monto).toFixed(2)} CHF</td>
+                        <td className={`px-3 py-3 whitespace-nowrap text-gray-600 ${p.anulada ? 'line-through' : ''}`}>{formatMoneda(p.monto, negocio?.moneda)}</td>
                         <td className="px-3 py-3">
-                          <Badge color={METODO_BADGE[p.metodo] ?? 'gray'}>{METODO_LABEL[p.metodo] ?? p.metodo}</Badge>
+                          <Badge color={METODO_BADGE[p.metodo] ?? 'gray'}>{t(`enums:metodo_pago.${p.metodo}`, { defaultValue: p.metodo })}</Badge>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{aplicado.toFixed(2)} CHF</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatMoneda(aplicado, negocio?.moneda)}</td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           {sinAplicar > 0 ? (
-                            <span className="text-amber-600 font-medium">{sinAplicar.toFixed(2)} CHF</span>
+                            <span className="text-amber-600 font-medium">{formatMoneda(sinAplicar, negocio?.moneda)}</span>
                           ) : (
                             <span className="text-gray-300">—</span>
                           )}
@@ -232,7 +233,7 @@ function Pagos() {
                                           <tr key={pa.id}>
                                             <td className="py-1.5">{tipo}</td>
                                             <td className="py-1.5">{codigo}</td>
-                                            <td className="py-1.5">{Number(pa.monto_aplicado).toFixed(2)} CHF</td>
+                                            <td className="py-1.5">{formatMoneda(pa.monto_aplicado, negocio?.moneda)}</td>
                                           </tr>
                                         )
                                       })}

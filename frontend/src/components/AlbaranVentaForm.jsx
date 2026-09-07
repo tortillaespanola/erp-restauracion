@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatMoneda } from '../lib/formatCantidad'
 import { generarAlbaranVentaPdf, prepararDocumentoAlbaranVenta } from '../lib/generarAlbaranVentaPdf'
 import { IconTrash } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button, LinkAction } from './ui'
+import { useNegocio } from '../context/useNegocio'
 
 // Fix: los avisos de stock mostraban "3.000" en vez de "3" para valores enteros -- redondea a 3
 // decimales (mismo tope ya usado en toda la UI, step="0.001") y quita los ceros sobrantes.
@@ -22,6 +24,7 @@ function formatCantidad(n) {
 // resetForm: el componente se desmonta al cerrar el drawer, la próxima apertura es un montaje
 // nuevo con estado fresco.
 export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, articulosMercaderia, onGuardado, onCancelar }) {
+  const { negocio } = useNegocio()
   const navigate = useNavigate()
 
   const [clienteId, setClienteId] = useState('')
@@ -384,7 +387,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
                     {l.tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
                   </td>
                   <td className="py-1.5">{l.cantidad} uds.</td>
-                  <td className="py-1.5">{l.precio_unitario != null ? `${l.precio_unitario} €/ud` : '-'}</td>
+                  <td className="py-1.5">{l.precio_unitario != null ? `${formatMoneda(l.precio_unitario, negocio?.moneda)}/ud` : '-'}</td>
                   <td className="py-1.5 text-right">
                     <button type="button" onClick={() => removeLinea(index)}
                       className="text-gray-400 hover:text-red-600">

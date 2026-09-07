@@ -1,0 +1,40 @@
+{
+  "estado_pedido": {
+    "pendiente": "Ausstehend",
+    "en_produccion": "In Produktion",
+    "servido": "Serviert",
+    "cancelado": "Storniert"
+  },
+  "estado_pedido_compra": {
+    "pendiente": "Ausstehend",
+    "recibido": "Erhalten",
+    "cancelado": "Storniert"
+  },
+  "estado_pago": {
+    "pagada": "Bezahlt",
+    "parcial": "Teilweise",
+    "pendiente": "Ausstehend",
+    "anulada": "Storniert"
+  },
+  "estado_facturacion": {
+    "facturado": "Fakturiert",
+    "pendiente_facturar": "Ausstehende Rechnung"
+  },
+  "metodo_pago": {
+    "efectivo": "Bargeld",
+    "twint": "Twint",
+    "tarjeta": "Karte",
+    "transferencia": "Überweisung"
+  },
+  "tipo_ajuste": {
+    "articulo": "Artikel",
+    "semielaborado": "Halbfertigprodukt",
+    "producto_final": "Fertigprodukt"
+  },
+  "motivo_categoria": {
+    "caducado": "Abgelaufen",
+    "roto": "Beschädigt",
+    "evento_no_consumido": "Nicht verbraucht (Event)",
+    "otro": "Sonstiges"
+  }
+}

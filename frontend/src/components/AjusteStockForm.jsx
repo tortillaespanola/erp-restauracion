@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad } from '../lib/formatCantidad'
 import { Field, Input, Select, Button } from './ui'
 
-const MOTIVO_CATEGORIA_LABEL = {
-  caducado: 'Caducado',
-  roto: 'Roto',
-  evento_no_consumido: 'Evento no consumido',
-  otro: 'Otro',
-}
+// CONTRATO_I18N.md, Fase 0: claves del enum motivo_categoria (fijas en BD) -- la etiqueta
+// visible se resuelve con t('enums:motivo_categoria.<clave>'), ver enums.json. Antes
+// MOTIVO_CATEGORIA_LABEL tenía el texto español fijo, y estaba duplicado en la vista SQL
+// historial_ajustes_stock (ver migración 20260907_i18n_idioma_moneda.sql).
+const MOTIVOS_CATEGORIA = ['caducado', 'roto', 'evento_no_consumido', 'otro']
 
 const hoyIso = () => new Date().toISOString().slice(0, 10)
 
@@ -24,6 +24,7 @@ const hoyIso = () => new Date().toISOString().slice(0, 10)
 //   selectores) -- caso Inventario.jsx, siempre tipo 'articulo' hoy porque es el único nivel que
 //   esa pantalla expone. `null` = modo manual, igual que el formulario original de AjustesStock.jsx.
 export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar }) {
+  const { t } = useTranslation(['common', 'enums'])
   const [tipo, setTipo] = useState(fijo?.tipo || 'articulo')
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
@@ -193,8 +194,8 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
         <Field label="Motivo">
           <Select value={motivoCategoria} onChange={(e) => setMotivoCategoria(e.target.value)} required>
             <option value="">Selecciona motivo</option>
-            {Object.entries(MOTIVO_CATEGORIA_LABEL).map(([valor, label]) => (
-              <option key={valor} value={valor}>{label}</option>
+            {MOTIVOS_CATEGORIA.map((valor) => (
+              <option key={valor} value={valor}>{t(`enums:motivo_categoria.${valor}`)}</option>
             ))}
           </Select>
         </Field>

@@ -1,0 +1,40 @@
+{
+  "estado_pedido": {
+    "pendiente": "Pending",
+    "en_produccion": "In production",
+    "servido": "Served",
+    "cancelado": "Cancelled"
+  },
+  "estado_pedido_compra": {
+    "pendiente": "Pending",
+    "recibido": "Received",
+    "cancelado": "Cancelled"
+  },
+  "estado_pago": {
+    "pagada": "Paid",
+    "parcial": "Partial",
+    "pendiente": "Pending",
+    "anulada": "Cancelled"
+  },
+  "estado_facturacion": {
+    "facturado": "Invoiced",
+    "pendiente_facturar": "Pending invoice"
+  },
+  "metodo_pago": {
+    "efectivo": "Cash",
+    "twint": "Twint",
+    "tarjeta": "Card",
+    "transferencia": "Bank transfer"
+  },
+  "tipo_ajuste": {
+    "articulo": "article",
+    "semielaborado": "semi-finished good",
+    "producto_final": "final product"
+  },
+  "motivo_categoria": {
+    "caducado": "Expired",
+    "roto": "Broken",
+    "evento_no_consumido": "Unused at event",
+    "otro": "Other"
+  }
+}

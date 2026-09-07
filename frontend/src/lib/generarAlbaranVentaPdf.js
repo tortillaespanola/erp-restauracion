@@ -2,7 +2,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase } from './supabase'
 import { formatFecha } from './formatFecha'
-import { formatCantidad, formatPrecio } from './formatCantidad'
+import { formatCantidad, formatMoneda } from './formatCantidad'
 
 // BLOQUE 6 (CONTRATO_UX_ALBARANES_VENTA.md): antes vivían solo en AlbaranesVenta.jsx -- movidas
 // aquí (sin cambios) porque ahora las necesitan dos sitios: las acciones del listado (Imprimir/
@@ -208,9 +208,9 @@ export async function generarAlbaranVentaPdf(documento) {
       formatFecha(documento.fecha),
       l.concepto,
       formatCantidad(l.cantidad, l.unidad),
-      l.precioUnitario != null ? `${formatPrecio(l.precioUnitario)} €` : '-',
+      l.precioUnitario != null ? formatMoneda(l.precioUnitario, empresa?.moneda) : '-',
       l.unidad || '-',
-      l.precioUnitario != null ? `${formatPrecio(l.cantidad * l.precioUnitario)} €` : '-',
+      l.precioUnitario != null ? formatMoneda(l.cantidad * l.precioUnitario, empresa?.moneda) : '-',
     ]),
     theme: 'plain',
     styles: { font: 'SpaceMono', fontSize: 9, textColor: 60, lineColor: [220, 220, 220], lineWidth: 0.1 },
@@ -227,7 +227,7 @@ export async function generarAlbaranVentaPdf(documento) {
   // ZWISCHENSUMME
   lineaMixtaDerecha(doc, [
     { texto: 'ZWISCHENSUMME: ', font: 'Montserrat', style: 'bold', size: 11, color: 20 },
-    { texto: documento.total != null ? `${formatPrecio(documento.total)} €` : '-', font: 'SpaceMono', style: 'bold', size: 11, color: 20 },
+    { texto: documento.total != null ? formatMoneda(documento.total, empresa?.moneda) : '-', font: 'SpaceMono', style: 'bold', size: 11, color: 20 },
   ], xDer, yFinal)
   yFinal += 12
 

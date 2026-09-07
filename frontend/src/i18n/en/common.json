@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "sections": {
+      "compras": "Purchasing",
+      "produccion": "Production",
+      "ventas": "Sales"
+    },
+    "items": {
+      "pedidos_compra": "Purchase orders",
+      "proveedores": "Suppliers",
+      "articulos": "Articles",
+      "albaranes_compra": "Purchase delivery notes",
+      "facturas_compra": "Purchase invoices",
+      "pedidos_del_dia": "Today's production",
+      "inventario": "Inventory",
+      "ingredientes": "Ingredients",
+      "semielaborados": "Semi-finished goods",
+      "producciones": "Production runs",
+      "ajustes_stock": "Stock adjustments",
+      "productos": "Final products",
+      "produccion_productos": "Final product runs",
+      "pedidos": "Orders",
+      "clientes": "Customers",
+      "albaranes_venta": "Sales delivery notes",
+      "facturas_venta": "Sales invoices",
+      "pagos": "Payments"
+    }
+  },
+  "titles": {
+    "pedidos_compra": { "title": "Purchase orders", "breadcrumb": "Purchasing · Purchase orders" },
+    "proveedores": { "title": "Suppliers", "breadcrumb": "Purchasing · Suppliers" },
+    "articulos": { "title": "Purchase articles", "breadcrumb": "Purchasing · Articles" },
+    "albaranes_compra": { "title": "Purchase delivery notes", "breadcrumb": "Purchasing · Purchase delivery notes" },
+    "facturas_compra": { "title": "Purchase invoices", "breadcrumb": "Purchasing · Purchase invoices" },
+    "pedidos_del_dia": { "title": "Today's production", "breadcrumb": "Production · Today's production" },
+    "inventario": { "title": "Inventory", "breadcrumb": "Production · Inventory" },
+    "cierre_tanda": { "title": "Batch close / delivery", "breadcrumb": "Production · Batch close" },
+    "ingredientes": { "title": "Ingredients", "breadcrumb": "Production · Ingredients" },
+    "semielaborados": { "title": "Semi-finished goods", "breadcrumb": "Production · Semi-finished goods" },
+    "producciones": { "title": "Production runs", "breadcrumb": "Production · Production runs" },
+    "ajustes_stock": { "title": "Stock adjustments", "breadcrumb": "Production · Stock adjustments" },
+    "productos": { "title": "Final products", "breadcrumb": "Production · Final products" },
+    "produccion_productos": { "title": "Final product runs", "breadcrumb": "Production · Final product runs" },
+    "pedidos": { "title": "Orders", "breadcrumb": "Sales · Orders" },
+    "clientes": { "title": "Customers", "breadcrumb": "Sales · Customers" },
+    "albaranes_venta": { "title": "Sales delivery notes", "breadcrumb": "Sales · Sales delivery notes" },
+    "facturas_venta": { "title": "Sales invoices", "breadcrumb": "Sales · Sales invoices" },
+    "pagos": { "title": "Sales payments", "breadcrumb": "Sales · Payments" },
+    "configuracion": { "title": "Settings", "breadcrumb": "Company settings" }
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "add": "Add",
+    "previous": "Previous",
+    "next": "Next",
+    "search_placeholder": "Search...",
+    "logout": "Log out",
+    "settings": "Settings",
+    "loading": "Loading...",
+    "default_user": "User"
+  }
+}

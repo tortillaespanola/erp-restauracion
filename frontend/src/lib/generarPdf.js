@@ -2,6 +2,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase } from './supabase'
 import { formatFecha } from './formatFecha'
+import { formatMoneda } from './formatCantidad'
 
 // Convierte una URL de imagen en base64 y devuelve también sus proporciones reales
 function urlToBase64(url) {
@@ -97,8 +98,8 @@ export async function generarDocumentoPdf(tipo, documento) {
     body: documento.lineas.map((l) => [
       l.concepto,
       l.cantidad,
-      l.precioUnitario != null ? `${l.precioUnitario.toFixed(2)} CHF` : '-',
-      l.precioUnitario != null ? `${(l.cantidad * l.precioUnitario).toFixed(2)} CHF` : '-',
+      l.precioUnitario != null ? formatMoneda(l.precioUnitario, empresa?.moneda) : '-',
+      l.precioUnitario != null ? formatMoneda(l.cantidad * l.precioUnitario, empresa?.moneda) : '-',
     ]),
     theme: 'striped',
     headStyles: { fillColor: [30, 41, 59] },
@@ -111,7 +112,7 @@ export async function generarDocumentoPdf(tipo, documento) {
   if (documento.total != null) {
     doc.setFontSize(12)
     doc.setTextColor(20)
-    doc.text(`Total: ${Number(documento.total).toFixed(2)} CHF`, 195, yFinal, { align: 'right' })
+    doc.text(`Total: ${formatMoneda(documento.total, empresa?.moneda)}`, 195, yFinal, { align: 'right' })
   }
 
   return doc

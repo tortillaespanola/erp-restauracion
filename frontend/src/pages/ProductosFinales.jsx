@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatMoneda } from '../lib/formatCantidad'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { useNegocio } from '../context/useNegocio'
 
 const lineaVacia = { tipo: 'articulo', articulo_id: '', ingrediente_semielaborado_id: '', ingrediente_id: '', cantidad: '' }
 
 function ProductosFinales() {
+  const { negocio } = useNegocio()
   const [productos, setProductos] = useState([])
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
@@ -336,7 +339,7 @@ function ProductosFinales() {
                   <p className="font-semibold text-[#1C2938]">
                     {p.nombre} {p.codigo && <span className="text-gray-400 font-mono text-xs">({p.codigo})</span>}
                   </p>
-                  {p.precio_venta != null && <p className="text-sm text-gray-500">Precio: {p.precio_venta} €</p>}
+                  {p.precio_venta != null && <p className="text-sm text-gray-500">Precio: {formatMoneda(p.precio_venta, negocio?.moneda)}</p>}
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0">

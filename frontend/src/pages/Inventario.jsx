@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { formatCantidad, formatPrecio } from '../lib/formatCantidad'
+import { formatCantidad, formatMoneda } from '../lib/formatCantidad'
+import { useNegocio } from '../context/useNegocio'
 import { IconChevronRight, IconChevronDown } from '@tabler/icons-react'
 import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer, LinkAction } from '../components/ui'
 import AjusteStockForm from '../components/AjusteStockForm'
@@ -14,6 +15,7 @@ const datosVacios = {
 }
 
 function Inventario() {
+  const { negocio } = useNegocio()
   const [datos, setDatos] = useState(datosVacios)
   const [demandaPorIngrediente, setDemandaPorIngrediente] = useState(new Map())
   const [cargando, setCargando] = useState(true)
@@ -469,9 +471,9 @@ function Inventario() {
                                                             )}
                                                           </td>
                                                           <td className="px-2 py-1.5">{d.proveedorNombre}</td>
-                                                          <td className="px-2 py-1.5">{d.precio != null ? `${formatPrecio(d.precio)} €/${art.unidad}` : '—'}</td>
+                                                          <td className="px-2 py-1.5">{d.precio != null ? `${formatMoneda(d.precio, negocio?.moneda)}/${art.unidad}` : '—'}</td>
                                                           <td className="px-2 py-1.5">
-                                                            {d.ultimoPrecio ? `${formatPrecio(d.ultimoPrecio.precio)} €/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
+                                                            {d.ultimoPrecio ? `${formatMoneda(d.ultimoPrecio.precio, negocio?.moneda)}/${art.unidad} (${formatFecha(d.ultimoPrecio.fecha)})` : '—'}
                                                           </td>
                                                           <td className="px-2 py-1.5">{formatCantidad(d.stock, art.unidad)} {art.unidad}</td>
                                                         </tr>

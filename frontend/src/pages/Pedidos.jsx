@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import {
@@ -28,20 +29,18 @@ const ESTADO_BADGE = {
   cancelado: 'red',
 }
 
-const ESTADO_LABEL = {
-  pendiente: 'Pendiente',
-  en_produccion: 'En producción',
-  servido: 'Servido',
-  cancelado: 'Cancelado',
-}
-
-// BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): mismas opciones que ESTADO_LABEL, en formato
-// {value, label} para el MultiSelect -- una sola fuente de verdad para el texto del badge y el
-// texto del filtro, sin duplicar la lista de estados en dos sitios.
-const ESTADO_FILTRO_OPCIONES = Object.entries(ESTADO_LABEL).map(([value, label]) => ({ value, label }))
+// CONTRATO_I18N.md, Fase 0: solo las claves del enum (estables, en español porque así están en
+// la BD) viven aquí -- la etiqueta visible se resuelve con t('enums:estado_pedido.<clave>'), ver
+// enums.json en cada carpeta de idioma. Antes ESTADO_LABEL tenía el texto español fijo.
+const ESTADOS_PEDIDO = ['pendiente', 'en_produccion', 'servido', 'cancelado']
 
 function Pedidos() {
   const navigate = useNavigate()
+  const { t } = useTranslation(['common', 'enums'])
+  // BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): mismas opciones que el enum de estado, en formato
+  // {value, label} para el MultiSelect -- recalculado en cada render para reaccionar al cambio
+  // de idioma (ver Fase 0 del contrato i18n).
+  const ESTADO_FILTRO_OPCIONES = ESTADOS_PEDIDO.map((value) => ({ value, label: t(`enums:estado_pedido.${value}`) }))
   const [pedidos, setPedidos] = useState([])
   const [clientes, setClientes] = useState([])
   const [productos, setProductos] = useState([])
@@ -421,7 +420,7 @@ function Pedidos() {
                           {p.fecha_entrega_prevista ? formatFecha(p.fecha_entrega_prevista) : '—'}
                         </td>
                         <td className="px-3 py-3">
-                          <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
+                          <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{t(`enums:estado_pedido.${p.estado}`, { defaultValue: p.estado })}</Badge>
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">

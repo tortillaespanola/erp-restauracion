@@ -1,18 +1,30 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad } from '../lib/formatCantidad'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import AjusteStockForm from '../components/AjusteStockForm'
 
-const TIPO_LABEL = { articulo: 'artículo', semielaborado: 'semielaborado', producto_final: 'producto final' }
+// CONTRATO_I18N.md, Fase 0: etiqueta resuelta con t('enums:tipo_ajuste.<clave>') -- ver
+// enums.json. Antes TIPO_LABEL tenía el texto español fijo.
 const PAGE_SIZE = 20
+
+// La migración 20260907_i18n_idioma_moneda.sql separó motivo_categoria (solo producto_final,
+// valor crudo del enum) de motivo (texto libre) en la vista -- antes venían ya concatenados y
+// traducidos a español desde el propio SQL. Se recompone aquí, traduciendo solo la categoría.
+function motivoMostrado(a, t) {
+  if (!a.motivo_categoria) return a.motivo
+  const categoria = t(`enums:motivo_categoria.${a.motivo_categoria}`, { defaultValue: a.motivo_categoria })
+  return a.motivo ? `${categoria} — ${a.motivo}` : categoria
+}
 
 // CONTRATO_AJUSTE_RAPIDO_INVENTARIO.md, Parte B: esta pantalla deja de ser el punto de entrada
 // para crear un ajuste (eso vive en el drawer, ver AjusteStockForm.jsx, disparado desde aquí y
 // desde Inventario.jsx) y pasa a ser histórico de movimientos -- tabla filtrable y paginada sobre
 // la vista historial_ajustes_stock, no una lista de artículos que crece sin límite.
 function AjustesStock() {
+  const { t } = useTranslation(['common', 'enums'])
   const [drawerAbierto, setDrawerAbierto] = useState(false)
   const [historial, setHistorial] = useState([])
   const [total, setTotal] = useState(0)
@@ -31,7 +43,13 @@ function AjustesStock() {
     if (fechaDesde) query = query.gte('fecha', fechaDesde)
     if (fechaHasta) query = query.lte('fecha', fechaHasta)
     if (buscarItem.trim()) query = query.ilike('item_nombre', `%${buscarItem.trim()}%`)
-    if (buscarMotivo.trim()) query = query.ilike('motivo', `%${buscarMotivo.trim()}%`)
+    // Busca en motivo (texto libre) Y motivo_categoria (valor crudo del enum, solo producto_final)
+    // -- desde que la migración de Fase 0 los separó en dos columnas, buscar solo en `motivo` dejaría
+    // de encontrar ajustes de producto_final por su categoría (antes venía concatenada ahí mismo).
+    if (buscarMotivo.trim()) {
+      const termino = buscarMotivo.trim()
+      query = query.or(`motivo.ilike.%${termino}%,motivo_categoria.ilike.%${termino}%`)
+    }
 
     const desde = pagina * PAGE_SIZE
     const { data, error, count } = await query.range(desde, desde + PAGE_SIZE - 1)
@@ -127,11 +145,11 @@ function AjustesStock() {
                 {historial.map((a) => (
                   <tr key={`${a.tipo}-${a.id}`} className="hover:bg-blue-50/40">
                     <Td className="text-gray-500">{formatFecha(a.fecha)}</Td>
-                    <Td className="font-medium">{a.item_nombre} <span className="text-gray-400 text-xs font-normal">({TIPO_LABEL[a.tipo]})</span></Td>
+                    <Td className="font-medium">{a.item_nombre} <span className="text-gray-400 text-xs font-normal">({t(`enums:tipo_ajuste.${a.tipo}`, { defaultValue: a.tipo })})</span></Td>
                     <Td className={`font-medium ${a.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {a.cantidad >= 0 ? '+' : ''}{formatCantidad(a.cantidad, a.unidad)} {a.unidad}
                     </Td>
-                    <Td className="text-gray-500">{a.motivo}</Td>
+                    <Td className="text-gray-500">{motivoMostrado(a, t)}</Td>
                     <Td className="text-gray-500">{a.user_email || '—'}</Td>
                     <Td className="text-right">
                       <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">Borrar</LinkAction>

@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatMoneda } from '../lib/formatCantidad'
 import { documentosPendientesCliente, EPSILON } from '../lib/saldosVenta'
 import { Field, Select, Input, DateInput, Textarea, SectionLabel, Button } from './ui'
+import { useNegocio } from '../context/useNegocio'
 
-const METODOS = [
-  { value: 'efectivo', label: 'Efectivo' },
-  { value: 'twint', label: 'Twint' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'transferencia', label: 'Transferencia' },
-]
+// CONTRATO_I18N.md, Fase 0: mismo enum que METODO_LABEL en Pagos.jsx, consolidado en
+// enums.json -- antes estaba duplicado aquí con el texto español fijo.
+const METODOS_PAGO = ['efectivo', 'twint', 'tarjeta', 'transferencia']
 
 function claveDoc(d) {
   return `${d.tipo}-${d.id}`
@@ -20,6 +20,9 @@ function claveDoc(d) {
 // rápido de Facturas/Albaranes (Bloque 6, con clienteIdInicial + documentoPreseleccionado ya
 // resueltos por el llamador).
 export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, documentoPreseleccionado = null, onGuardado, onCancelar }) {
+  const { t } = useTranslation(['common', 'enums'])
+  const { negocio } = useNegocio()
+  const METODOS = METODOS_PAGO.map((value) => ({ value, label: t(`enums:metodo_pago.${value}`) }))
   const [clienteId, setClienteId] = useState(clienteIdInicial != null ? String(clienteIdInicial) : '')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [monto, setMonto] = useState(documentoPreseleccionado ? documentoPreseleccionado.saldo.toFixed(2) : '')
@@ -214,7 +217,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
         <Field label="Fecha">
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
-        <Field label="Monto recibido (CHF)">
+        <Field label={`Monto recibido (${negocio?.moneda || 'CHF'})`}>
           <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required />
         </Field>
         <Field label="Método">
@@ -228,7 +231,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
       </div>
 
       <div className={`text-sm font-medium ${colorIndicador}`}>
-        Aplicado: {totalAplicado.toFixed(2)} CHF / Recibido: {montoRecibido.toFixed(2)} CHF
+        Aplicado: {formatMoneda(totalAplicado, negocio?.moneda)} / Recibido: {formatMoneda(montoRecibido, negocio?.moneda)}
         {excedeLoRecibido && ' — supera lo recibido, corrige antes de guardar'}
       </div>
 
@@ -270,7 +273,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
                         <label key={key} className="flex items-center gap-2 text-sm">
                           <input type="checkbox" checked={!!apl?.checked} onChange={() => toggleDocumento(d)} />
                           <span className="flex-1">
-                            {d.codigo} · {formatFecha(d.fecha)} · saldo {d.saldo.toFixed(2)} CHF
+                            {d.codigo} · {formatFecha(d.fecha)} · saldo {formatMoneda(d.saldo, negocio?.moneda)}
                           </span>
                           <Input
                             type="number" step="0.01" min="0"

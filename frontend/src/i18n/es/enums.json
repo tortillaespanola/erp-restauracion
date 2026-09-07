@@ -1,0 +1,40 @@
+{
+  "estado_pedido": {
+    "pendiente": "Pendiente",
+    "en_produccion": "En producción",
+    "servido": "Servido",
+    "cancelado": "Cancelado"
+  },
+  "estado_pedido_compra": {
+    "pendiente": "Pendiente",
+    "recibido": "Recibido",
+    "cancelado": "Cancelado"
+  },
+  "estado_pago": {
+    "pagada": "Pagada",
+    "parcial": "Parcial",
+    "pendiente": "Pendiente",
+    "anulada": "Anulada"
+  },
+  "estado_facturacion": {
+    "facturado": "Facturado",
+    "pendiente_facturar": "Pendiente de facturar"
+  },
+  "metodo_pago": {
+    "efectivo": "Efectivo",
+    "twint": "Twint",
+    "tarjeta": "Tarjeta",
+    "transferencia": "Transferencia"
+  },
+  "tipo_ajuste": {
+    "articulo": "artículo",
+    "semielaborado": "semielaborado",
+    "producto_final": "producto final"
+  },
+  "motivo_categoria": {
+    "caducado": "Caducado",
+    "roto": "Roto",
+    "evento_no_consumido": "Evento no consumido",
+    "otro": "Otro"
+  }
+}

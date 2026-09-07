@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { formatMoneda } from '../lib/formatCantidad'
 import { IconThermometer, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, EmptyState, LoadingState } from '../components/ui'
+import { useNegocio } from '../context/useNegocio'
 
 const NUEVO_INGREDIENTE = '__nuevo__'
 
@@ -331,6 +333,7 @@ function Articulos() {
 }
 
 function ProveedoresDelArticulo({ articulo, onCambio }) {
+  const { negocio } = useNegocio()
   const [proveedores, setProveedores] = useState([])
   const [proveedorId, setProveedorId] = useState('')
   const [precio, setPrecio] = useState('')
@@ -469,7 +472,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
                     {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
                     {ap.proveedores?.nombre_comercial}
                   </td>
-                  <td className="py-1.5">{ap.precio != null ? `${ap.precio} €` : '-'}</td>
+                  <td className="py-1.5">{ap.precio != null ? formatMoneda(ap.precio, negocio?.moneda) : '-'}</td>
                   <td className="py-1.5 text-gray-400">{ap.referencia_proveedor ?? '-'}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">
                     <LinkAction tone="blue" onClick={() => handleEmpezarEdicion(ap)} className="text-xs mr-3">Editar</LinkAction>

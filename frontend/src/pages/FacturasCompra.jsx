@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatMoneda } from '../lib/formatCantidad'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import { useNegocio } from '../context/useNegocio'
 
 function FacturasCompra() {
+  const { negocio } = useNegocio()
   const [facturas, setFacturas] = useState([])
   const [proveedores, setProveedores] = useState([])
   const [albaranesDisponibles, setAlbaranesDisponibles] = useState([])
@@ -214,7 +217,7 @@ function FacturasCompra() {
                   <p className="font-semibold text-[#1C2938]">{f.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
                   <p className="text-sm text-gray-500">
                     Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
-                    {f.total != null && ` · ${f.total} €`}
+                    {f.total != null && ` · ${formatMoneda(f.total, negocio?.moneda)}`}
                     {f.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{f.codigo_interno}</span>}
                   </p>
                 </div>

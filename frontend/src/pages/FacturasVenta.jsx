@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
+import { formatMoneda } from '../lib/formatCantidad'
 import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
 import { estadoPago, clientesParaDrawer } from '../lib/saldosVenta'
+import { useNegocio } from '../context/useNegocio'
 import {
   IconChevronRight, IconChevronDown, IconPrinter, IconDownload, IconCoin, IconBan,
   IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus,
@@ -12,21 +15,19 @@ import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import FacturaVentaForm from '../components/FacturaVentaForm'
 
 const ESTADO_PAGO_BADGE = { pagada: 'green', parcial: 'amber', pendiente: 'gray' }
-const ESTADO_PAGO_LABEL = { pagada: 'Pagada', parcial: 'Parcial', pendiente: 'Pendiente' }
 
 // BLOQUE 5 (CONTRATO_UX_FACTURAS_VENTA.md): 20 por página, mismo tamaño que Pedidos/Albaranes.
 const PAGINA_TAMANO = 20
 
 // BLOQUE 3 (CONTRATO_FILTROS_VENTA.md), sección 4: incluye "Anulada" además de los tres estados
-// de pago del badge -- es un estado propio de la factura, no del saldo.
-const ESTADO_FILTRO_OPCIONES = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'parcial', label: 'Parcial' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'anulada', label: 'Anulada' },
-]
+// de pago del badge -- es un estado propio de la factura, no del saldo. CONTRATO_I18N.md, Fase 0:
+// solo las claves viven aquí, la etiqueta se resuelve con t('enums:estado_pago.<clave>').
+const ESTADOS_FILTRO_FACTURA = ['pendiente', 'parcial', 'pagada', 'anulada']
 
 function FacturasVenta() {
+  const { t } = useTranslation(['common', 'enums'])
+  const { negocio } = useNegocio()
+  const ESTADO_FILTRO_OPCIONES = ESTADOS_FILTRO_FACTURA.map((value) => ({ value, label: t(`enums:estado_pago.${value}`) }))
   const [facturas, setFacturas] = useState([])
   const [clientes, setClientes] = useState([])
   const [clientesActivos, setClientesActivos] = useState([])
@@ -352,12 +353,12 @@ function FacturasVenta() {
                         <td className="px-3 py-3">{f.clientes?.nombre ?? 'Sin cliente'}</td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {f.anulada && <Badge color="red">Anulada</Badge>}
-                            {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{ESTADO_PAGO_LABEL[estado]}</Badge>}
+                            {f.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
+                            {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{t(`enums:estado_pago.${estado}`)}</Badge>}
                           </div>
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap text-gray-600">
-                          {f.total != null ? `${f.total} CHF` : '—'}
+                          {f.total != null ? formatMoneda(f.total, negocio?.moneda) : '—'}
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>

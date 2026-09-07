@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "sections": {
+      "compras": "Compras",
+      "produccion": "Producción",
+      "ventas": "Ventas"
+    },
+    "items": {
+      "pedidos_compra": "Pedidos de compra",
+      "proveedores": "Proveedores",
+      "articulos": "Artículos",
+      "albaranes_compra": "Albaranes compra",
+      "facturas_compra": "Facturas compra",
+      "pedidos_del_dia": "Producciones del día",
+      "inventario": "Inventario",
+      "ingredientes": "Ingredientes",
+      "semielaborados": "Semielaborados",
+      "producciones": "Producciones",
+      "ajustes_stock": "Ajustes de stock",
+      "productos": "Productos finales",
+      "produccion_productos": "Producción prod. finales",
+      "pedidos": "Pedidos",
+      "clientes": "Clientes",
+      "albaranes_venta": "Albaranes venta",
+      "facturas_venta": "Facturas venta",
+      "pagos": "Pagos"
+    }
+  },
+  "titles": {
+    "pedidos_compra": { "title": "Pedidos de compra", "breadcrumb": "Compras · Pedidos de compra" },
+    "proveedores": { "title": "Proveedores", "breadcrumb": "Compras · Proveedores" },
+    "articulos": { "title": "Artículos de compra", "breadcrumb": "Compras · Artículos" },
+    "albaranes_compra": { "title": "Albaranes de compra", "breadcrumb": "Compras · Albaranes compra" },
+    "facturas_compra": { "title": "Facturas de compra", "breadcrumb": "Compras · Facturas compra" },
+    "pedidos_del_dia": { "title": "Producciones del día", "breadcrumb": "Producción · Producciones del día" },
+    "inventario": { "title": "Inventario", "breadcrumb": "Producción · Inventario" },
+    "cierre_tanda": { "title": "Cierre / entrega", "breadcrumb": "Producción · Cierre de tanda" },
+    "ingredientes": { "title": "Ingredientes", "breadcrumb": "Producción · Ingredientes" },
+    "semielaborados": { "title": "Semielaborados", "breadcrumb": "Producción · Semielaborados" },
+    "producciones": { "title": "Producciones", "breadcrumb": "Producción · Producciones" },
+    "ajustes_stock": { "title": "Ajustes de stock", "breadcrumb": "Producción · Ajustes de stock" },
+    "productos": { "title": "Productos finales", "breadcrumb": "Producción · Productos finales" },
+    "produccion_productos": { "title": "Producción de productos finales", "breadcrumb": "Producción · Producción prod. finales" },
+    "pedidos": { "title": "Pedidos", "breadcrumb": "Ventas · Pedidos" },
+    "clientes": { "title": "Clientes", "breadcrumb": "Ventas · Clientes" },
+    "albaranes_venta": { "title": "Albaranes de venta", "breadcrumb": "Ventas · Albaranes venta" },
+    "facturas_venta": { "title": "Facturas de venta", "breadcrumb": "Ventas · Facturas venta" },
+    "pagos": { "title": "Pagos de venta", "breadcrumb": "Ventas · Pagos" },
+    "configuracion": { "title": "Configuración", "breadcrumb": "Configuración de empresa" }
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "add": "Añadir",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "search_placeholder": "Buscar...",
+    "logout": "Cerrar sesión",
+    "settings": "Configuración",
+    "loading": "Cargando...",
+    "default_user": "Usuario"
+  }
+}
