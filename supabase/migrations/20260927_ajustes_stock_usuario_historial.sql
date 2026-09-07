@@ -81,7 +81,8 @@ join producciones_producto_final ppf on ppf.id = apf.produccion_pf_id
 join productos_finales pf on pf.id = ppf.producto_final_id
 left join auth.users u3 on u3.id = apf.user_id;
 
--- GRANT y RLS son capas independientes (ver feedback_test_rls_authenticated / incidente ya
+-- GRANT y RLS son capas independientes (ver feedback_test_rls_authenticated.md -- reconstruido
+-- el 2026-09-07, no existía todavía cuando se escribió este comentario -- e incidente ya
 -- documentado en 20260914_grant_previsiones_distribucion_pf.sql) -- una vista nueva no hereda
 -- privilegios de las tablas base, hay que concedérselos explícitamente o toda consulta desde el
 -- frontend falla con 42501 "permission denied", silenciosamente confundible con "sin resultados".
