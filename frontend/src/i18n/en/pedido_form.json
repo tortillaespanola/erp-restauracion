@@ -1,0 +1,33 @@
+{
+  "campos": {
+    "cliente": "Customer",
+    "fecha": "Date",
+    "fecha_entrega_opcional": "Expected delivery date (optional)",
+    "notas_opcional": "Notes (optional)"
+  },
+  "fecha_entrega_anterior": "Cannot be earlier than the order date",
+  "redondea_3_decimales": "Will be rounded to 3 decimals",
+  "lineas_pedido_titulo": "Order lines",
+  "tipo_producto_final": "Final product",
+  "tipo_mercaderia": "Merchandise",
+  "tipo_libre": "Other / service",
+  "selecciona_cliente": "Select customer",
+  "selecciona_producto_final": "Select final product",
+  "selecciona_articulo_mercaderia": "Select merchandise article",
+  "descripcion_placeholder": "Description (e.g. Bread, extra showcooking hours...)",
+  "cantidad_placeholder": "Quantity",
+  "precio_placeholder": "Price",
+  "anadir_linea": "Add line",
+  "guardar_cambios": "Save changes",
+  "guardar_pedido": "Save order",
+  "alertas": {
+    "fecha_entrega_invalida": "The expected delivery date cannot be earlier than the order date",
+    "sin_lineas_validas": "Add at least one line with product/merchandise/description and quantity",
+    "error_actualizar_pedido": "Error updating the order: {{mensaje}}",
+    "error_borrar_lineas": "Error deleting lines: {{mensaje}}",
+    "error_actualizar_linea": "Error updating a line: {{mensaje}}",
+    "error_anadir_lineas": "Error adding new lines: {{mensaje}}",
+    "error_crear_pedido": "Error creating the order: {{mensaje}}",
+    "error_guardar_lineas": "Error saving the lines: {{mensaje}}"
+  }
+}

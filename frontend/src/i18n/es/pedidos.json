@@ -1,0 +1,48 @@
+{
+  "titulo": "Pedidos",
+  "subtitulo": "Registra lo que pide un cliente, lanza la producción que haga falta, y créalo como albarán de venta cuando esté listo.",
+  "listado_titulo": "Listado",
+  "nuevo_pedido": "Nuevo pedido",
+  "editar_pedido": "Editar pedido",
+  "filtros": {
+    "cliente": "Cliente",
+    "estado": "Estado",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "sin_pedidos_filtro": "Ningún pedido coincide con los filtros aplicados.",
+  "sin_pedidos": "Todavía no hay pedidos registrados.",
+  "tabla": {
+    "fecha": "Fecha",
+    "cliente": "Cliente",
+    "entrega_prevista": "Entrega prevista",
+    "estado": "Estado",
+    "progreso": "Progreso",
+    "acciones": "Acciones"
+  },
+  "sin_cliente": "Sin cliente",
+  "lineas_servidas": "{{servidas}}/{{total}} líneas servidas",
+  "aviso_stock_insuficiente_title": "Alguna línea tiene stock insuficiente en la tanda asignada",
+  "editar_title": "Editar",
+  "crear_albaran_title": "Crear albarán de venta",
+  "cancelar_pedido_title": "Cancelar pedido",
+  "tabla_detalle": {
+    "linea": "Línea",
+    "pedido": "Pedido",
+    "previsto": "Previsto",
+    "servido": "Servido"
+  },
+  "tipo_mercaderia": " (mercadería)",
+  "tipo_libre": " (otro/servicio)",
+  "solo_disp_en_tanda": "({{lista}} en la tanda asignada)",
+  "solo_disp_item": "solo {{valor}} disp.",
+  "pedido_pagina_count_one": "{{count}} pedido · página {{pagina}} de {{total}}",
+  "pedido_pagina_count_other": "{{count}} pedidos · página {{pagina}} de {{total}}",
+  "alertas": {
+    "confirmar_cancelar": "¿Cancelar este pedido?",
+    "error_cancelar": "Error al cancelar: {{mensaje}}",
+    "error_comprobar_editable": "Error al comprobar si el pedido se puede editar: {{mensaje}}",
+    "no_editable": "Este pedido ya tiene producción o entregas registradas; no se puede editar todavía — cancélalo y crea uno nuevo, o contacta con soporte."
+  }
+}

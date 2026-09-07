@@ -1,0 +1,33 @@
+{
+  "campos": {
+    "cliente": "Cliente",
+    "fecha": "Fecha",
+    "fecha_entrega_opcional": "Fecha de entrega prevista (opcional)",
+    "notas_opcional": "Notas (opcional)"
+  },
+  "fecha_entrega_anterior": "No puede ser anterior a la fecha del pedido",
+  "redondea_3_decimales": "Se redondeará a 3 decimales",
+  "lineas_pedido_titulo": "Líneas del pedido",
+  "tipo_producto_final": "Producto final",
+  "tipo_mercaderia": "Mercadería",
+  "tipo_libre": "Otro / servicio",
+  "selecciona_cliente": "Selecciona cliente",
+  "selecciona_producto_final": "Selecciona producto final",
+  "selecciona_articulo_mercaderia": "Selecciona artículo de mercadería",
+  "descripcion_placeholder": "Descripción (ej. Pan, Horas de showcooking extra...)",
+  "cantidad_placeholder": "Cantidad",
+  "precio_placeholder": "Precio",
+  "anadir_linea": "Añadir línea",
+  "guardar_cambios": "Guardar cambios",
+  "guardar_pedido": "Guardar pedido",
+  "alertas": {
+    "fecha_entrega_invalida": "La fecha de entrega prevista no puede ser anterior a la fecha del pedido",
+    "sin_lineas_validas": "Añade al menos una línea con producto/mercadería/descripción y cantidad",
+    "error_actualizar_pedido": "Error al actualizar el pedido: {{mensaje}}",
+    "error_borrar_lineas": "Error al borrar líneas: {{mensaje}}",
+    "error_actualizar_linea": "Error al actualizar una línea: {{mensaje}}",
+    "error_anadir_lineas": "Error al añadir nuevas líneas: {{mensaje}}",
+    "error_crear_pedido": "Error al crear el pedido: {{mensaje}}",
+    "error_guardar_lineas": "Error al guardar las líneas: {{mensaje}}"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "produccion_pf": {
+    "ok": "OK",
+    "pendiente": "Pendiente de producir",
+    "semi": "Falta stock de semielaborados",
+    "ingrediente": "Falta stock de ingredientes",
+    "ambos": "Falta stock de ambos",
+    "en_curso_insuficiente": "En curso",
+    "en_curso_cubre": "En curso — cubre necesidad",
+    "semis_en_curso_insuficiente": "Semielaborados en curso",
+    "semis_en_curso_cubre": "Semielaborados en curso — cubren necesidad"
+  },
+  "consumo": {
+    "no_consumido": "No consumido",
+    "completo": "Completo",
+    "parcial": "Parcial — {{pct}}%"
+  },
+  "despacho": {
+    "no_despachado": "No despachado",
+    "despachado": "Despachado",
+    "parcial": "Parcial — {{pct}}%"
+  }
+}

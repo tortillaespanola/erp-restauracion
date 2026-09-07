@@ -1,0 +1,23 @@
+{
+  "produccion_pf": {
+    "ok": "OK",
+    "pendiente": "Ausstehende Produktion",
+    "semi": "Halbfertigprodukt-Bestand fehlt",
+    "ingrediente": "Zutaten-Bestand fehlt",
+    "ambos": "Beides fehlt",
+    "en_curso_insuficiente": "In Bearbeitung",
+    "en_curso_cubre": "In Bearbeitung — deckt Bedarf",
+    "semis_en_curso_insuficiente": "Halbfertigprodukte in Bearbeitung",
+    "semis_en_curso_cubre": "Halbfertigprodukte in Bearbeitung — decken Bedarf"
+  },
+  "consumo": {
+    "no_consumido": "Nicht verbraucht",
+    "completo": "Vollständig",
+    "parcial": "Teilweise — {{pct}}%"
+  },
+  "despacho": {
+    "no_despachado": "Nicht versendet",
+    "despachado": "Versendet",
+    "parcial": "Teilweise — {{pct}}%"
+  }
+}

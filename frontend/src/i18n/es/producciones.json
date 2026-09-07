@@ -1,0 +1,46 @@
+{
+  "titulo": "Producciones",
+  "subtitulo_tanda": "Iniciando producción para una tanda de \"Pedidos del día\" — la cantidad y los consumos se sugieren según los pedidos de esa tanda.",
+  "subtitulo_normal": "Inicia una producción, ve registrando consumos de los lotes que uses, y ciérrala cuando tengas el peso neto final.",
+  "cantidad_a_producir_opcional": "Cantidad a producir (opcional, valida stock)",
+  "sin_validar_placeholder": "Sin validar",
+  "comprobando_stock": "Comprobando stock disponible…",
+  "aviso_stock_insuficiente_titulo": "Aviso: stock insuficiente en receta — puedes iniciar igualmente:",
+  "falta_de": "Falta {{falta}} {{unidad}} de {{nombre}} (disponible: {{disponible}} {{unidad}})",
+  "stock_disponible_titulo": "Stock disponible",
+  "stock_disponible_para": "Stock disponible para {{nombre}}",
+  "sin_receta": "Este semielaborado no tiene semielaborados ni ingredientes en su receta.",
+  "tabla": {
+    "nombre": "Nombre",
+    "tipo": "Tipo",
+    "stock_disponible": "Stock disponible",
+    "semielaborado": "Semielaborado",
+    "ingrediente": "Ingrediente"
+  },
+  "sin_produccion_en_curso": "No hay ninguna producción en curso de este semielaborado.",
+  "historial_titulo": "Historial de producciones cerradas",
+  "historial_titulo_de": "Historial de producciones cerradas de {{nombre}}",
+  "sin_producciones_cerradas": "Todavía no hay producciones cerradas.",
+  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas de este semielaborado.",
+  "tabla_historial": {
+    "semielaborado": "Semielaborado",
+    "estado_consumo": "Estado de consumo"
+  },
+  "cantidad_sugerida_tanda": "Cantidad a producir ({{unidad}}) — sugerida por la tanda",
+  "calculando_placeholder": "Calculando...",
+  "recalcular_consumos": "Recalcular consumos sugeridos",
+  "consumido_por_titulo": "Consumido por",
+  "sin_consumo_registrado_todavia": "Sin consumo registrado todavía.",
+  "tipo_semielaborado": "semielaborado",
+  "tipo_producto_final": "producto final",
+  "confirmar_borrar_con_avisos": "⚠️ Este lote se usó en:\n\n{{lista}}\n\nAl borrarlo, esos consumos/ajustes también se eliminarán. ¿Seguro que quieres continuar?",
+  "confirmar_borrar_sin_avisos": "¿Seguro que quieres borrar esta producción?",
+  "avisos": {
+    "consumo_semi_one": "{{count}} consumo en otras producciones de semielaborados",
+    "consumo_semi_other": "{{count}} consumos en otras producciones de semielaborados",
+    "consumo_pf_one": "{{count}} consumo en producciones de productos finales",
+    "consumo_pf_other": "{{count}} consumos en producciones de productos finales",
+    "ajuste_one": "{{count}} ajuste de stock",
+    "ajuste_other": "{{count}} ajustes de stock"
+  }
+}

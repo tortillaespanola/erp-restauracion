@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
@@ -17,15 +18,19 @@ const PAGINA_TAMANO = 20
 // ya llega con los ajustes restados (ver cargarHistorial) -- puede superar `cantidadProducida` (un
 // ajuste negativo grande) o quedar por debajo de 0 (uno positivo grande), por eso el % se acota
 // explícitamente entre 0 y 100 antes de decidir el badge.
+//
+// CONTRATO_I18N.md, Fase 1: `t` se pasa como parámetro (función pura, no componente) -- las
+// etiquetas viven en estados_calculados.json, nunca en enums.json (son estado calculado en cliente,
+// no un valor crudo de un CHECK de BD).
 const EPS = 0.0005
-function estadoConsumo(cantidadProducida, consumido) {
+function estadoConsumo(cantidadProducida, consumido, t) {
   const cantidad = Number(cantidadProducida) || 0
   const cons = Number(consumido) || 0
-  if (cons <= EPS) return { color: 'gray', texto: 'No consumido' }
+  if (cons <= EPS) return { color: 'gray', texto: t('estados_calculados:consumo.no_consumido') }
   const pctBruto = cantidad > 0 ? (cons / cantidad) * 100 : 100
   const pct = Math.max(0, Math.min(100, pctBruto))
-  if (pct >= 100 - EPS) return { color: 'green', texto: 'Completo' }
-  return { color: 'amber', texto: `Parcial — ${pct.toFixed(0)}%` }
+  if (pct >= 100 - EPS) return { color: 'green', texto: t('estados_calculados:consumo.completo') }
+  return { color: 'amber', texto: t('estados_calculados:consumo.parcial', { pct: pct.toFixed(0) }) }
 }
 
 // Nivel 'semielaborado' de necesidades_pedidos() sobre los pedidos de una tanda — usado tanto para
@@ -221,6 +226,7 @@ function claveIngrediente(ing) {
 function Producciones() {
   const [searchParams] = useSearchParams()
   const tandaId = searchParams.get('tanda_id')
+  const { t } = useTranslation(['common', 'produccion_comun', 'producciones'])
 
   const [semielaborados, setSemielaborados] = useState([])
   const [abiertas, setAbiertas] = useState([])
@@ -482,7 +488,7 @@ function Producciones() {
       })
 
     if (error) {
-      alert('Error al iniciar la producción: ' + error.message)
+      alert(t('produccion_comun:alertas.error_iniciar_produccion', { mensaje: error.message }))
       return
     }
 
@@ -493,10 +499,10 @@ function Producciones() {
   }
 
   async function handleCancelar(id) {
-    if (!confirm('¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados.')) return
+    if (!confirm(t('produccion_comun:alertas.confirmar_cancelar_produccion'))) return
     const { error } = await supabase.from('producciones_semielaborado').delete().eq('id', id)
     if (error) {
-      alert('Error al cancelar: ' + error.message)
+      alert(t('produccion_comun:alertas.error_cancelar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -510,19 +516,19 @@ function Producciones() {
     ])
 
     let avisos = []
-    if (c1.count > 0) avisos.push(`${c1.count} consumo(s) en otras producciones de semielaborados`)
-    if (c2.count > 0) avisos.push(`${c2.count} consumo(s) en producciones de productos finales`)
-    if (c3.count > 0) avisos.push(`${c3.count} ajuste(s) de stock`)
+    if (c1.count > 0) avisos.push(t('producciones:avisos.consumo_semi', { count: c1.count }))
+    if (c2.count > 0) avisos.push(t('producciones:avisos.consumo_pf', { count: c2.count }))
+    if (c3.count > 0) avisos.push(t('producciones:avisos.ajuste', { count: c3.count }))
 
     const mensaje = avisos.length > 0
-      ? `⚠️ Este lote se usó en:\n\n${avisos.map((a) => '• ' + a).join('\n')}\n\nAl borrarlo, esos consumos/ajustes también se eliminarán. ¿Seguro que quieres continuar?`
-      : '¿Seguro que quieres borrar esta producción?'
+      ? t('producciones:confirmar_borrar_con_avisos', { lista: avisos.map((a) => '• ' + a).join('\n') })
+      : t('producciones:confirmar_borrar_sin_avisos')
 
     if (!confirm(mensaje)) return
 
     const { error } = await supabase.from('producciones_semielaborado').delete().eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('produccion_comun:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     cargarHistorial()
@@ -545,7 +551,7 @@ function Producciones() {
     if (lista.length === 0 && !mensajeVacio) return null
     return (
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Producciones en curso</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('produccion_comun:producciones_en_curso')}</h2>
         {lista.length === 0 ? (
           <Card><EmptyState>{mensajeVacio}</EmptyState></Card>
         ) : (
@@ -567,51 +573,46 @@ function Producciones() {
   return (
     <div>
       <PageHeader
-        title="Producciones"
-        subtitle={
-          tandaId
-            ? 'Iniciando producción para una tanda de "Pedidos del día" — la cantidad y los consumos se sugieren según los pedidos de esa tanda.'
-            : 'Inicia una producción, ve registrando consumos de los lotes que uses, y ciérrala cuando tengas el peso neto final.'
-        }
+        title={t('producciones:titulo')}
+        subtitle={tandaId ? t('producciones:subtitulo_tanda') : t('producciones:subtitulo_normal')}
       />
 
       <Card className="mb-6">
         <CardBody>
           <form onSubmit={iniciarProduccion} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-3 items-end">
-            <Field label="Iniciar nueva producción">
+            <Field label={t('produccion_comun:campos.iniciar_nueva_produccion')}>
               <Select
                 value={semielaboradoId}
                 onChange={(e) => { setSemielaboradoId(e.target.value); setCantidadPlan(''); setHistorialPagina(1) }}
                 required
               >
-                <option value="">Selecciona qué vas a producir</option>
+                <option value="">{t('produccion_comun:campos.selecciona_que_produces')}</option>
                 {semielaborados.map((s) => (
                   <option key={s.id} value={s.id}>{s.nombre} ({s.unidad})</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Fecha">
+            <Field label={t('produccion_comun:campos.fecha')}>
               <DateInput value={fechaInicio} onChange={setFechaInicio} required />
             </Field>
-            <Field label="Cantidad a producir (opcional, valida stock)">
+            <Field label={t('producciones:cantidad_a_producir_opcional')}>
               <Input type="number" step="0.001" value={cantidadPlan} onChange={(e) => setCantidadPlan(e.target.value)}
-                placeholder="Sin validar" title="Se redondeará a 3 decimales" />
+                placeholder={t('producciones:sin_validar_placeholder')} title={t('produccion_comun:campos.redondea_3_decimales')} />
             </Field>
-            <Button type="submit">Iniciar</Button>
+            <Button type="submit">{t('produccion_comun:campos.iniciar')}</Button>
           </form>
 
-          {validandoStock && <p className="text-xs text-gray-400 mt-2">Comprobando stock disponible…</p>}
+          {validandoStock && <p className="text-xs text-gray-400 mt-2">{t('producciones:comprobando_stock')}</p>}
 
           {!validandoStock && faltantes.length > 0 && (
             <div className="mt-3 bg-amber-50 border border-amber-200 rounded-md p-3">
               <p className="text-sm font-semibold text-amber-700 mb-1">
-                Aviso: stock insuficiente en receta — puedes iniciar igualmente:
+                {t('producciones:aviso_stock_insuficiente_titulo')}
               </p>
               <ul className="text-sm text-amber-700 list-disc list-inside">
                 {faltantes.map((f, i) => (
                   <li key={i}>
-                    Falta {(f.necesario - f.disponible).toFixed(3)} {f.unidad} de {f.nombre}
-                    {' '}(disponible: {f.disponible.toFixed(3)} {f.unidad})
+                    {t('producciones:falta_de', { falta: (f.necesario - f.disponible).toFixed(3), unidad: f.unidad, nombre: f.nombre, disponible: f.disponible.toFixed(3) })}
                   </li>
                 ))}
               </ul>
@@ -630,25 +631,25 @@ function Producciones() {
       {semielaboradoId && (
         <>
           <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
-            {semielaboradoSeleccionado ? `Stock disponible para ${semielaboradoSeleccionado.nombre}` : 'Stock disponible'}
+            {semielaboradoSeleccionado ? t('producciones:stock_disponible_para', { nombre: semielaboradoSeleccionado.nombre }) : t('producciones:stock_disponible_titulo')}
           </h2>
           {cargando || cadenaCargando ? (
             <LoadingState />
           ) : cadenaStock.length === 0 ? (
-            <Card className="mb-8"><EmptyState>Este semielaborado no tiene semielaborados ni ingredientes en su receta.</EmptyState></Card>
+            <Card className="mb-8"><EmptyState>{t('producciones:sin_receta')}</EmptyState></Card>
           ) : (
             <Card className="overflow-hidden mb-8">
               <Table>
                 <Thead>
-                  <Th>Nombre</Th>
-                  <Th>Tipo</Th>
-                  <Th>Stock disponible</Th>
+                  <Th>{t('producciones:tabla.nombre')}</Th>
+                  <Th>{t('producciones:tabla.tipo')}</Th>
+                  <Th>{t('producciones:tabla.stock_disponible')}</Th>
                 </Thead>
                 <tbody className="divide-y divide-gray-100">
                   {cadenaStock.map((f) => (
                     <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-blue-50/40">
                       <Td className="font-medium">{f.nombre}</Td>
-                      <Td className="text-gray-500">{f.tipo === 'semielaborado' ? 'Semielaborado' : 'Ingrediente'}</Td>
+                      <Td className="text-gray-500">{f.tipo === 'semielaborado' ? t('producciones:tabla.semielaborado') : t('producciones:tabla.ingrediente')}</Td>
                       <Td>{f.stock.toFixed(3)} {f.unidad}</Td>
                     </tr>
                   ))}
@@ -659,17 +660,17 @@ function Producciones() {
         </>
       )}
 
-      {bloqueProduccionesEnCurso(abiertasFiltradas, semielaboradoId ? 'No hay ninguna producción en curso de este semielaborado.' : null)}
+      {bloqueProduccionesEnCurso(abiertasFiltradas, semielaboradoId ? t('producciones:sin_produccion_en_curso') : null)}
 
       <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
-        {semielaboradoSeleccionado ? `Historial de producciones cerradas de ${semielaboradoSeleccionado.nombre}` : 'Historial de producciones cerradas'}
+        {semielaboradoSeleccionado ? t('producciones:historial_titulo_de', { nombre: semielaboradoSeleccionado.nombre }) : t('producciones:historial_titulo')}
       </h2>
       {cargandoHistorial ? (
         <LoadingState />
       ) : historial.length === 0 ? (
         <Card className="mb-8">
           <EmptyState>
-            {semielaboradoId ? 'Todavía no hay producciones cerradas de este semielaborado.' : 'Todavía no hay producciones cerradas.'}
+            {semielaboradoId ? t('producciones:sin_producciones_cerradas_de') : t('producciones:sin_producciones_cerradas')}
           </EmptyState>
         </Card>
       ) : (
@@ -679,12 +680,12 @@ function Producciones() {
               <thead className="sticky top-0 z-10 bg-gray-50">
                 <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
                   <th className="w-8 px-3 py-2.5"></th>
-                  <th className="px-3 py-2.5 font-medium">Fecha</th>
-                  <th className="px-3 py-2.5 font-medium">Semielaborado</th>
-                  <th className="px-3 py-2.5 font-medium">Cantidad producida</th>
-                  <th className="px-3 py-2.5 font-medium">Notas</th>
-                  <th className="px-3 py-2.5 font-medium">Estado de consumo</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                  <th className="px-3 py-2.5 font-medium">{t('produccion_comun:campos.fecha')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('producciones:tabla_historial.semielaborado')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('produccion_comun:tabla.cantidad_producida')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('produccion_comun:tabla.notas')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('producciones:tabla_historial.estado_consumo')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('produccion_comun:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -708,7 +709,7 @@ function Producciones() {
       {!cargandoHistorial && totalHistorial > 0 && (
         <div className="flex items-center justify-between mb-8">
           <p className="text-xs text-gray-400">
-            {totalHistorial} producci{totalHistorial === 1 ? 'ón' : 'ones'} · página {historialPagina} de {totalPaginasHistorial}
+            {t('produccion_comun:historial_pagina_count', { count: totalHistorial, pagina: historialPagina, total: totalPaginasHistorial })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -716,7 +717,7 @@ function Producciones() {
               disabled={historialPagina === 1}
               onClick={() => setHistorialPagina((p) => p - 1)}
             >
-              Anterior
+              {t('common:actions.previous')}
             </Button>
             {Array.from({ length: totalPaginasHistorial }, (_, i) => i + 1).map((n) => (
               <button
@@ -733,7 +734,7 @@ function Producciones() {
               disabled={historialPagina === totalPaginasHistorial}
               onClick={() => setHistorialPagina((p) => p + 1)}
             >
-              Siguiente
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
@@ -744,6 +745,7 @@ function Producciones() {
 
 function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const navigate = useNavigate()
+  const { t } = useTranslation(['common', 'produccion_comun', 'producciones'])
   const [ingredientes, setIngredientes] = useState([])
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
   const [filasConsumo, setFilasConsumo] = useState({})
@@ -795,7 +797,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     const { error } = await supabase.from('producciones_semielaborado').update({ cantidad_objetivo: valor }).eq('id', produccion.id)
     setGuardandoObjetivo(false)
     if (error) {
-      alert('Error al guardar la cantidad objetivo: ' + error.message)
+      alert(t('produccion_comun:alertas.error_guardar_objetivo', { mensaje: error.message }))
       return
     }
     onCambio()
@@ -936,7 +938,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   async function confirmarConsumo() {
     const completas = filasCompletas()
     if (completas.length === 0) {
-      alert('Rellena lote y cantidad de al menos una línea')
+      alert(t('produccion_comun:rellena_lote_cantidad'))
       return
     }
 
@@ -961,7 +963,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     setConfirmando(false)
 
     if (error) {
-      alert('Ninguna línea se ha guardado — revisa el error y vuelve a confirmar:\n\n' + error.message)
+      alert(t('produccion_comun:alertas.ninguna_linea_guardada', { mensaje: error.message }))
       return
     }
 
@@ -973,7 +975,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   async function quitarConsumo(consumoId) {
     const { error } = await supabase.from('consumo_produccion').delete().eq('id', consumoId)
     if (error) {
-      alert('Error al quitar el consumo: ' + error.message)
+      alert(t('produccion_comun:alertas.error_quitar_consumo', { mensaje: error.message }))
       return
     }
     await cargarIngredientes()
@@ -982,15 +984,13 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
   async function cerrarProduccion() {
     if (!cantidadProducida || parseFloat(cantidadProducida) <= 0) {
-      alert('Indica el peso/cantidad neta producida')
+      alert(t('produccion_comun:alertas.indica_cantidad_valida'))
       return
     }
 
     const pendientes = filasCompletas().length
     if (pendientes > 0) {
-      const continuar = confirm(
-        `Tienes ${pendientes} línea(s) de consumo rellenas pero sin confirmar — se perderán si cierras ahora sin confirmarlas antes. ¿Cerrar de todas formas?`
-      )
+      const continuar = confirm(t('produccion_comun:pendientes_sin_confirmar', { count: pendientes }))
       if (!continuar) return
     }
 
@@ -1004,7 +1004,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       .eq('id', produccion.id)
 
     if (error) {
-      alert('Error al cerrar la producción: ' + error.message)
+      alert(t('produccion_comun:alertas.error_cerrar_produccion', { mensaje: error.message }))
       return
     }
 
@@ -1020,40 +1020,40 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     <Card className="p-4 border-l-4 border-l-amber-400!">
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-semibold text-[#1C2938]">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— en curso</span></p>
-          <p className="text-sm text-gray-500">Iniciada el {formatFecha(produccion.fecha)}</p>
+          <p className="font-semibold text-[#1C2938]">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— {t('produccion_comun:en_curso_badge')}</span></p>
+          <p className="text-sm text-gray-500">{t('produccion_comun:iniciada_el', { fecha: formatFecha(produccion.fecha) })}</p>
         </div>
-        <LinkAction tone="red" onClick={onCancelar}>Cancelar producción</LinkAction>
+        <LinkAction tone="red" onClick={onCancelar}>{t('produccion_comun:cancelar_produccion')}</LinkAction>
       </div>
 
       <div className="mt-3 flex items-end gap-3 flex-wrap">
-        <Field label={`Cantidad objetivo (${produccion.semielaborados?.unidad})`} className="w-56">
+        <Field label={t('produccion_comun:cantidad_objetivo', { unidad: produccion.semielaborados?.unidad })} className="w-56">
           <Input
             type="number"
             step="0.001"
             value={objetivo}
             onChange={(e) => setObjetivo(e.target.value)}
             onBlur={guardarObjetivo}
-            placeholder="Sin definir"
-            title="Ajuste de referencia -- no modifica el consumo ya registrado ni cierra la producción"
+            placeholder={t('produccion_comun:sin_definir')}
+            title={t('produccion_comun:ajuste_referencia_title')}
           />
         </Field>
-        {guardandoObjetivo && <span className="text-xs text-gray-400">Guardando...</span>}
+        {guardandoObjetivo && <span className="text-xs text-gray-400">{t('common:actions.saving')}</span>}
       </div>
 
       {produccion.tanda_id && (
         <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">
-          <Field label={`Cantidad a producir (${produccion.semielaborados?.unidad}) — sugerida por la tanda`} className="w-64">
+          <Field label={t('producciones:cantidad_sugerida_tanda', { unidad: produccion.semielaborados?.unidad })} className="w-64">
             <Input
               type="number"
               step="0.001"
               value={cantidadObjetivo}
               onChange={(e) => setCantidadObjetivo(e.target.value)}
-              placeholder={cantidadSugerida != null ? String(cantidadSugerida) : 'Calculando...'}
+              placeholder={cantidadSugerida != null ? String(cantidadSugerida) : t('producciones:calculando_placeholder')}
             />
           </Field>
           <LinkAction tone="blue" onClick={recalcularConsumosSugeridos} className="text-xs">
-            Recalcular consumos sugeridos
+            {t('producciones:recalcular_consumos')}
           </LinkAction>
         </div>
       )}
@@ -1064,31 +1064,31 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       <div className="border-t border-gray-100 mt-4 pt-4 flex items-center gap-3 flex-wrap">
         {!cargandoIngredientes && (
           <Button variant="success" size="sm" onClick={confirmarConsumo} disabled={confirmando}>
-            {confirmando ? 'Confirmando...' : `Confirmar consumo${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
+            {confirmando ? t('produccion_comun:confirmando') : `${t('produccion_comun:confirmar_consumo')}${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
           </Button>
         )}
         {!cerrando && (
           <Button variant="success" size="sm" onClick={() => setCerrando(true)}>
-            Cerrar producción (indicar cantidad neta)
+            {t('produccion_comun:cerrar_produccion_boton')}
           </Button>
         )}
         {/* Addenda "indicador listo para cerrar": puramente informativo, no deshabilita ni sustituye al
             botón de arriba -- cerrar con más o menos de lo estimado sigue siendo decisión del operador. */}
         {listoParaCerrar && (
           <span className="text-xs text-green-700 font-medium inline-flex items-center gap-1">
-            <IconCircleCheck size={14} /> Consumo suficiente para cerrar
+            <IconCircleCheck size={14} /> {t('produccion_comun:consumo_suficiente_cerrar')}
           </span>
         )}
       </div>
 
       {cerrando && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-          <Input type="number" step="0.001" placeholder={`Cantidad producida (${produccion.semielaborados?.unidad})`}
+          <Input type="number" step="0.001" placeholder={t('produccion_comun:cantidad_producida', { unidad: produccion.semielaborados?.unidad })}
             value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
-            autoFocus title="Se redondeará a 3 decimales" />
-          <Input type="text" placeholder="Notas (mermas, incidencias...)"
+            autoFocus title={t('produccion_comun:campos.redondea_3_decimales')} />
+          <Input type="text" placeholder={t('produccion_comun:notas_placeholder')}
             value={notas} onChange={(e) => setNotas(e.target.value)} />
-          <Button variant="success" onClick={cerrarProduccion}>Confirmar cierre</Button>
+          <Button variant="success" onClick={cerrarProduccion}>{t('produccion_comun:confirmar_cierre')}</Button>
         </div>
       )}
 
@@ -1102,7 +1102,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
                   <td className="py-1.5 text-gray-500">{nombre}</td>
                   <td className="py-1.5">{c.cantidad} {unidad}</td>
                   <td className="py-1.5 text-right">
-                    <LinkAction tone="red" onClick={() => quitarConsumo(c.id)} className="text-xs">Quitar</LinkAction>
+                    <LinkAction tone="red" onClick={() => quitarConsumo(c.id)} className="text-xs">{t('produccion_comun:quitar')}</LinkAction>
                   </td>
                 </tr>
               )
@@ -1113,7 +1113,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-gray-600">Registrar consumo</h3>
+          <h3 className="text-sm font-semibold text-gray-600">{t('produccion_comun:registrar_consumo_titulo')}</h3>
           {filasOrdenadas.map(({ ing, estimacion }) => (
             <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
@@ -1136,11 +1136,18 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 // Fila controlada (lote + cantidad): el padre decide qué hacer con las
 // líneas rellenas (confirmar en bloque, añadir a una edición, etc.) —
 // este componente no tiene acción ni estado propios.
-function labelLote(ingrediente, l, fechaDestino) {
+function labelLote(ingrediente, l, fechaDestino, t) {
   const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
-  return ingrediente.esArticulo
-    ? `${l.nombre} · ${l.proveedor ? `${l.proveedor} · ` : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)}${l.fecha_caducidad ? ` · cad. ${formatFecha(l.fecha_caducidad)}` : ''} · ${l.stock_disponible.toFixed(3)} ${l.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
-    : `${l.nombre} · ${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · ${l.stock_disponible.toFixed(3)} ${l.unidad} disp.${caducado ? ' — ⚠ caducado, revisar antes de usar' : ''}`
+  const aviso = caducado ? t('produccion_comun:lote_caducado_aviso') : ''
+  const stockDisp = t('produccion_comun:lote_stock_disp', { stock: l.stock_disponible.toFixed(3), unidad: l.unidad })
+  if (ingrediente.esArticulo) {
+    const proveedor = l.proveedor ? `${l.proveedor} · ` : ''
+    const numero = l.numero_albaran || t('produccion_comun:lote_sin_numero')
+    const cad = l.fecha_caducidad ? ` · ${t('produccion_comun:lote_caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) })}` : ''
+    return `${l.nombre} · ${proveedor}${t('produccion_comun:lote_albaran', { numero })} · ${formatFecha(l.fecha_recepcion)}${cad} · ${stockDisp}${aviso}`
+  }
+  const codigo = l.codigo_lote ? l.codigo_lote + ' · ' : ''
+  return `${l.nombre} · ${codigo}${t('produccion_comun:lote_produccion_label', { fecha: formatFecha(l.fecha) })} · ${stockDisp}${aviso}`
 }
 
 // Addenda "reorganización del bloque de registro de consumo": `estimacion` ({necesario, disponible,
@@ -1148,6 +1155,7 @@ function labelLote(ingrediente, l, fechaDestino) {
 // `onPrecargar` (null si no hay estimación con la que precargar) fusionan aquí lo que antes vivía en un
 // bloque de tabla aparte arriba de la tarjeta -- mismo dato, junto a "orientativo" de cada línea.
 function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estimacion, cargandoEstimacion, onPrecargar }) {
+  const { t } = useTranslation(['produccion_comun'])
   const [mostrarSustituto, setMostrarSustituto] = useState(false)
   const idDeLote = (l) => (ingrediente.esArticulo ? l.entrada_material_id : l.produccion_id)
   const deReceta = ingrediente.lotes.filter((l) => l.esDeReceta)
@@ -1157,7 +1165,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
   const panelSustitutoVisible = mostrarSustituto || esSustitucion
 
   function opcion(l) {
-    return <option key={idDeLote(l)} value={idDeLote(l)}>{labelLote(ingrediente, l, fechaDestino)}</option>
+    return <option key={idDeLote(l)} value={idDeLote(l)}>{labelLote(ingrediente, l, fechaDestino, t)}</option>
   }
 
   return (
@@ -1165,65 +1173,65 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
       <p className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-wrap">
         <span>
           {ingrediente.nombre}
-          <span className="text-gray-400 font-normal"> — orientativo: {ingrediente.cantidadOrientativa} {ingrediente.unidad} por unidad</span>
-          {cargandoEstimacion && <span className="text-gray-400 font-normal"> · calculando estimación...</span>}
+          <span className="text-gray-400 font-normal"> — {t('orientativo', { cantidad: ingrediente.cantidadOrientativa, unidad: ingrediente.unidad })}</span>
+          {cargandoEstimacion && <span className="text-gray-400 font-normal"> · {t('calculando_estimacion')}</span>}
           {estimacion && (
             <span className={`font-normal ${estimacion.insuficiente ? 'text-red-600' : 'text-gray-400'}`}>
-              {' '}· estimación: {estimacion.necesario.toFixed(3)} {ingrediente.unidad} · disponible: {estimacion.disponible.toFixed(3)} {ingrediente.unidad}
-              {estimacion.insuficiente ? ' — insuficiente' : ''}
-              {estimacion.registrado > 0 && ` · registrado: ${estimacion.registrado.toFixed(3)} ${ingrediente.unidad}${estimacion.cubierto ? ' (cubre estimación)' : ''}`}
+              {' '}· {t('estimacion_linea', { necesario: estimacion.necesario.toFixed(3), unidad: ingrediente.unidad, disponible: estimacion.disponible.toFixed(3) })}
+              {estimacion.insuficiente ? ` — ${t('insuficiente')}` : ''}
+              {estimacion.registrado > 0 && ` · ${t('registrado_linea', { registrado: estimacion.registrado.toFixed(3), unidad: ingrediente.unidad })}${estimacion.cubierto ? ` ${t('cubre_estimacion')}` : ''}`}
             </span>
           )}
         </span>
         {onPrecargar && (
           <button type="button" onClick={onPrecargar}
             className="text-[#0854A0] hover:text-[#0A3D62] inline-flex items-center gap-1 text-xs shrink-0"
-            title="Precargar la cantidad con la estimación">
-            <IconWand size={14} /> Usar estimación
+            title={t('precargar_estimacion_title')}>
+            <IconWand size={14} /> {t('usar_estimacion')}
           </button>
         )}
-        {esSustitucion && <span className="text-xs font-semibold text-amber-600">SUSTITUCIÓN EXCEPCIONAL</span>}
+        {esSustitucion && <span className="text-xs font-semibold text-amber-600">{t('sustitucion_badge')}</span>}
       </p>
 
       {deReceta.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 mt-2 items-center">
           <Select value={esSustitucion ? '' : value.loteId}
             onChange={(e) => onChange({ ...value, loteId: e.target.value, nota: '' })} className="text-sm">
-            <option value="">Selecciona lote</option>
+            <option value="">{t('selecciona_lote')}</option>
             {deReceta.map(opcion)}
           </Select>
-          <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+          <Input type="number" step="0.001" placeholder={t('cantidad_placeholder')} value={value.cantidad}
             onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-            className="text-sm" title="Se redondeará a 3 decimales" />
+            className="text-sm" title={t('campos.redondea_3_decimales')} />
         </div>
       )}
 
       {deReceta.length === 0 && !panelSustitutoVisible && (
-        <p className="text-sm text-red-500 mt-1">Sin stock disponible de este ingrediente.</p>
+        <p className="text-sm text-red-500 mt-1">{t('sin_stock_ingrediente')}</p>
       )}
 
       {otros.length > 0 && !panelSustitutoVisible && (
         <LinkAction tone="blue" onClick={() => setMostrarSustituto(true)} className="text-xs mt-2 inline-block">
-          ¿No hay lote de receta disponible? Buscar sustituto
+          {t('buscar_sustituto')}
         </LinkAction>
       )}
 
       {otros.length > 0 && panelSustitutoVisible && (
         <div className="mt-2 pt-2 border-t border-amber-200">
-          <p className="text-xs font-semibold text-amber-700 mb-1.5 uppercase tracking-wide">Sustitución excepcional — misma categoría</p>
+          <p className="text-xs font-semibold text-amber-700 mb-1.5 uppercase tracking-wide">{t('sustitucion_titulo')}</p>
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 items-center">
             <Select value={esSustitucion ? value.loteId : ''}
               onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
-              <option value="">Selecciona lote sustituto</option>
+              <option value="">{t('selecciona_lote_sustituto')}</option>
               {otros.map(opcion)}
             </Select>
             {deReceta.length === 0 && (
-              <Input type="number" step="0.001" placeholder="Cantidad" value={value.cantidad}
+              <Input type="number" step="0.001" placeholder={t('cantidad_placeholder')} value={value.cantidad}
                 onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-                className="text-sm" title="Se redondeará a 3 decimales" />
+                className="text-sm" title={t('campos.redondea_3_decimales')} />
             )}
           </div>
-          <Input type="text" placeholder="Motivo de la sustitución (opcional)" value={value.nota ?? ''}
+          <Input type="text" placeholder={t('motivo_sustitucion_placeholder')} value={value.nota ?? ''}
             onChange={(e) => onChange({ ...value, nota: e.target.value })}
             className="text-sm mt-2 w-full" />
         </div>
@@ -1238,13 +1246,14 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
 // esta fila, exactamente igual que antes -- entrar en edición fuerza la fila abierta (`abierto =
 // expandido || editando`) sin depender de si el padre ya la había expandido primero.
 function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoInfo, onCambio, onBorrar }) {
+  const { t } = useTranslation(['common', 'produccion_comun', 'producciones'])
   const [editando, setEditando] = useState(false)
   const abierto = expandido || editando
 
   // Punto 1.5: badge de estado de consumo -- consumidoInfo llega del padre (cargarHistorial), ya
   // agregado por produccion_origen_id a partir de consumo_produccion + consumo_produccion_pf.
   const consumido = consumidoInfo?.consumido || 0
-  const { color, texto } = estadoConsumo(produccion.cantidad_producida, consumido)
+  const { color, texto } = estadoConsumo(produccion.cantidad_producida, consumido, t)
   const detalleConsumidoPor = consumidoInfo?.detalle || []
   const detalleAjustes = consumidoInfo?.ajustesDetalle || []
 
@@ -1271,8 +1280,8 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-            <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">Editar</LinkAction>
-            <LinkAction tone="red" onClick={onBorrar} className="text-xs">Borrar</LinkAction>
+            <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
+            <LinkAction tone="red" onClick={onBorrar} className="text-xs">{t('produccion_comun:borrar')}</LinkAction>
           </div>
         </td>
       </tr>
@@ -1294,10 +1303,10 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     {/* Punto 1.6.1: ingredientes consumidos por esta producción (aguas arriba) -- la
                         misma tabla que ya existía, sin cambios de fondo, solo movida aquí dentro. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      Ingredientes consumidos por esta producción
+                      {t('produccion_comun:ingredientes_consumidos_titulo')}
                     </p>
                     {produccion.consumo_produccion.length === 0 ? (
-                      <p className="text-sm text-gray-400 mb-3">Sin consumo registrado.</p>
+                      <p className="text-sm text-gray-400 mb-3">{t('produccion_comun:sin_consumo_registrado')}</p>
                     ) : (
                       <table className="w-full text-sm mb-3">
                         <tbody className="divide-y divide-gray-100">
@@ -1315,9 +1324,9 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     )}
 
                     {/* Punto 1.6.2: consumido por (aguas abajo) -- nuevo, a partir de consumidoInfo. */}
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Consumido por</p>
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('producciones:consumido_por_titulo')}</p>
                     {detalleConsumidoPor.length === 0 ? (
-                      <p className="text-sm text-gray-400 mb-3">Sin consumo registrado todavía.</p>
+                      <p className="text-sm text-gray-400 mb-3">{t('producciones:sin_consumo_registrado_todavia')}</p>
                     ) : (
                       <table className="w-full text-sm mb-3">
                         <tbody className="divide-y divide-gray-100">
@@ -1325,7 +1334,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                             <tr key={i}>
                               <td className="py-1.5 text-gray-500">
                                 {d.nombre ?? '(sin nombre)'}{' '}
-                                <span className="text-gray-400">({d.tipo === 'semielaborado' ? 'semielaborado' : 'producto final'})</span>
+                                <span className="text-gray-400">({d.tipo === 'semielaborado' ? t('producciones:tipo_semielaborado') : t('producciones:tipo_producto_final')})</span>
                               </td>
                               <td className="py-1.5 text-gray-500">{d.fecha ? formatFecha(d.fecha) : '—'}</td>
                               <td className="py-1.5">{d.cantidad} {produccion.semielaborados?.unidad}</td>
@@ -1338,9 +1347,9 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     {/* Punto 1.6.3 (corrección post-implementación, caso real WIP-MIXKZ-260060): ajustes
                         de stock -- sin este bloque, un lote corregido manualmente aparece "Completo" sin
                         explicar por qué el consumo por producción no llega al 100%. */}
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ajustes de stock</p>
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('produccion_comun:ajustes_stock_titulo')}</p>
                     {detalleAjustes.length === 0 ? (
-                      <p className="text-sm text-gray-400">Sin ajustes registrados.</p>
+                      <p className="text-sm text-gray-400">{t('produccion_comun:sin_ajustes_registrados')}</p>
                     ) : (
                       <table className="w-full text-sm">
                         <tbody className="divide-y divide-gray-100">
@@ -1368,6 +1377,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
 }
 
 function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
+  const { t } = useTranslation(['common', 'produccion_comun'])
   const [fecha, setFecha] = useState(produccion.fecha)
   const [cantidadProducida, setCantidadProducida] = useState(String(produccion.cantidad_producida))
   const [notas, setNotas] = useState(produccion.notas ?? '')
@@ -1423,7 +1433,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
   function anadirLineasRellenas() {
     const completas = filasNuevasCompletas()
     if (completas.length === 0) {
-      alert('Rellena lote y cantidad de al menos una línea')
+      alert(t('produccion_comun:rellena_lote_cantidad'))
       return
     }
 
@@ -1451,7 +1461,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
 
   async function guardar() {
     if (!cantidadProducida || parseFloat(cantidadProducida) <= 0) {
-      alert('Indica una cantidad producida válida')
+      alert(t('produccion_comun:alertas.indica_cantidad_valida'))
       return
     }
 
@@ -1479,7 +1489,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
     setGuardando(false)
 
     if (error) {
-      alert('Edición inválida: ' + error.message)
+      alert(t('produccion_comun:alertas.edicion_invalida', { mensaje: error.message }))
       return
     }
 
@@ -1489,27 +1499,27 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
   return (
     <Card className="p-4 border-l-4 border-l-[#0854A0]!">
       <p className="font-semibold text-[#1C2938] mb-3">
-        Editando producción de {produccion.semielaborados?.nombre}
+        {t('produccion_comun:editando_produccion_de', { nombre: produccion.semielaborados?.nombre })}
         {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Field label="Fecha">
+        <Field label={t('produccion_comun:campos.fecha')}>
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
-        <Field label={`Cantidad producida (${produccion.semielaborados?.unidad})`}>
+        <Field label={t('produccion_comun:cantidad_producida', { unidad: produccion.semielaborados?.unidad })}>
           <Input type="number" step="0.001" value={cantidadProducida}
-            onChange={(e) => setCantidadProducida(e.target.value)} title="Se redondeará a 3 decimales" />
+            onChange={(e) => setCantidadProducida(e.target.value)} title={t('produccion_comun:campos.redondea_3_decimales')} />
         </Field>
-        <Field label="Notas">
+        <Field label={t('produccion_comun:notas_label')}>
           <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
         </Field>
-        <Field label="Fecha de caducidad (opcional)">
+        <Field label={t('produccion_comun:fecha_caducidad_opcional')}>
           <DateInput value={fechaCaducidad} onChange={setFechaCaducidad} />
         </Field>
       </div>
 
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">Líneas de consumo</p>
+      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">{t('produccion_comun:lineas_consumo_titulo')}</p>
       <div className="flex flex-col gap-2">
         {lineas.filter((l) => !l._deleted).map((linea) => {
           const index = lineas.indexOf(linea)
@@ -1518,19 +1528,19 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
               <span className="text-sm text-gray-600">{linea._nombre}</span>
               <Input type="number" step="0.001" value={linea.cantidad}
                 onChange={(e) => cambiarCantidadLinea(index, e.target.value)}
-                className="text-sm" title="Se redondeará a 3 decimales" />
+                className="text-sm" title={t('produccion_comun:campos.redondea_3_decimales')} />
               <button type="button" onClick={() => quitarLinea(index)} className="text-gray-400 hover:text-red-600 justify-self-center">
                 <IconTrash size={16} />
               </button>
             </div>
           )
         })}
-        {lineas.every((l) => l._deleted) && <p className="text-sm text-gray-400">Sin líneas de consumo.</p>}
+        {lineas.every((l) => l._deleted) && <p className="text-sm text-gray-400">{t('produccion_comun:sin_lineas_consumo')}</p>}
       </div>
 
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-2">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Añadir más consumo</p>
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{t('produccion_comun:anadir_mas_consumo')}</p>
           {ingredientes.map((ing) => (
             <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
@@ -1539,14 +1549,14 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
               onChange={(valor) => actualizarFilaNueva(ing, valor)} />
           ))}
           <Button variant="secondary" size="sm" onClick={anadirLineasRellenas}>
-            {`+ Añadir líneas${filasNuevasCompletas().length > 0 ? ` (${filasNuevasCompletas().length})` : ''}`}
+            {`${t('produccion_comun:anadir_lineas')}${filasNuevasCompletas().length > 0 ? ` (${filasNuevasCompletas().length})` : ''}`}
           </Button>
         </div>
       )}
 
       <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-        <Button onClick={guardar} disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar cambios'}</Button>
-        <Button variant="secondary" onClick={onCancelar} disabled={guardando}>Cancelar</Button>
+        <Button onClick={guardar} disabled={guardando}>{guardando ? t('common:actions.saving') : t('produccion_comun:guardar_cambios')}</Button>
+        <Button variant="secondary" onClick={onCancelar} disabled={guardando}>{t('common:actions.cancel')}</Button>
       </div>
     </Card>
   )

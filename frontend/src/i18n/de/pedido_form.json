@@ -1,0 +1,33 @@
+{
+  "campos": {
+    "cliente": "Kunde",
+    "fecha": "Datum",
+    "fecha_entrega_opcional": "Voraussichtliches Lieferdatum (optional)",
+    "notas_opcional": "Notizen (optional)"
+  },
+  "fecha_entrega_anterior": "Darf nicht vor dem Bestelldatum liegen",
+  "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet",
+  "lineas_pedido_titulo": "Bestellzeilen",
+  "tipo_producto_final": "Fertigprodukt",
+  "tipo_mercaderia": "Ware",
+  "tipo_libre": "Sonstiges / Dienstleistung",
+  "selecciona_cliente": "Kunde auswählen",
+  "selecciona_producto_final": "Fertigprodukt auswählen",
+  "selecciona_articulo_mercaderia": "Warenartikel auswählen",
+  "descripcion_placeholder": "Beschreibung (z. B. Brot, zusätzliche Showcooking-Stunden...)",
+  "cantidad_placeholder": "Menge",
+  "precio_placeholder": "Preis",
+  "anadir_linea": "Zeile hinzufügen",
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_pedido": "Bestellung speichern",
+  "alertas": {
+    "fecha_entrega_invalida": "Das voraussichtliche Lieferdatum darf nicht vor dem Bestelldatum liegen",
+    "sin_lineas_validas": "Füge mindestens eine Zeile mit Produkt/Ware/Beschreibung und Menge hinzu",
+    "error_actualizar_pedido": "Fehler beim Aktualisieren der Bestellung: {{mensaje}}",
+    "error_borrar_lineas": "Fehler beim Löschen der Zeilen: {{mensaje}}",
+    "error_actualizar_linea": "Fehler beim Aktualisieren einer Zeile: {{mensaje}}",
+    "error_anadir_lineas": "Fehler beim Hinzufügen neuer Zeilen: {{mensaje}}",
+    "error_crear_pedido": "Fehler beim Erstellen der Bestellung: {{mensaje}}",
+    "error_guardar_lineas": "Fehler beim Speichern der Zeilen: {{mensaje}}"
+  }
+}

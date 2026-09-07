@@ -1,0 +1,37 @@
+{
+  "titulo": "Produktion von Fertigprodukten",
+  "subtitulo_tanda": "Produktion für eine Charge aus \"Tagesproduktion\" wird gestartet — die gerade abgeschlossene Mix-Charge wird anhand der Bestellungen dieser Charge vorgeschlagen.",
+  "subtitulo_normal": "Starte eine Produktion, erfasse aus welchen Chargen du jede Zutat verbrauchst, und schließe sie mit der erzielten Nettomenge ab.",
+  "produccion_enlazada_pedido": "Diese Produktion wird mit der ausgewählten Bestellung verknüpft.",
+  "cantidad_a_producir_opcional": "Zu produzierende Menge (optional)",
+  "unidad_larga": "Einheiten",
+  "unidad_corta": "Stk.",
+  "stock_actual_titulo": "Aktueller Bestand der Fertigprodukte",
+  "stock_actual_de": "Aktueller Bestand von {{nombre}}",
+  "tabla": {
+    "producto": "Produkt",
+    "stock": "Bestand"
+  },
+  "historial_titulo": "Verlauf abgeschlossener Produktionen",
+  "historial_titulo_de": "Verlauf abgeschlossener Produktionen von {{nombre}}",
+  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen Produktionen.",
+  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen Produktionen dieses Produkts.",
+  "tabla_historial": {
+    "producto": "Produkt",
+    "estado_despacho": "Versandstatus"
+  },
+  "pedido_codigo": "Bestellung {{codigo}}",
+  "repartido_pedidos_titulo": "Auf Bestellungen verteilt",
+  "sin_reparto_previsto": "Noch keine Verteilung geplant.",
+  "tabla_reparto": {
+    "cliente": "Kunde",
+    "pedido": "Bestellung",
+    "entrega_prevista": "Voraussichtliche Lieferung",
+    "previsto": "Geplant"
+  },
+  "sin_cliente": "Kein Kunde",
+  "sin_fecha": "kein Datum",
+  "confirmar_cancelar": "Diese laufende Produktion abbrechen? Bereits erfasste Verbräuche werden rückgängig gemacht.",
+  "confirmar_borrar": "Möchtest du diese Produktion wirklich löschen? Ihr Verbrauch und Bestand werden rückgängig gemacht.",
+  "indica_cantidad_neta": "Gib die produzierte Nettomenge an"
+}

@@ -1,0 +1,37 @@
+{
+  "titulo": "Producción de productos finales",
+  "subtitulo_tanda": "Iniciando producción para una tanda de \"Pedidos del día\" — el lote de Mezcla recién cerrado se sugiere según los pedidos de esa tanda.",
+  "subtitulo_normal": "Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida.",
+  "produccion_enlazada_pedido": "Esta producción quedará enlazada al pedido seleccionado.",
+  "cantidad_a_producir_opcional": "Cantidad a producir (opcional)",
+  "unidad_larga": "unidades",
+  "unidad_corta": "uds.",
+  "stock_actual_titulo": "Stock actual de productos finales",
+  "stock_actual_de": "Stock actual de {{nombre}}",
+  "tabla": {
+    "producto": "Producto",
+    "stock": "Stock"
+  },
+  "historial_titulo": "Historial de producciones cerradas",
+  "historial_titulo_de": "Historial de producciones cerradas de {{nombre}}",
+  "sin_producciones_cerradas": "Todavía no hay producciones cerradas.",
+  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas de este producto.",
+  "tabla_historial": {
+    "producto": "Producto",
+    "estado_despacho": "Estado de despacho"
+  },
+  "pedido_codigo": "Pedido {{codigo}}",
+  "repartido_pedidos_titulo": "Repartido a pedidos",
+  "sin_reparto_previsto": "Sin reparto previsto todavía.",
+  "tabla_reparto": {
+    "cliente": "Cliente",
+    "pedido": "Pedido",
+    "entrega_prevista": "Entrega prevista",
+    "previsto": "Previsto"
+  },
+  "sin_cliente": "Sin cliente",
+  "sin_fecha": "sin fecha",
+  "confirmar_cancelar": "¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados.",
+  "confirmar_borrar": "¿Seguro que quieres borrar esta producción? Se revertirán sus consumos y su stock.",
+  "indica_cantidad_neta": "Indica la cantidad neta producida"
+}

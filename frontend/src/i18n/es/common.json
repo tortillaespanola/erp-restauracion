@@ -59,6 +59,8 @@
     "logout": "Cerrar sesión",
     "settings": "Configuración",
     "loading": "Cargando...",
+    "saving": "Guardando...",
+    "all": "Todos",
     "default_user": "Usuario"
   }
 }

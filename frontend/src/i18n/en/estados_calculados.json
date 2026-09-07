@@ -1,0 +1,23 @@
+{
+  "produccion_pf": {
+    "ok": "OK",
+    "pendiente": "Pending production",
+    "semi": "Missing semi-finished stock",
+    "ingrediente": "Missing ingredient stock",
+    "ambos": "Missing both",
+    "en_curso_insuficiente": "In progress",
+    "en_curso_cubre": "In progress — covers need",
+    "semis_en_curso_insuficiente": "Semi-finished goods in progress",
+    "semis_en_curso_cubre": "Semi-finished goods in progress — cover need"
+  },
+  "consumo": {
+    "no_consumido": "Not consumed",
+    "completo": "Complete",
+    "parcial": "Partial — {{pct}}%"
+  },
+  "despacho": {
+    "no_despachado": "Not dispatched",
+    "despachado": "Dispatched",
+    "parcial": "Partial — {{pct}}%"
+  }
+}

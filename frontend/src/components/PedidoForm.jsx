@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
@@ -40,6 +41,7 @@ function estadoInicial(pedido) {
 }
 
 export default function PedidoForm({ pedido, clientes, productos, articulosMercaderia, onGuardado, onCancelar }) {
+  const { t } = useTranslation(['common', 'pedido_form'])
   const [inicial] = useState(() => estadoInicial(pedido))
   const [clienteId, setClienteId] = useState(inicial.clienteId)
   const [fecha, setFecha] = useState(inicial.fecha)
@@ -81,7 +83,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
     e.preventDefault()
 
     if (fechaEntrega && fechaEntrega < fecha) {
-      alert('La fecha de entrega prevista no puede ser anterior a la fecha del pedido')
+      alert(t('pedido_form:alertas.fecha_entrega_invalida'))
       return
     }
 
@@ -89,7 +91,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
       (l) => l.cantidad && (l.producto_final_id || l.articulo_id || l.descripcion)
     )
     if (lineasValidas.length === 0) {
-      alert('Añade al menos una línea con producto/mercadería/descripción y cantidad')
+      alert(t('pedido_form:alertas.sin_lineas_validas'))
       return
     }
 
@@ -115,7 +117,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
         .eq('id', editandoId)
 
       if (errorUpdate) {
-        alert('Error al actualizar el pedido: ' + errorUpdate.message)
+        alert(t('pedido_form:alertas.error_actualizar_pedido', { mensaje: errorUpdate.message }))
         return
       }
 
@@ -125,7 +127,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
           .delete()
           .in('id', lineasABorrar)
         if (errorBorrar) {
-          alert('Error al borrar líneas: ' + errorBorrar.message)
+          alert(t('pedido_form:alertas.error_borrar_lineas', { mensaje: errorBorrar.message }))
           return
         }
       }
@@ -136,7 +138,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
           .update(calcularCamposLinea(l))
           .eq('id', l.id)
         if (error) {
-          alert('Error al actualizar una línea: ' + error.message)
+          alert(t('pedido_form:alertas.error_actualizar_linea', { mensaje: error.message }))
           return
         }
       }
@@ -147,7 +149,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
           .from('lineas_pedido_venta')
           .insert(nuevas.map((l) => ({ pedido_id: editandoId, ...calcularCamposLinea(l) })))
         if (error) {
-          alert('Error al añadir nuevas líneas: ' + error.message)
+          alert(t('pedido_form:alertas.error_anadir_lineas', { mensaje: error.message }))
           return
         }
       }
@@ -168,7 +170,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
       .single()
 
     if (errorPedido) {
-      alert('Error al crear el pedido: ' + errorPedido.message)
+      alert(t('pedido_form:alertas.error_crear_pedido', { mensaje: errorPedido.message }))
       return
     }
 
@@ -183,7 +185,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
 
     if (errorLineas) {
       await supabase.from('pedidos_venta').delete().eq('id', pedidoCreado.id)
-      alert('Error al guardar las líneas: ' + errorLineas.message)
+      alert(t('pedido_form:alertas.error_guardar_lineas', { mensaje: errorLineas.message }))
       return
     }
 
@@ -193,30 +195,30 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3">
-        <Field label="Cliente">
+        <Field label={t('pedido_form:campos.cliente')}>
           <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
-            <option value="">Selecciona cliente</option>
+            <option value="">{t('pedido_form:selecciona_cliente')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Fecha">
+        <Field label={t('pedido_form:campos.fecha')}>
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
-        <Field label="Fecha de entrega prevista (opcional)">
+        <Field label={t('pedido_form:campos.fecha_entrega_opcional')}>
           <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
           {fechaEntrega && fechaEntrega < fecha && (
-            <p className="text-red-600 text-xs mt-1">No puede ser anterior a la fecha del pedido</p>
+            <p className="text-red-600 text-xs mt-1">{t('pedido_form:fecha_entrega_anterior')}</p>
           )}
         </Field>
       </div>
-      <Field label="Notas (opcional)">
+      <Field label={t('pedido_form:campos.notas_opcional')}>
         <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
       </Field>
 
       <div>
-        <SectionLabel>Líneas del pedido</SectionLabel>
+        <SectionLabel>{t('pedido_form:lineas_pedido_titulo')}</SectionLabel>
         <div className="flex flex-col gap-3">
           {lineas.map((linea, index) => (
             <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
@@ -224,17 +226,17 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={linea.tipo === 'producto'}
                     onChange={() => handleLineaChange(index, 'tipo', 'producto')} />
-                  Producto final
+                  {t('pedido_form:tipo_producto_final')}
                 </label>
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={linea.tipo === 'mercaderia'}
                     onChange={() => handleLineaChange(index, 'tipo', 'mercaderia')} />
-                  Mercadería
+                  {t('pedido_form:tipo_mercaderia')}
                 </label>
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={linea.tipo === 'libre'}
                     onChange={() => handleLineaChange(index, 'tipo', 'libre')} />
-                  Otro / servicio
+                  {t('pedido_form:tipo_libre')}
                 </label>
               </div>
 
@@ -243,7 +245,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
                   <Select value={linea.producto_final_id}
                     onChange={(e) => handleLineaChange(index, 'producto_final_id', e.target.value)}
                     required>
-                    <option value="">Selecciona producto final</option>
+                    <option value="">{t('pedido_form:selecciona_producto_final')}</option>
                     {productos.map((p) => (
                       <option key={p.id} value={p.id}>{p.nombre}</option>
                     ))}
@@ -252,22 +254,22 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
                   <Select value={linea.articulo_id}
                     onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                     required>
-                    <option value="">Selecciona artículo de mercadería</option>
+                    <option value="">{t('pedido_form:selecciona_articulo_mercaderia')}</option>
                     {articulosMercaderia.map((a) => (
                       <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
                     ))}
                   </Select>
                 ) : (
-                  <Input type="text" placeholder="Descripción (ej. Pan, Horas de showcooking extra...)"
+                  <Input type="text" placeholder={t('pedido_form:descripcion_placeholder')}
                     value={linea.descripcion}
                     onChange={(e) => handleLineaChange(index, 'descripcion', e.target.value)}
                     required />
                 )}
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                  <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                  <Input type="number" step="0.001" placeholder={t('pedido_form:cantidad_placeholder')} value={linea.cantidad}
                     onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                    required title="Se redondeará a 3 decimales" />
-                  <Input type="number" step="0.01" placeholder="Precio" value={linea.precio_unitario}
+                    required title={t('pedido_form:redondea_3_decimales')} />
+                  <Input type="number" step="0.01" placeholder={t('pedido_form:precio_placeholder')} value={linea.precio_unitario}
                     onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
                   <button type="button" onClick={() => removeLinea(index)}
                     className="text-gray-400 hover:text-red-600 justify-self-center">
@@ -280,13 +282,13 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
         </div>
         <button type="button" onClick={addLinea}
           className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
-          <IconPlus size={15} /> Añadir línea
+          <IconPlus size={15} /> {t('pedido_form:anadir_linea')}
         </button>
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar pedido'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancelar}>Cancelar</Button>
+        <Button type="submit">{editandoId ? t('pedido_form:guardar_cambios') : t('pedido_form:guardar_pedido')}</Button>
+        <Button type="button" variant="secondary" onClick={onCancelar}>{t('common:actions.cancel')}</Button>
       </div>
     </form>
   )

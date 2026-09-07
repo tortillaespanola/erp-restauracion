@@ -36,7 +36,7 @@ const ESTADOS_PEDIDO = ['pendiente', 'en_produccion', 'servido', 'cancelado']
 
 function Pedidos() {
   const navigate = useNavigate()
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'pedidos'])
   // BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): mismas opciones que el enum de estado, en formato
   // {value, label} para el MultiSelect -- recalculado en cada render para reaccionar al cambio
   // de idioma (ver Fase 0 del contrato i18n).
@@ -262,12 +262,12 @@ function Pedidos() {
     ])
 
     if (resProduccion.error || resAlbaran.error || resProduccionTanda.error || resSemielaboradoTanda.error) {
-      alert('Error al comprobar si el pedido se puede editar: ' + (resProduccion.error || resAlbaran.error || resProduccionTanda.error || resSemielaboradoTanda.error).message)
+      alert(t('pedidos:alertas.error_comprobar_editable', { mensaje: (resProduccion.error || resAlbaran.error || resProduccionTanda.error || resSemielaboradoTanda.error).message }))
       return
     }
 
     if ((resProduccion.count || 0) > 0 || (resAlbaran.count || 0) > 0 || (resProduccionTanda.count || 0) > 0 || (resSemielaboradoTanda.count || 0) > 0) {
-      alert('Este pedido ya tiene producción o entregas registradas; no se puede editar todavía — cancélalo y crea uno nuevo, o contacta con soporte.')
+      alert(t('pedidos:alertas.no_editable'))
       return
     }
 
@@ -316,10 +316,10 @@ function Pedidos() {
   }
 
   async function handleCancelar(id) {
-    if (!confirm('¿Cancelar este pedido?')) return
+    if (!confirm(t('pedidos:alertas.confirmar_cancelar'))) return
     const { error } = await supabase.from('pedidos_venta').update({ estado: 'cancelado' }).eq('id', id)
     if (error) {
-      alert('Error al cancelar: ' + error.message)
+      alert(t('pedidos:alertas.error_cancelar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -327,12 +327,12 @@ function Pedidos() {
 
   return (
     <div>
-      <PageHeader title="Pedidos" subtitle="Registra lo que pide un cliente, lanza la producción que haga falta, y créalo como albarán de venta cuando esté listo." />
+      <PageHeader title={t('pedidos:titulo')} subtitle={t('pedidos:subtitulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">Listado</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938]">{t('pedidos:listado_titulo')}</h2>
         <Button onClick={() => setModoDrawer('nuevo')}>
-          <IconPlus size={15} /> Nuevo pedido
+          <IconPlus size={15} /> {t('pedidos:nuevo_pedido')}
         </Button>
       </div>
 
@@ -340,25 +340,25 @@ function Pedidos() {
           activos e inactivos), Estado (MultiSelect, OR entre valores), rango de fechas. Se
           combinan con AND entre sí en cargarDatos(). */}
       <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
-        <Field label="Cliente" className="w-48">
+        <Field label={t('pedidos:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
-            <option value="">Todos</option>
+            <option value="">{t('common:actions.all')}</option>
             {clientesFiltro.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Estado" className="w-56">
-          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder="Todos" />
+        <Field label={t('pedidos:filtros.estado')} className="w-56">
+          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder={t('common:actions.all')} />
         </Field>
-        <Field label="Desde" className="w-40">
+        <Field label={t('pedidos:filtros.desde')} className="w-40">
           <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
         </Field>
-        <Field label="Hasta" className="w-40">
+        <Field label={t('pedidos:filtros.hasta')} className="w-40">
           <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
         </Field>
         {hayFiltrosActivos && (
-          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>{t('pedidos:filtros.limpiar_filtros')}</Button>
         )}
       </div>
 
@@ -367,7 +367,7 @@ function Pedidos() {
       ) : pedidos.length === 0 ? (
         <Card>
           <EmptyState>
-            {hayFiltrosActivos ? 'Ningún pedido coincide con los filtros aplicados.' : 'Todavía no hay pedidos registrados.'}
+            {hayFiltrosActivos ? t('pedidos:sin_pedidos_filtro') : t('pedidos:sin_pedidos')}
           </EmptyState>
         </Card>
       ) : (
@@ -379,18 +379,18 @@ function Pedidos() {
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
-                      Fecha {iconoOrden('fecha')}
+                      {t('pedidos:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Cliente</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pedidos:tabla.cliente')}</th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-gray-600">
-                      Entrega prevista {iconoOrden('fecha_entrega_prevista')}
+                      {t('pedidos:tabla.entrega_prevista')} {iconoOrden('fecha_entrega_prevista')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Estado</th>
-                  <th className="px-3 py-2.5 font-medium">Progreso</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pedidos:tabla.estado')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pedidos:tabla.progreso')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('pedidos:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -413,7 +413,7 @@ function Pedidos() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3">
-                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? 'Sin cliente'}</div>
+                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? t('pedidos:sin_cliente')}</div>
                           {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">
@@ -425,10 +425,10 @@ function Pedidos() {
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
                             <span className={progresoCompleto ? 'text-green-600 font-medium' : 'text-gray-600'}>
-                              {lineasServidas}/{totalLineas} líneas servidas
+                              {t('pedidos:lineas_servidas', { servidas: lineasServidas, total: totalLineas })}
                             </span>
                             {algunaConAvisoStock && (
-                              <span title="Alguna línea tiene stock insuficiente en la tanda asignada">
+                              <span title={t('pedidos:aviso_stock_insuficiente_title')}>
                                 <IconAlertTriangle size={14} className="text-red-600" />
                               </span>
                             )}
@@ -446,13 +446,13 @@ function Pedidos() {
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
                             {puedeGestionar && (
                               <>
-                                <button type="button" title="Editar" onClick={() => handleEditar(p)} className="text-gray-400 hover:text-[#0854A0]">
+                                <button type="button" title={t('pedidos:editar_title')} onClick={() => handleEditar(p)} className="text-gray-400 hover:text-[#0854A0]">
                                   <IconEdit size={16} />
                                 </button>
-                                <button type="button" title="Crear albarán de venta" onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-[#0854A0]">
+                                <button type="button" title={t('pedidos:crear_albaran_title')} onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-[#0854A0]">
                                   <IconTruckDelivery size={16} />
                                 </button>
-                                <button type="button" title="Cancelar pedido" onClick={() => handleCancelar(p.id)} className="text-gray-400 hover:text-red-600">
+                                <button type="button" title={t('pedidos:cancelar_pedido_title')} onClick={() => handleCancelar(p.id)} className="text-gray-400 hover:text-red-600">
                                   <IconX size={16} />
                                 </button>
                               </>
@@ -471,10 +471,10 @@ function Pedidos() {
                                 <table className="w-full text-sm">
                               <thead>
                                 <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
-                                  <th className="py-1.5 font-medium">Línea</th>
-                                  <th className="py-1.5 font-medium">Pedido</th>
-                                  <th className="py-1.5 font-medium">Previsto</th>
-                                  <th className="py-1.5 font-medium">Servido</th>
+                                  <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.linea')}</th>
+                                  <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.pedido')}</th>
+                                  <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.previsto')}</th>
+                                  <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.servido')}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
@@ -513,8 +513,8 @@ function Pedidos() {
                                     <tr key={linea.id}>
                                       <td className="py-1.5">
                                         {nombre}
-                                        {tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
-                                        {tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
+                                        {tipo === 'mercaderia' && <span className="text-gray-400 text-xs">{t('pedidos:tipo_mercaderia')}</span>}
+                                        {tipo === 'libre' && <span className="text-gray-400 text-xs">{t('pedidos:tipo_libre')}</span>}
                                       </td>
                                       <td className="py-1.5">{linea.cantidad} {unidad}</td>
                                       <td className={`py-1.5 ${stockInsuficiente ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
@@ -523,7 +523,7 @@ function Pedidos() {
                                             {previsto} {unidad}
                                             {stockInsuficiente && (
                                               <span className="text-xs">
-                                                {' '}({previsionesConAviso.map((pd) => `solo ${pd.disponibleNeto.toFixed(3)} disp.`).join('; ')} en la tanda asignada)
+                                                {' '}{t('pedidos:solo_disp_en_tanda', { lista: previsionesConAviso.map((pd) => t('pedidos:solo_disp_item', { valor: pd.disponibleNeto.toFixed(3) })).join('; ') })}
                                               </span>
                                             )}
                                           </>
@@ -552,7 +552,7 @@ function Pedidos() {
       {!cargando && totalPedidos > 0 && (
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-gray-400">
-            {totalPedidos} pedido{totalPedidos === 1 ? '' : 's'} · página {pagina} de {totalPaginas}
+            {t('pedidos:pedido_pagina_count', { count: totalPedidos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -560,7 +560,7 @@ function Pedidos() {
               disabled={pagina === 1}
               onClick={() => setPagina((p) => p - 1)}
             >
-              Anterior
+              {t('common:actions.previous')}
             </Button>
             {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
               <button
@@ -577,7 +577,7 @@ function Pedidos() {
               disabled={pagina === totalPaginas}
               onClick={() => setPagina((p) => p + 1)}
             >
-              Siguiente
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
@@ -586,7 +586,7 @@ function Pedidos() {
       <Drawer
         open={modoDrawer !== null}
         onClose={() => setModoDrawer(null)}
-        title={modoDrawer !== null && typeof modoDrawer === 'object' ? 'Editar pedido' : 'Nuevo pedido'}
+        title={modoDrawer !== null && typeof modoDrawer === 'object' ? t('pedidos:editar_pedido') : t('pedidos:nuevo_pedido')}
       >
         {modoDrawer !== null && (
           <PedidoForm

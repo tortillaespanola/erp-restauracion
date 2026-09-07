@@ -1,0 +1,46 @@
+{
+  "titulo": "Produktionen",
+  "subtitulo_tanda": "Produktion für eine Charge aus \"Tagesproduktion\" wird gestartet — Menge und Verbrauch werden anhand der Bestellungen dieser Charge vorgeschlagen.",
+  "subtitulo_normal": "Starte eine Produktion, erfasse den Verbrauch der verwendeten Chargen und schließe sie ab, sobald du das endgültige Nettogewicht hast.",
+  "cantidad_a_producir_opcional": "Zu produzierende Menge (optional, prüft Bestand)",
+  "sin_validar_placeholder": "Nicht geprüft",
+  "comprobando_stock": "Verfügbarer Bestand wird geprüft…",
+  "aviso_stock_insuficiente_titulo": "Hinweis: unzureichender Rezeptbestand — du kannst trotzdem starten:",
+  "falta_de": "Es fehlen {{falta}} {{unidad}} von {{nombre}} (verfügbar: {{disponible}} {{unidad}})",
+  "stock_disponible_titulo": "Verfügbarer Bestand",
+  "stock_disponible_para": "Verfügbarer Bestand für {{nombre}}",
+  "sin_receta": "Dieses Halbfertigprodukt hat keine Halbfertigprodukte oder Zutaten in seinem Rezept.",
+  "tabla": {
+    "nombre": "Name",
+    "tipo": "Typ",
+    "stock_disponible": "Verfügbarer Bestand",
+    "semielaborado": "Halbfertigprodukt",
+    "ingrediente": "Zutat"
+  },
+  "sin_produccion_en_curso": "Es läuft keine Produktion für dieses Halbfertigprodukt.",
+  "historial_titulo": "Verlauf abgeschlossener Produktionen",
+  "historial_titulo_de": "Verlauf abgeschlossener Produktionen von {{nombre}}",
+  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen Produktionen.",
+  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen Produktionen dieses Halbfertigprodukts.",
+  "tabla_historial": {
+    "semielaborado": "Halbfertigprodukt",
+    "estado_consumo": "Verbrauchsstatus"
+  },
+  "cantidad_sugerida_tanda": "Zu produzierende Menge ({{unidad}}) — von der Charge vorgeschlagen",
+  "calculando_placeholder": "Wird berechnet...",
+  "recalcular_consumos": "Vorgeschlagenen Verbrauch neu berechnen",
+  "consumido_por_titulo": "Verbraucht von",
+  "sin_consumo_registrado_todavia": "Noch kein Verbrauch erfasst.",
+  "tipo_semielaborado": "Halbfertigprodukt",
+  "tipo_producto_final": "Fertigprodukt",
+  "confirmar_borrar_con_avisos": "⚠️ Diese Charge wurde verwendet in:\n\n{{lista}}\n\nBeim Löschen werden auch diese Verbräuche/Korrekturen entfernt. Möchtest du wirklich fortfahren?",
+  "confirmar_borrar_sin_avisos": "Möchtest du diese Produktion wirklich löschen?",
+  "avisos": {
+    "consumo_semi_one": "{{count}} Verbrauch in anderen Halbfertigprodukt-Produktionen",
+    "consumo_semi_other": "{{count}} Verbräuche in anderen Halbfertigprodukt-Produktionen",
+    "consumo_pf_one": "{{count}} Verbrauch in Fertigprodukt-Produktionen",
+    "consumo_pf_other": "{{count}} Verbräuche in Fertigprodukt-Produktionen",
+    "ajuste_one": "{{count}} Bestandskorrektur",
+    "ajuste_other": "{{count}} Bestandskorrekturen"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "titulo": "Final product production",
+  "subtitulo_tanda": "Starting production for a batch from \"Today's production\" — the just-closed Mix lot is suggested based on that batch's orders.",
+  "subtitulo_normal": "Start a production, record which lots you consume each ingredient from, and close it with the net quantity obtained.",
+  "produccion_enlazada_pedido": "This production will be linked to the selected order.",
+  "cantidad_a_producir_opcional": "Quantity to produce (optional)",
+  "unidad_larga": "units",
+  "unidad_corta": "units",
+  "stock_actual_titulo": "Current stock of final products",
+  "stock_actual_de": "Current stock of {{nombre}}",
+  "tabla": {
+    "producto": "Product",
+    "stock": "Stock"
+  },
+  "historial_titulo": "History of closed productions",
+  "historial_titulo_de": "History of closed productions of {{nombre}}",
+  "sin_producciones_cerradas": "There are no closed productions yet.",
+  "sin_producciones_cerradas_de": "There are no closed productions of this product yet.",
+  "tabla_historial": {
+    "producto": "Product",
+    "estado_despacho": "Dispatch status"
+  },
+  "pedido_codigo": "Order {{codigo}}",
+  "repartido_pedidos_titulo": "Allocated to orders",
+  "sin_reparto_previsto": "No allocation planned yet.",
+  "tabla_reparto": {
+    "cliente": "Customer",
+    "pedido": "Order",
+    "entrega_prevista": "Expected delivery",
+    "previsto": "Planned"
+  },
+  "sin_cliente": "No customer",
+  "sin_fecha": "no date",
+  "confirmar_cancelar": "Cancel this open production? Any consumption already registered will be reverted.",
+  "confirmar_borrar": "Are you sure you want to delete this production? Its consumption and stock will be reverted.",
+  "indica_cantidad_neta": "Enter the net quantity produced"
+}

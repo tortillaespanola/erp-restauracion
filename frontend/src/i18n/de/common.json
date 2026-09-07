@@ -59,6 +59,8 @@
     "logout": "Abmelden",
     "settings": "Einstellungen",
     "loading": "Lädt...",
+    "saving": "Speichert...",
+    "all": "Alle",
     "default_user": "Benutzer"
   }
 }

@@ -1,0 +1,48 @@
+{
+  "titulo": "Orders",
+  "subtitulo": "Register what a customer orders, launch the production that's needed, and turn it into a sales delivery note once it's ready.",
+  "listado_titulo": "List",
+  "nuevo_pedido": "New order",
+  "editar_pedido": "Edit order",
+  "filtros": {
+    "cliente": "Customer",
+    "estado": "Status",
+    "desde": "From",
+    "hasta": "To",
+    "limpiar_filtros": "Clear filters"
+  },
+  "sin_pedidos_filtro": "No order matches the applied filters.",
+  "sin_pedidos": "There are no orders registered yet.",
+  "tabla": {
+    "fecha": "Date",
+    "cliente": "Customer",
+    "entrega_prevista": "Expected delivery",
+    "estado": "Status",
+    "progreso": "Progress",
+    "acciones": "Actions"
+  },
+  "sin_cliente": "No customer",
+  "lineas_servidas": "{{servidas}}/{{total}} lines served",
+  "aviso_stock_insuficiente_title": "Some line has insufficient stock in the assigned batch",
+  "editar_title": "Edit",
+  "crear_albaran_title": "Create sales delivery note",
+  "cancelar_pedido_title": "Cancel order",
+  "tabla_detalle": {
+    "linea": "Line",
+    "pedido": "Order",
+    "previsto": "Planned",
+    "servido": "Served"
+  },
+  "tipo_mercaderia": " (merchandise)",
+  "tipo_libre": " (other/service)",
+  "solo_disp_en_tanda": "({{lista}} in the assigned batch)",
+  "solo_disp_item": "only {{valor}} avail.",
+  "pedido_pagina_count_one": "{{count}} order · page {{pagina}} of {{total}}",
+  "pedido_pagina_count_other": "{{count}} orders · page {{pagina}} of {{total}}",
+  "alertas": {
+    "confirmar_cancelar": "Cancel this order?",
+    "error_cancelar": "Error cancelling: {{mensaje}}",
+    "error_comprobar_editable": "Error checking whether the order can be edited: {{mensaje}}",
+    "no_editable": "This order already has production or deliveries registered; it cannot be edited yet — cancel it and create a new one, or contact support."
+  }
+}

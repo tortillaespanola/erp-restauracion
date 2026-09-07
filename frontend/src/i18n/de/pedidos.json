@@ -1,0 +1,48 @@
+{
+  "titulo": "Bestellungen",
+  "subtitulo": "Erfasse, was ein Kunde bestellt, starte die nötige Produktion und wandle sie in einen Lieferschein um, sobald sie fertig ist.",
+  "listado_titulo": "Liste",
+  "nuevo_pedido": "Neue Bestellung",
+  "editar_pedido": "Bestellung bearbeiten",
+  "filtros": {
+    "cliente": "Kunde",
+    "estado": "Status",
+    "desde": "Von",
+    "hasta": "Bis",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "sin_pedidos_filtro": "Keine Bestellung entspricht den angewendeten Filtern.",
+  "sin_pedidos": "Es sind noch keine Bestellungen erfasst.",
+  "tabla": {
+    "fecha": "Datum",
+    "cliente": "Kunde",
+    "entrega_prevista": "Voraussichtliche Lieferung",
+    "estado": "Status",
+    "progreso": "Fortschritt",
+    "acciones": "Aktionen"
+  },
+  "sin_cliente": "Kein Kunde",
+  "lineas_servidas": "{{servidas}}/{{total}} Zeilen geliefert",
+  "aviso_stock_insuficiente_title": "Eine Zeile hat unzureichenden Bestand in der zugewiesenen Charge",
+  "editar_title": "Bearbeiten",
+  "crear_albaran_title": "Lieferschein erstellen",
+  "cancelar_pedido_title": "Bestellung stornieren",
+  "tabla_detalle": {
+    "linea": "Zeile",
+    "pedido": "Bestellung",
+    "previsto": "Geplant",
+    "servido": "Geliefert"
+  },
+  "tipo_mercaderia": " (Ware)",
+  "tipo_libre": " (Sonstiges/Dienstleistung)",
+  "solo_disp_en_tanda": "({{lista}} in der zugewiesenen Charge)",
+  "solo_disp_item": "nur {{valor}} verf.",
+  "pedido_pagina_count_one": "{{count}} Bestellung · Seite {{pagina}} von {{total}}",
+  "pedido_pagina_count_other": "{{count}} Bestellungen · Seite {{pagina}} von {{total}}",
+  "alertas": {
+    "confirmar_cancelar": "Diese Bestellung stornieren?",
+    "error_cancelar": "Fehler beim Stornieren: {{mensaje}}",
+    "error_comprobar_editable": "Fehler beim Prüfen, ob die Bestellung bearbeitet werden kann: {{mensaje}}",
+    "no_editable": "Diese Bestellung hat bereits Produktion oder Lieferungen erfasst; sie kann noch nicht bearbeitet werden — storniere sie und lege eine neue an, oder wende dich an den Support."
+  }
+}
