@@ -11,7 +11,7 @@ function Configuracion() {
 
   async function cargar() {
     setCargando(true)
-    const { data, error } = await supabase.from('empresa_config').select('*').eq('id', 1).single()
+    const { data, error } = await supabase.from('empresa_config').select('*').single()
     if (error) console.error(error)
     else setForm(data)
     setCargando(false)
@@ -27,7 +27,7 @@ function Configuracion() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const { error } = await supabase.from('empresa_config').update(form).eq('id', 1)
+    const { error } = await supabase.from('empresa_config').update(form)
     if (error) {
       alert('Error al guardar: ' + error.message)
       return

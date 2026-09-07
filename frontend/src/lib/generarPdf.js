@@ -26,7 +26,7 @@ function urlToBase64(url) {
 }
 
 async function cargarEmpresa() {
-  const { data } = await supabase.from('empresa_config').select('*').eq('id', 1).single()
+  const { data } = await supabase.from('empresa_config').select('*').single()
   return data
 }
 
