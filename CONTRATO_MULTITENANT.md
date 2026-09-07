@@ -8,6 +8,15 @@ comparan contra un UUID fijo en vez de resolver dinámicamente el negocio del us
 autenticado.
 
 Al finalizar este contrato, dos negocios (p. ej. "Española/Company Valencia" y el negocio
+
+**Patrón recurrente a vigilar en cualquier tarea futura de este contrato:** un `UNIQUE`
+o `PRIMARY KEY` sobre un **código/texto elegido por el negocio** (`clave` en
+`secuencias_lote`, el viejo `anio` en `facturas_venta_secuencia`, `codigo` en
+`unidades_medida`) casi siempre necesita partirse a `(negocio_id, código)`. Un
+`UNIQUE`/`PK` sobre un **ID numérico interno** (`articulo_id`, `proveedor_id`, etc.) casi
+nunca lo necesita, porque esos IDs ya son globalmente únicos en todo el esquema. Antes
+de dar por cerrada cualquier auditoría de este tipo, distinguir explícitamente ambas
+categorías en vez de "corregir todo por igual".
 demo de catering) deben poder convivir en la misma base de datos sin que ningún usuario
 pueda ver, editar ni contar (secuencias, agregados) datos del negocio ajeno.
 
@@ -147,27 +156,6 @@ negocios, añadir selector explícito).
 
 **Criterio de aceptación:** no hay ninguna pantalla del ERP alcanzable sin que el contexto
 de negocio esté resuelto primero.
-
-**Decisión de alcance (confirmada al implementar):** el escenario real inmediato es un
-usuario por negocio, no un usuario en varios negocios todavía — no se construyó ningún
-selector visible. Se investigó primero qué pasaba hoy con un usuario sin fila en
-`usuarios_negocios`: cada pantalla hacía `console.error(error)` en la carga inicial y
-seguía renderizando una lista vacía, indistinguible de "negocio sin datos todavía" —
-ningún error visible para un usuario real. Se implementó solo la pieza mínima que
-corrige esto: `NegocioProvider` (`frontend/src/context/`), que tras el login hace una
-única consulta a `empresa_config` (ya 1:1 con el negocio) y, si `negocio_actual()` lanza
-su excepción (confirmado en vivo con un usuario de prueba desechable: `error.code`
-`P0001`, mensaje empezando por `negocio_actual():`), muestra una pantalla clara en vez
-de dejar que la app renderice vacía en silencio. El resto de la app no se tocó. El
-selector multi-negocio queda como mejora futura, sin implementar, para cuando exista de
-verdad un usuario en más de un negocio.
-
-**Alta manual de un negocio nuevo (sin pantalla propia, confirmado por grep que no
-existe ninguna en el frontend — procedimiento a seguir para el negocio demo de
-catering):**
-1. `insert into negocios (id, nombre, codigo_corto) values (gen_random_uuid(), '<nombre>', '<CODIGO>')` — `codigo_corto` obligatorio para cualquier negocio que no sea el principal (Tarea 4).
-2. Crear el usuario en Supabase Auth (dashboard → Authentication → Add user, o invitación por email) — no por SQL directo, para que las credenciales queden gestionadas por el flujo normal de Supabase.
-3. `insert into usuarios_negocios (usuario_id, negocio_id) values ('<id del usuario creado>', '<id del negocio del paso 1>')` — sin esta fila, el usuario nuevo verá la pantalla de "sin negocio asignado" de `NegocioProvider` al iniciar sesión.
 
 ---
 
