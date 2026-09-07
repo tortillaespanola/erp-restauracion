@@ -27,7 +27,7 @@ function Configuracion() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const { error } = await supabase.from('empresa_config').update(form)
+    const { error } = await supabase.from('empresa_config').update(form).eq('negocio_id', form.negocio_id)
     if (error) {
       alert('Error al guardar: ' + error.message)
       return
