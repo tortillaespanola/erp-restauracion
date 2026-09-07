@@ -102,6 +102,40 @@ numeración por culpa del otro. Contablemente inaceptable.
 **Criterio de aceptación:** dos negocios generando facturas en paralelo obtienen cada uno
 su propia secuencia correlativa (1, 2, 3... por negocio), sin huecos causados por el otro.
 
+**Decisión de formato (no se conoce si los negocios serán fiscalmente independientes,
+así que se previene desde ya):** el negocio A conserva su formato actual sin cambios
+retroactivos (`RE-2026-001`...`017` no se renombran). A partir de esta tarea, el
+generador de número de factura incluye un código corto de negocio (p. ej.
+`negocios.codigo_corto`, a añadir) en el formato visible, de forma que dos facturas de
+negocios distintos nunca puedan verse idénticas sobre el papel, independientemente de si
+resultan ser la misma entidad fiscal o no. El negocio A puede mantenerse sin segmento
+por continuidad histórica, o adoptar el nuevo formato hacia delante — a decidir al
+diseñar la migración, pero nunca reescribiendo las 17 ya emitidas.
+
+---
+
+## Tarea 7 — `secuencias_lote` con el mismo problema que Tarea 4, mayor radio de impacto
+
+**Hallazgo (detectado al investigar Tarea 4, fuera del alcance original):**
+`secuencias_lote` (la tabla detrás de `generar_codigo()`, usada para `OV-`, `OC-`,
+códigos de lote de producción, etc.) tiene `PRIMARY KEY (clave)` global, no
+`(negocio_id, clave)` — el mismo problema estructural que motivó la Tarea 4, pero
+afectando a pedidos de venta, pedidos de compra y trazabilidad de lotes FIFO, no solo a
+facturas.
+
+**Riesgo concreto:** sin corregir, el día que el negocio demo empiece a generar sus
+propios pedidos/lotes, competiría literalmente por los mismos códigos correlativos que
+el negocio A — colisión de numeración desde el primer día del segundo negocio.
+
+**Prioridad:** alta — probablemente antes que la Tarea 5 (selector de frontend), porque
+esta sí bloquea de forma silenciosa y con daño creciente en cuanto exista actividad real
+en el negocio demo, mientras que la Tarea 5 solo afecta la comodidad de acceso.
+
+**Qué hacer:** mismo patrón que Tarea 4 — clave compuesta `(negocio_id, clave)`,
+backfill del negocio A explícito, `negocio_actual()` en la función generadora, y la
+misma decisión de formato visible que en Tarea 4 (evaluar si `OV-`/`OC-`/códigos de lote
+necesitan también un segmento identificador de negocio).
+
 ---
 
 ## Tarea 5 — Selector/login de negocio en el frontend
