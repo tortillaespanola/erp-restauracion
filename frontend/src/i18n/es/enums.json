@@ -31,6 +31,15 @@
     "semielaborado": "semielaborado",
     "producto_final": "producto final"
   },
+  "tipo_cliente": {
+    "particular": "Particular",
+    "empresa": "Empresa"
+  },
+  "tipo_material": {
+    "RM": "Materia prima (RM)",
+    "AUX": "Material auxiliar (AUX)",
+    "TRD": "Mercadería (TRD)"
+  },
   "motivo_categoria": {
     "caducado": "Caducado",
     "roto": "Roto",

@@ -1,0 +1,36 @@
+{
+  "tipo": {
+    "articulo": "Einkaufsartikel",
+    "semielaborado": "Halbfertigprodukt",
+    "producto_final": "Fertigprodukt"
+  },
+  "selecciona_tipo": {
+    "articulo": "Artikel",
+    "semielaborado": "Halbfertigprodukt",
+    "producto_final": "Fertigprodukt"
+  },
+  "selecciona_item": "{{tipo}} auswählen",
+  "sin_lotes_con_stock": "Dieses Element hat keine Chargen mit Bestand",
+  "selecciona_lote": "Wähle die anzupassende Charge",
+  "mas_antiguo_badge": "✓ Älteste · ",
+  "lote_albaran": "Lieferschein {{numero}}",
+  "lote_sin_numero": "(o. Nr.)",
+  "lote_stock_actual": "aktueller Bestand: {{stock}}",
+  "lote_produccion": "Produktion {{fecha}}",
+  "lote_caduca": " · läuft ab {{fecha}}",
+  "stock_actual_del_lote": "Aktueller Bestand der Charge: {{cantidad}} {{unidad}}",
+  "campos": {
+    "cantidad": "Menge (+ addiert, - subtrahiert)",
+    "motivo": "Grund",
+    "detalle_motivo_opcional": "Detail zum Grund (optional)"
+  },
+  "motivo_placeholder": "Ablauf, Bruch, Wiegefehler...",
+  "detalle_motivo_placeholder": "Zusätzliche Erläuterung...",
+  "selecciona_motivo": "Grund auswählen",
+  "registrar_ajuste": "Korrektur erfassen",
+  "alertas": {
+    "faltan_campos_producto_final": "Wähle das Produkt, die Charge, die Menge und den Grund",
+    "faltan_campos": "Wähle das Element, die Charge, die Menge und den Grund",
+    "error_guardar": "Fehler beim Speichern der Korrektur: {{mensaje}}"
+  }
+}

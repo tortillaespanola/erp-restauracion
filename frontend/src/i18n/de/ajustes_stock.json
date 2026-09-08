@@ -1,0 +1,32 @@
+{
+  "titulo": "Bestandskorrekturen",
+  "subtitulo": "Verlauf der Bestandskorrekturen wegen Schwund, Ablauf, Bruch oder Wiegefehlern.",
+  "movimientos_titulo": "Bewegungen",
+  "nuevo_ajuste": "+ Neue Korrektur",
+  "filtros": {
+    "desde": "Von",
+    "hasta": "Bis",
+    "articulo_item": "Artikel / Element",
+    "motivo": "Grund"
+  },
+  "buscar_por_nombre_placeholder": "Nach Name suchen...",
+  "buscar_por_motivo_placeholder": "Nach Grund suchen...",
+  "error_cargar_historico": "Fehler beim Laden des Verlaufs: {{mensaje}}",
+  "sin_ajustes_filtro": "Keine Korrektur entspricht den Filtern.",
+  "tabla": {
+    "fecha": "Datum",
+    "item": "Element",
+    "cantidad": "Menge",
+    "motivo": "Grund",
+    "usuario": "Benutzer"
+  },
+  "borrar": "Löschen",
+  "movimiento_count_one": "{{count}} Bewegung",
+  "movimiento_count_other": "{{count}} Bewegungen",
+  "pagina_de": "Seite {{pagina}} von {{total}}",
+  "drawer_nuevo_ajuste_titulo": "Neue Bestandskorrektur",
+  "alertas": {
+    "confirmar_borrar": "Möchtest du diese Korrektur wirklich löschen? Der Bestand wird auf seinen vorherigen Wert zurückgesetzt.",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

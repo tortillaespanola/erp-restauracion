@@ -1,0 +1,35 @@
+{
+  "titulo": "Inventario",
+  "subtitulo": "Stock y necesidad agregada por ingrediente, con desglose hasta la dupla artículo-proveedor.",
+  "filtros": {
+    "proveedor": "Proveedor",
+    "ingredientes": "Ingrediente(s)",
+    "semielaborados": "Semielaborado(s)",
+    "productos_finales": "Producto(s) final(es)",
+    "solo_con_necesidad": "Solo con necesidad"
+  },
+  "necesidad_mayor_cero": "Necesidad > 0",
+  "nada_pendiente_comprar": "Nada pendiente de comprar.",
+  "sin_coincidencias_filtros": "Ningún ingrediente coincide con los filtros seleccionados.",
+  "tabla": {
+    "ingrediente": "Ingrediente",
+    "stock": "Stock",
+    "necesidad_agregada": "Necesidad agregada",
+    "articulo": "Artículo",
+    "proveedor": "Proveedor",
+    "precio": "Precio",
+    "ultimo_precio_compra": "Último precio de compra",
+    "recepcion": "Recepción",
+    "lote": "Lote",
+    "entrado": "Entrado",
+    "consumido": "Consumido"
+  },
+  "sin_articulos_vinculados": "Sin artículos vinculados todavía.",
+  "sin_proveedores_asignados": "Sin proveedores asignados todavía.",
+  "sin_lotes_vivos": "Sin lotes vivos de esta dupla.",
+  "recibido_ajuste": "recibido {{cantidad}} · ajuste +{{ajuste}}",
+  "produccion_ajuste": "prod. {{cantidad}} · ajuste −{{ajuste}}",
+  "ajustar": "Ajustar",
+  "recepcion_lote_label": "Recepción {{fecha}}",
+  "drawer_ajustar_stock_titulo": "Ajustar stock"
+}

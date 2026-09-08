@@ -66,5 +66,7 @@
     "download_pdf": "Descargar PDF"
   },
   "listado_titulo": "Listado",
-  "sin_cliente": "Sin cliente"
+  "sin_cliente": "Sin cliente",
+  "sin_numero": "(sin número)",
+  "redondea_3_decimales": "Se redondeará a 3 decimales"
 }

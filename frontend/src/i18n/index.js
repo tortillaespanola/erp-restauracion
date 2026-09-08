@@ -15,6 +15,15 @@ import albaranesVentaEs from './es/albaranes_venta.json'
 import facturasVentaEs from './es/facturas_venta.json'
 import pagosEs from './es/pagos.json'
 import registrarPagoFormEs from './es/registrar_pago_form.json'
+import comprasComunEs from './es/compras_comun.json'
+import albaranesCompraEs from './es/albaranes_compra.json'
+import pedidosCompraEs from './es/pedidos_compra.json'
+import facturasCompraEs from './es/facturas_compra.json'
+import articulosEs from './es/articulos.json'
+import inventarioEs from './es/inventario.json'
+import ajustesStockEs from './es/ajustes_stock.json'
+import ajusteStockFormEs from './es/ajuste_stock_form.json'
+import configuracionEs from './es/configuracion.json'
 
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
@@ -30,6 +39,15 @@ import albaranesVentaEn from './en/albaranes_venta.json'
 import facturasVentaEn from './en/facturas_venta.json'
 import pagosEn from './en/pagos.json'
 import registrarPagoFormEn from './en/registrar_pago_form.json'
+import comprasComunEn from './en/compras_comun.json'
+import albaranesCompraEn from './en/albaranes_compra.json'
+import pedidosCompraEn from './en/pedidos_compra.json'
+import facturasCompraEn from './en/facturas_compra.json'
+import articulosEn from './en/articulos.json'
+import inventarioEn from './en/inventario.json'
+import ajustesStockEn from './en/ajustes_stock.json'
+import ajusteStockFormEn from './en/ajuste_stock_form.json'
+import configuracionEn from './en/configuracion.json'
 
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
@@ -45,6 +63,15 @@ import albaranesVentaDe from './de/albaranes_venta.json'
 import facturasVentaDe from './de/facturas_venta.json'
 import pagosDe from './de/pagos.json'
 import registrarPagoFormDe from './de/registrar_pago_form.json'
+import comprasComunDe from './de/compras_comun.json'
+import albaranesCompraDe from './de/albaranes_compra.json'
+import pedidosCompraDe from './de/pedidos_compra.json'
+import facturasCompraDe from './de/facturas_compra.json'
+import articulosDe from './de/articulos.json'
+import inventarioDe from './de/inventario.json'
+import ajustesStockDe from './de/ajustes_stock.json'
+import ajusteStockFormDe from './de/ajuste_stock_form.json'
+import configuracionDe from './de/configuracion.json'
 
 // CONTRATO_I18N.md, Fase 0. El idioma real por usuario vive en usuarios_negocios.idioma (con
 // fallback a empresa_config.idioma) -- NegocioProvider sincroniza ese valor aquí en cuanto carga
@@ -77,6 +104,10 @@ i18n.use(initReactI18next).init({
       pedidos_del_dia: pedidosDelDiaEs, pedidos: pedidosEs, pedido_form: pedidoFormEs,
       ventas_comun: ventasComunEs, albaranes_venta: albaranesVentaEs,
       facturas_venta: facturasVentaEs, pagos: pagosEs, registrar_pago_form: registrarPagoFormEs,
+      compras_comun: comprasComunEs, albaranes_compra: albaranesCompraEs,
+      pedidos_compra: pedidosCompraEs, facturas_compra: facturasCompraEs,
+      articulos: articulosEs, inventario: inventarioEs, ajustes_stock: ajustesStockEs,
+      ajuste_stock_form: ajusteStockFormEs, configuracion: configuracionEs,
     },
     en: {
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
@@ -85,6 +116,10 @@ i18n.use(initReactI18next).init({
       pedidos_del_dia: pedidosDelDiaEn, pedidos: pedidosEn, pedido_form: pedidoFormEn,
       ventas_comun: ventasComunEn, albaranes_venta: albaranesVentaEn,
       facturas_venta: facturasVentaEn, pagos: pagosEn, registrar_pago_form: registrarPagoFormEn,
+      compras_comun: comprasComunEn, albaranes_compra: albaranesCompraEn,
+      pedidos_compra: pedidosCompraEn, facturas_compra: facturasCompraEn,
+      articulos: articulosEn, inventario: inventarioEn, ajustes_stock: ajustesStockEn,
+      ajuste_stock_form: ajusteStockFormEn, configuracion: configuracionEn,
     },
     de: {
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
@@ -93,6 +128,10 @@ i18n.use(initReactI18next).init({
       pedidos_del_dia: pedidosDelDiaDe, pedidos: pedidosDe, pedido_form: pedidoFormDe,
       ventas_comun: ventasComunDe, albaranes_venta: albaranesVentaDe,
       facturas_venta: facturasVentaDe, pagos: pagosDe, registrar_pago_form: registrarPagoFormDe,
+      compras_comun: comprasComunDe, albaranes_compra: albaranesCompraDe,
+      pedidos_compra: pedidosCompraDe, facturas_compra: facturasCompraDe,
+      articulos: articulosDe, inventario: inventarioDe, ajustes_stock: ajustesStockDe,
+      ajuste_stock_form: ajusteStockFormDe, configuracion: configuracionDe,
     },
   },
   lng: idiomaInicial(),
@@ -101,6 +140,8 @@ i18n.use(initReactI18next).init({
     'common', 'enums', 'estados_calculados', 'produccion_comun', 'producciones',
     'produccion_productos_finales', 'pedidos_del_dia', 'pedidos', 'pedido_form',
     'ventas_comun', 'albaranes_venta', 'facturas_venta', 'pagos', 'registrar_pago_form',
+    'compras_comun', 'albaranes_compra', 'pedidos_compra', 'facturas_compra',
+    'articulos', 'inventario', 'ajustes_stock', 'ajuste_stock_form', 'configuracion',
   ],
   defaultNS: 'common',
   interpolation: { escapeValue: false },

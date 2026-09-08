@@ -1,0 +1,73 @@
+{
+  "titulo": "Albaranes de compra",
+  "card_nuevo_titulo": "Nuevo albarán",
+  "card_editar_titulo": "Editar albarán",
+  "tipo_origen": {
+    "compra_directa": "Compra directa",
+    "pedido_existente": "Desde pedido existente"
+  },
+  "campos": {
+    "pedido_compra": "Pedido de compra",
+    "proveedor": "Proveedor",
+    "numero_albaran_proveedor": "Nº albarán del proveedor",
+    "fecha": "Fecha"
+  },
+  "albaran_linea": "Albarán {{numero}}",
+  "proveedor_label": "Proveedor: ",
+  "ref_proveedor_label": " · Ref. proveedor: ",
+  "selecciona_pedido": "Selecciona pedido",
+  "lineas_titulo": "Líneas",
+  "linea_bloqueada": {
+    "articulo_generico": "Artículo",
+    "aviso": "Artículo, cantidad y precio ya consumidos/ajustados — no se pueden modificar. Fecha de caducidad y notas sí."
+  },
+  "placeholders": {
+    "caducidad": "Caducidad",
+    "notas": "Notas",
+    "cantidad": "Cantidad",
+    "precio": "Precio",
+    "notas_detalle": "Notas (temperatura de recepción, incidencias...)"
+  },
+  "fecha_caducidad_opcional_title": "Fecha de caducidad (opcional)",
+  "temperatura": {
+    "placeholder_base": "Temperatura de recepción (°C)",
+    "rango_sufijo": " — rango: {{min}} a {{max}}",
+    "fuera_rango_aviso": "Fuera del rango aceptable ({{min}}°C a {{max}}°C)"
+  },
+  "guardar_cambios": "Guardar cambios",
+  "guardar_albaran": "Guardar albarán",
+  "cancelar_edicion": "Cancelar edición",
+  "sin_albaranes": "Todavía no hay albaranes registrados.",
+  "editar": "Editar",
+  "borrar": "Borrar",
+  "tabla": {
+    "articulo": "Artículo",
+    "cantidad": "Cantidad",
+    "precio": "Precio",
+    "caducidad": "Caducidad",
+    "notas": "Notas",
+    "temperatura": "Temp.",
+    "lote": "Lote"
+  },
+  "avisos": {
+    "consumo_semi_one": "{{count}} consumo en producciones de semielaborados",
+    "consumo_semi_other": "{{count}} consumos en producciones de semielaborados",
+    "consumo_pf_one": "{{count}} consumo en producciones de productos finales",
+    "consumo_pf_other": "{{count}} consumos en producciones de productos finales",
+    "ajuste_one": "{{count}} ajuste de stock",
+    "ajuste_other": "{{count}} ajustes de stock"
+  },
+  "alertas": {
+    "sin_lineas_validas": "Añade al menos una línea con artículo y cantidad",
+    "error_actualizar_albaran": "Error al actualizar el albarán: {{mensaje}}",
+    "error_borrar_lineas": "Error al borrar líneas: {{mensaje}}",
+    "error_actualizar_linea": "Error al actualizar una línea: {{mensaje}}",
+    "error_actualizar_linea_bloqueada": "Error al actualizar caducidad/notas de una línea bloqueada: {{mensaje}}",
+    "error_anadir_lineas": "Error al añadir nuevas líneas: {{mensaje}}",
+    "error_crear_albaran": "Error al crear el albarán: {{mensaje}}",
+    "error_guardar_lineas": "Error al guardar las líneas: {{mensaje}}",
+    "confirmar_borrar_con_avisos": "⚠️ Este albarán tiene datos relacionados que se BORRARÁN también:\n\n{{lista}}\n\n¿Seguro que quieres continuar?",
+    "confirmar_borrar_sin_avisos": "¿Seguro que quieres borrar este albarán?",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

@@ -268,7 +268,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
                   <Input type="number" step="0.001" placeholder={t('pedido_form:cantidad_placeholder')} value={linea.cantidad}
                     onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                    required title={t('pedido_form:redondea_3_decimales')} />
+                    required title={t('common:redondea_3_decimales')} />
                   <Input type="number" step="0.01" placeholder={t('pedido_form:precio_placeholder')} value={linea.precio_unitario}
                     onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
                   <button type="button" onClick={() => removeLinea(index)}

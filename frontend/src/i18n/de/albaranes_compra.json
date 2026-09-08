@@ -1,0 +1,73 @@
+{
+  "titulo": "Lieferscheine Einkauf",
+  "card_nuevo_titulo": "Neuer Lieferschein",
+  "card_editar_titulo": "Lieferschein bearbeiten",
+  "tipo_origen": {
+    "compra_directa": "Direkteinkauf",
+    "pedido_existente": "Aus bestehender Bestellung"
+  },
+  "campos": {
+    "pedido_compra": "Bestellung",
+    "proveedor": "Lieferant",
+    "numero_albaran_proveedor": "Lieferschein-Nr. des Lieferanten",
+    "fecha": "Datum"
+  },
+  "albaran_linea": "Lieferschein {{numero}}",
+  "proveedor_label": "Lieferant: ",
+  "ref_proveedor_label": " · Lieferantenreferenz: ",
+  "selecciona_pedido": "Bestellung auswählen",
+  "lineas_titulo": "Zeilen",
+  "linea_bloqueada": {
+    "articulo_generico": "Artikel",
+    "aviso": "Artikel, Menge und Preis bereits verbraucht/korrigiert — können nicht geändert werden. Verfallsdatum und Notizen schon."
+  },
+  "placeholders": {
+    "caducidad": "Verfallsdatum",
+    "notas": "Notizen",
+    "cantidad": "Menge",
+    "precio": "Preis",
+    "notas_detalle": "Notizen (Empfangstemperatur, Vorfälle...)"
+  },
+  "fecha_caducidad_opcional_title": "Verfallsdatum (optional)",
+  "temperatura": {
+    "placeholder_base": "Empfangstemperatur (°C)",
+    "rango_sufijo": " — Bereich: {{min}} bis {{max}}",
+    "fuera_rango_aviso": "Außerhalb des zulässigen Bereichs ({{min}}°C bis {{max}}°C)"
+  },
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_albaran": "Lieferschein speichern",
+  "cancelar_edicion": "Bearbeitung abbrechen",
+  "sin_albaranes": "Es sind noch keine Lieferscheine erfasst.",
+  "editar": "Bearbeiten",
+  "borrar": "Löschen",
+  "tabla": {
+    "articulo": "Artikel",
+    "cantidad": "Menge",
+    "precio": "Preis",
+    "caducidad": "Verfallsdatum",
+    "notas": "Notizen",
+    "temperatura": "Temp.",
+    "lote": "Charge"
+  },
+  "avisos": {
+    "consumo_semi_one": "{{count}} Verbrauch in Halbfertigprodukt-Produktionen",
+    "consumo_semi_other": "{{count}} Verbräuche in Halbfertigprodukt-Produktionen",
+    "consumo_pf_one": "{{count}} Verbrauch in Fertigprodukt-Produktionen",
+    "consumo_pf_other": "{{count}} Verbräuche in Fertigprodukt-Produktionen",
+    "ajuste_one": "{{count}} Bestandskorrektur",
+    "ajuste_other": "{{count}} Bestandskorrekturen"
+  },
+  "alertas": {
+    "sin_lineas_validas": "Füge mindestens eine Zeile mit Artikel und Menge hinzu",
+    "error_actualizar_albaran": "Fehler beim Aktualisieren des Lieferscheins: {{mensaje}}",
+    "error_borrar_lineas": "Fehler beim Löschen von Zeilen: {{mensaje}}",
+    "error_actualizar_linea": "Fehler beim Aktualisieren einer Zeile: {{mensaje}}",
+    "error_actualizar_linea_bloqueada": "Fehler beim Aktualisieren von Verfallsdatum/Notizen einer gesperrten Zeile: {{mensaje}}",
+    "error_anadir_lineas": "Fehler beim Hinzufügen neuer Zeilen: {{mensaje}}",
+    "error_crear_albaran": "Fehler beim Erstellen des Lieferscheins: {{mensaje}}",
+    "error_guardar_lineas": "Fehler beim Speichern der Zeilen: {{mensaje}}",
+    "confirmar_borrar_con_avisos": "⚠️ Dieser Lieferschein hat verknüpfte Daten, die ebenfalls GELÖSCHT werden:\n\n{{lista}}\n\nBist du sicher, dass du fortfahren willst?",
+    "confirmar_borrar_sin_avisos": "Möchtest du diesen Lieferschein wirklich löschen?",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

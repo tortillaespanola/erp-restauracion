@@ -1,0 +1,35 @@
+{
+  "titulo": "Inventory",
+  "subtitulo": "Stock and aggregate need per ingredient, broken down to the article-supplier pair.",
+  "filtros": {
+    "proveedor": "Supplier",
+    "ingredientes": "Ingredient(s)",
+    "semielaborados": "Semi-finished good(s)",
+    "productos_finales": "Final product(s)",
+    "solo_con_necesidad": "Only with need"
+  },
+  "necesidad_mayor_cero": "Need > 0",
+  "nada_pendiente_comprar": "Nothing pending to buy.",
+  "sin_coincidencias_filtros": "No ingredient matches the selected filters.",
+  "tabla": {
+    "ingrediente": "Ingredient",
+    "stock": "Stock",
+    "necesidad_agregada": "Aggregate need",
+    "articulo": "Article",
+    "proveedor": "Supplier",
+    "precio": "Price",
+    "ultimo_precio_compra": "Last purchase price",
+    "recepcion": "Reception",
+    "lote": "Lot",
+    "entrado": "In",
+    "consumido": "Consumed"
+  },
+  "sin_articulos_vinculados": "No articles linked yet.",
+  "sin_proveedores_asignados": "No suppliers assigned yet.",
+  "sin_lotes_vivos": "No live lots for this pair.",
+  "recibido_ajuste": "received {{cantidad}} · adjustment +{{ajuste}}",
+  "produccion_ajuste": "prod. {{cantidad}} · adjustment −{{ajuste}}",
+  "ajustar": "Adjust",
+  "recepcion_lote_label": "Reception {{fecha}}",
+  "drawer_ajustar_stock_titulo": "Adjust stock"
+}

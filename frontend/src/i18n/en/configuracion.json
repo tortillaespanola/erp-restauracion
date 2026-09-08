@@ -1,0 +1,21 @@
+{
+  "titulo": "Company settings",
+  "subtitulo": "This data will appear on the letterhead of delivery notes and invoices.",
+  "cargando": "Loading...",
+  "campos": {
+    "logo": "Logo",
+    "nombre_comercial": "Trade name",
+    "razon_fiscal": "Legal name",
+    "cif": "Tax ID",
+    "direccion": "Address",
+    "telefono": "Phone",
+    "email": "Email"
+  },
+  "subiendo": "Uploading...",
+  "guardar": "Save",
+  "alertas": {
+    "error_guardar": "Error saving: {{mensaje}}",
+    "guardado_correctamente": "Data saved successfully",
+    "error_subir_logo": "Error uploading the logo: {{mensaje}}"
+  }
+}

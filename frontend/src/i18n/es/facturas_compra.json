@@ -1,0 +1,26 @@
+{
+  "titulo": "Facturas de compra",
+  "card_nuevo_titulo": "Nueva factura",
+  "campos": {
+    "proveedor": "Proveedor",
+    "numero_factura": "Nº de factura",
+    "fecha": "Fecha",
+    "total_con_iva": "Total factura (con IVA)"
+  },
+  "albaranes_a_incluir_titulo": "Albaranes a incluir",
+  "elige_proveedor_para_albaranes": "Elige primero un proveedor para ver sus albaranes.",
+  "sin_albaranes_pendientes": "Este proveedor no tiene albaranes pendientes de facturar.",
+  "albaran_checkbox_label": "Albarán {{numero}} · {{fecha}}",
+  "guardar_factura": "Guardar factura",
+  "sin_facturas": "Todavía no hay facturas registradas.",
+  "borrar": "Borrar",
+  "factura_linea": "Factura {{numero}} · {{fecha}}",
+  "albaranes_incluidos": "Albaranes incluidos: ",
+  "alertas": {
+    "sin_albaranes_seleccionados": "Selecciona al menos un albarán para asociar a la factura",
+    "error_crear_factura": "Error al crear la factura: {{mensaje}}",
+    "error_asociar_albaranes": "Error al asociar los albaranes: {{mensaje}}",
+    "confirmar_borrar": "¿Seguro que quieres borrar esta factura?",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

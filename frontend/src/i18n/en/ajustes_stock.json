@@ -1,0 +1,32 @@
+{
+  "titulo": "Stock adjustments",
+  "subtitulo": "History of stock corrections for waste, expiry, breakage or weighing errors.",
+  "movimientos_titulo": "Movements",
+  "nuevo_ajuste": "+ New adjustment",
+  "filtros": {
+    "desde": "From",
+    "hasta": "To",
+    "articulo_item": "Article / item",
+    "motivo": "Reason"
+  },
+  "buscar_por_nombre_placeholder": "Search by name...",
+  "buscar_por_motivo_placeholder": "Search by reason...",
+  "error_cargar_historico": "Error loading the history: {{mensaje}}",
+  "sin_ajustes_filtro": "No adjustments match the filters.",
+  "tabla": {
+    "fecha": "Date",
+    "item": "Item",
+    "cantidad": "Quantity",
+    "motivo": "Reason",
+    "usuario": "User"
+  },
+  "borrar": "Delete",
+  "movimiento_count_one": "{{count}} movement",
+  "movimiento_count_other": "{{count}} movements",
+  "pagina_de": "Page {{pagina}} of {{total}}",
+  "drawer_nuevo_ajuste_titulo": "New stock adjustment",
+  "alertas": {
+    "confirmar_borrar": "Are you sure you want to delete this adjustment? The stock will return to its previous value.",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

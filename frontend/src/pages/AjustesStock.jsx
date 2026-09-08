@@ -24,7 +24,7 @@ function motivoMostrado(a, t) {
 // desde Inventario.jsx) y pasa a ser histórico de movimientos -- tabla filtrable y paginada sobre
 // la vista historial_ajustes_stock, no una lista de artículos que crece sin límite.
 function AjustesStock() {
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'ajustes_stock'])
   const [drawerAbierto, setDrawerAbierto] = useState(false)
   const [historial, setHistorial] = useState([])
   const [total, setTotal] = useState(0)
@@ -85,12 +85,12 @@ function AjustesStock() {
   const handleBuscarMotivo = conFiltro(setBuscarMotivo)
 
   async function handleBorrar(a) {
-    if (!confirm('¿Seguro que quieres eliminar este ajuste? El stock volverá a su valor anterior.')) return
+    if (!confirm(t('ajustes_stock:alertas.confirmar_borrar'))) return
 
     const tabla = a.tipo === 'articulo' ? 'ajustes_articulo' : a.tipo === 'semielaborado' ? 'ajustes_semielaborado' : 'ajustes_producto_final'
     const { error } = await supabase.from(tabla).delete().eq('id', a.id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('ajustes_stock:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     cargarHistorial()
@@ -101,24 +101,24 @@ function AjustesStock() {
   return (
     <div>
       <PageHeader
-        title="Ajustes de stock"
-        subtitle="Histórico de correcciones de stock por mermas, caducidad, roturas o errores de pesaje."
+        title={t('ajustes_stock:titulo')}
+        subtitle={t('ajustes_stock:subtitulo')}
       />
 
       <Card className="mb-6">
-        <CardHeader title="Movimientos" action={<Button onClick={() => setDrawerAbierto(true)}>+ Nuevo ajuste</Button>} />
+        <CardHeader title={t('ajustes_stock:movimientos_titulo')} action={<Button onClick={() => setDrawerAbierto(true)}>{t('ajustes_stock:nuevo_ajuste')}</Button>} />
         <CardBody className="flex flex-wrap gap-3">
-          <Field label="Desde" className="w-40">
+          <Field label={t('ajustes_stock:filtros.desde')} className="w-40">
             <DateInput value={fechaDesde} onChange={handleFechaDesde} isClearable />
           </Field>
-          <Field label="Hasta" className="w-40">
+          <Field label={t('ajustes_stock:filtros.hasta')} className="w-40">
             <DateInput value={fechaHasta} onChange={handleFechaHasta} isClearable />
           </Field>
-          <Field label="Artículo / ítem" className="w-56">
-            <Input type="text" placeholder="Buscar por nombre..." value={buscarItem} onChange={(e) => handleBuscarItem(e.target.value)} />
+          <Field label={t('ajustes_stock:filtros.articulo_item')} className="w-56">
+            <Input type="text" placeholder={t('ajustes_stock:buscar_por_nombre_placeholder')} value={buscarItem} onChange={(e) => handleBuscarItem(e.target.value)} />
           </Field>
-          <Field label="Motivo" className="w-56">
-            <Input type="text" placeholder="Buscar por motivo..." value={buscarMotivo} onChange={(e) => handleBuscarMotivo(e.target.value)} />
+          <Field label={t('ajustes_stock:filtros.motivo')} className="w-56">
+            <Input type="text" placeholder={t('ajustes_stock:buscar_por_motivo_placeholder')} value={buscarMotivo} onChange={(e) => handleBuscarMotivo(e.target.value)} />
           </Field>
         </CardBody>
       </Card>
@@ -126,19 +126,19 @@ function AjustesStock() {
       {cargando ? (
         <LoadingState />
       ) : errorCarga ? (
-        <Card><p className="text-sm text-red-600 py-6 text-center">Error al cargar el histórico: {errorCarga}</p></Card>
+        <Card><p className="text-sm text-red-600 py-6 text-center">{t('ajustes_stock:error_cargar_historico', { mensaje: errorCarga })}</p></Card>
       ) : historial.length === 0 ? (
-        <Card><EmptyState>No hay ajustes que coincidan con los filtros.</EmptyState></Card>
+        <Card><EmptyState>{t('ajustes_stock:sin_ajustes_filtro')}</EmptyState></Card>
       ) : (
         <>
           <Card className="overflow-hidden">
             <Table>
               <Thead>
-                <Th>Fecha</Th>
-                <Th>Ítem</Th>
-                <Th>Cantidad</Th>
-                <Th>Motivo</Th>
-                <Th>Usuario</Th>
+                <Th>{t('ajustes_stock:tabla.fecha')}</Th>
+                <Th>{t('ajustes_stock:tabla.item')}</Th>
+                <Th>{t('ajustes_stock:tabla.cantidad')}</Th>
+                <Th>{t('ajustes_stock:tabla.motivo')}</Th>
+                <Th>{t('ajustes_stock:tabla.usuario')}</Th>
                 <Th></Th>
               </Thead>
               <tbody className="divide-y divide-gray-100">
@@ -152,7 +152,7 @@ function AjustesStock() {
                     <Td className="text-gray-500">{motivoMostrado(a, t)}</Td>
                     <Td className="text-gray-500">{a.user_email || '—'}</Td>
                     <Td className="text-right">
-                      <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">Borrar</LinkAction>
+                      <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">{t('ajustes_stock:borrar')}</LinkAction>
                     </Td>
                   </tr>
                 ))}
@@ -161,17 +161,17 @@ function AjustesStock() {
           </Card>
 
           <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
-            <span>{total} movimiento{total === 1 ? '' : 's'}</span>
+            <span>{t('ajustes_stock:movimiento_count', { count: total })}</span>
             <div className="flex items-center gap-3">
-              <Button variant="secondary" size="sm" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>Anterior</Button>
-              <span>Página {pagina + 1} de {totalPaginas}</span>
-              <Button variant="secondary" size="sm" disabled={pagina + 1 >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</Button>
+              <Button variant="secondary" size="sm" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>{t('common:actions.previous')}</Button>
+              <span>{t('ajustes_stock:pagina_de', { pagina: pagina + 1, total: totalPaginas })}</span>
+              <Button variant="secondary" size="sm" disabled={pagina + 1 >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>{t('common:actions.next')}</Button>
             </div>
           </div>
         </>
       )}
 
-      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title="Nuevo ajuste de stock">
+      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title={t('ajustes_stock:drawer_nuevo_ajuste_titulo')}>
         <AjusteStockForm
           onCancelar={() => setDrawerAbierto(false)}
           onGuardado={() => {

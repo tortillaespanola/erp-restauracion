@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { PageHeader, Card, CardBody, Button, Field, Input } from '../components/ui'
 
 function Configuracion() {
+  const { t } = useTranslation(['configuracion'])
   const [form, setForm] = useState({
     nombre: '', razon_fiscal: '', cif: '', direccion: '', telefono: '', email: '', logo_url: '',
   })
@@ -29,10 +31,10 @@ function Configuracion() {
     e.preventDefault()
     const { error } = await supabase.from('empresa_config').update(form).eq('negocio_id', form.negocio_id)
     if (error) {
-      alert('Error al guardar: ' + error.message)
+      alert(t('configuracion:alertas.error_guardar', { mensaje: error.message }))
       return
     }
-    alert('Datos guardados correctamente')
+    alert(t('configuracion:alertas.guardado_correctamente'))
   }
 
   async function handleLogoChange(e) {
@@ -47,7 +49,7 @@ function Configuracion() {
       .upload(nombreArchivo, file, { upsert: true })
 
     if (errorUpload) {
-      alert('Error al subir el logo: ' + errorUpload.message)
+      alert(t('configuracion:alertas.error_subir_logo', { mensaje: errorUpload.message }))
       setSubiendoLogo(false)
       return
     }
@@ -57,43 +59,43 @@ function Configuracion() {
     setSubiendoLogo(false)
   }
 
-  if (cargando) return <div className="text-sm text-gray-400">Cargando...</div>
+  if (cargando) return <div className="text-sm text-gray-400">{t('configuracion:cargando')}</div>
 
   return (
     <div className="max-w-2xl">
-      <PageHeader title="Configuración de empresa" subtitle="Estos datos aparecerán en el membrete de albaranes y facturas." />
+      <PageHeader title={t('configuracion:titulo')} subtitle={t('configuracion:subtitulo')} />
 
       <Card>
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <Field label="Logo">
+            <Field label={t('configuracion:campos.logo')}>
               {form.logo_url && (
                 <img src={form.logo_url} alt="Logo" className="h-16 object-contain mb-2 border border-gray-200 rounded p-1" />
               )}
               <input type="file" accept="image/*" onChange={handleLogoChange} className="text-sm" />
-              {subiendoLogo && <p className="text-sm text-gray-400 mt-1">Subiendo...</p>}
+              {subiendoLogo && <p className="text-sm text-gray-400 mt-1">{t('configuracion:subiendo')}</p>}
             </Field>
 
-            <Field label="Nombre comercial">
+            <Field label={t('configuracion:campos.nombre_comercial')}>
               <Input type="text" value={form.nombre ?? ''} onChange={(e) => handleChange('nombre', e.target.value)} />
             </Field>
-            <Field label="Razón fiscal">
+            <Field label={t('configuracion:campos.razon_fiscal')}>
               <Input type="text" value={form.razon_fiscal ?? ''} onChange={(e) => handleChange('razon_fiscal', e.target.value)} />
             </Field>
-            <Field label="CIF">
+            <Field label={t('configuracion:campos.cif')}>
               <Input type="text" value={form.cif ?? ''} onChange={(e) => handleChange('cif', e.target.value)} />
             </Field>
-            <Field label="Dirección">
+            <Field label={t('configuracion:campos.direccion')}>
               <Input type="text" value={form.direccion ?? ''} onChange={(e) => handleChange('direccion', e.target.value)} />
             </Field>
-            <Field label="Teléfono">
+            <Field label={t('configuracion:campos.telefono')}>
               <Input type="text" value={form.telefono ?? ''} onChange={(e) => handleChange('telefono', e.target.value)} />
             </Field>
-            <Field label="Email">
+            <Field label={t('configuracion:campos.email')}>
               <Input type="email" value={form.email ?? ''} onChange={(e) => handleChange('email', e.target.value)} />
             </Field>
 
-            <Button type="submit" className="self-start mt-1">Guardar</Button>
+            <Button type="submit" className="self-start mt-1">{t('configuracion:guardar')}</Button>
           </form>
         </CardBody>
       </Card>

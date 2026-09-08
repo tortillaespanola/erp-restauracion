@@ -66,5 +66,7 @@
     "download_pdf": "Download PDF"
   },
   "listado_titulo": "List",
-  "sin_cliente": "No customer"
+  "sin_cliente": "No customer",
+  "sin_numero": "(no number)",
+  "redondea_3_decimales": "Will be rounded to 3 decimals"
 }

@@ -1,0 +1,36 @@
+{
+  "tipo": {
+    "articulo": "Purchase article",
+    "semielaborado": "Semi-finished good",
+    "producto_final": "Final product"
+  },
+  "selecciona_tipo": {
+    "articulo": "article",
+    "semielaborado": "semi-finished good",
+    "producto_final": "final product"
+  },
+  "selecciona_item": "Select {{tipo}}",
+  "sin_lotes_con_stock": "This item has no lots with stock",
+  "selecciona_lote": "Select the lot to adjust",
+  "mas_antiguo_badge": "✓ Oldest · ",
+  "lote_albaran": "Delivery note {{numero}}",
+  "lote_sin_numero": "(no number)",
+  "lote_stock_actual": "current stock: {{stock}}",
+  "lote_produccion": "Production {{fecha}}",
+  "lote_caduca": " · expires {{fecha}}",
+  "stock_actual_del_lote": "Current stock of the lot: {{cantidad}} {{unidad}}",
+  "campos": {
+    "cantidad": "Quantity (+ adds, - subtracts)",
+    "motivo": "Reason",
+    "detalle_motivo_opcional": "Reason detail (optional)"
+  },
+  "motivo_placeholder": "Expiry, breakage, weighing error...",
+  "detalle_motivo_placeholder": "Additional clarification...",
+  "selecciona_motivo": "Select reason",
+  "registrar_ajuste": "Register adjustment",
+  "alertas": {
+    "faltan_campos_producto_final": "Select the product, the lot, the quantity and the reason",
+    "faltan_campos": "Select the item, the lot, the quantity and the reason",
+    "error_guardar": "Error saving the adjustment: {{mensaje}}"
+  }
+}

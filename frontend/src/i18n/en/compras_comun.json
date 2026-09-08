@@ -1,0 +1,8 @@
+{
+  "sin_proveedor": "No supplier",
+  "selecciona_proveedor": "Select supplier",
+  "elige_proveedor_primero": "First choose a supplier",
+  "selecciona_articulo": "Select article",
+  "articulo_no_asignado_aviso": "This supplier has no article assigned yet — go to Articles to link one.",
+  "anadir_linea": "Add line"
+}

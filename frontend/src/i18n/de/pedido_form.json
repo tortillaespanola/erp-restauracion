@@ -6,7 +6,6 @@
     "notas_opcional": "Notizen (optional)"
   },
   "fecha_entrega_anterior": "Darf nicht vor dem Bestelldatum liegen",
-  "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet",
   "lineas_pedido_titulo": "Bestellzeilen",
   "tipo_producto_final": "Fertigprodukt",
   "tipo_mercaderia": "Ware",

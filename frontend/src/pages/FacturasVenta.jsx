@@ -348,7 +348,7 @@ function FacturasVenta() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(f.fecha)}</td>
                         <td className={`px-3 py-3 whitespace-nowrap text-[#1C2938] ${f.anulada ? 'line-through' : ''}`}>
-                          {f.numero_factura || t('ventas_comun:sin_numero')}
+                          {f.numero_factura || t('common:sin_numero')}
                         </td>
                         <td className="px-3 py-3">{f.clientes?.nombre ?? t('common:sin_cliente')}</td>
                         <td className="px-3 py-3">
@@ -396,7 +396,7 @@ function FacturasVenta() {
                                 {f.factura_venta_albaran.length === 0
                                   ? '—'
                                   : f.factura_venta_albaran
-                                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || t('ventas_comun:sin_numero')} (${formatFecha(rel.albaranes_venta?.fecha)})`)
+                                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || t('common:sin_numero')} (${formatFecha(rel.albaranes_venta?.fecha)})`)
                                       .join(', ')}
                               </div>
                             </div>

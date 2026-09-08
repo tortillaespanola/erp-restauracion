@@ -31,6 +31,15 @@
     "semielaborado": "semi-finished good",
     "producto_final": "final product"
   },
+  "tipo_cliente": {
+    "particular": "Individual",
+    "empresa": "Company"
+  },
+  "tipo_material": {
+    "RM": "Raw material (RM)",
+    "AUX": "Auxiliary material (AUX)",
+    "TRD": "Merchandise (TRD)"
+  },
   "motivo_categoria": {
     "caducado": "Expired",
     "roto": "Broken",

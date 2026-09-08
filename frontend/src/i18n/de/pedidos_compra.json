@@ -1,0 +1,36 @@
+{
+  "titulo": "Bestellungen Einkauf",
+  "subtitulo": "Erfasse, was bei einem Lieferanten bestellt wird, und empfange es bei Ankunft als Lieferschein Einkauf.",
+  "card_nuevo_titulo": "Neue Bestellung",
+  "campos": {
+    "proveedor": "Lieferant",
+    "fecha": "Datum",
+    "fecha_entrega_opcional": "Voraussichtliches Lieferdatum (optional)",
+    "referencia_proveedor_opcional": "Referenz des Lieferanten (optional)",
+    "notas_opcional": "Notizen (optional)"
+  },
+  "referencia_proveedor_placeholder": "Bestätigungsnummer des Lieferanten für diese Bestellung",
+  "placeholders": {
+    "cantidad": "Menge",
+    "precio": "Preis"
+  },
+  "fecha_entrega_anterior": "Darf nicht vor dem Bestelldatum liegen",
+  "lineas_titulo": "Bestellzeilen",
+  "guardar_pedido": "Bestellung speichern",
+  "sin_pedidos": "Es sind noch keine Bestellungen erfasst.",
+  "recibir_como_albaran": "Als Lieferschein empfangen",
+  "tabla": {
+    "articulo": "Artikel",
+    "pedido": "Bestellt",
+    "recibido": "Erhalten"
+  },
+  "alertas": {
+    "cambiar_proveedor_confirmacion": "Der Wechsel des Lieferanten löscht die bereits eingegebenen Zeilen, fortfahren?",
+    "fecha_entrega_invalida": "Das voraussichtliche Lieferdatum darf nicht vor dem Bestelldatum liegen",
+    "sin_lineas_validas": "Füge mindestens eine Zeile mit Artikel und Menge hinzu",
+    "error_crear_pedido": "Fehler beim Erstellen der Bestellung: {{mensaje}}",
+    "error_guardar_lineas": "Fehler beim Speichern der Zeilen: {{mensaje}}",
+    "confirmar_cancelar": "Diese Bestellung stornieren?",
+    "error_cancelar": "Fehler beim Stornieren: {{mensaje}}"
+  }
+}

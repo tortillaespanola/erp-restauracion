@@ -3,8 +3,7 @@
     "iniciar_nueva_produccion": "Neue Produktion starten",
     "selecciona_que_produces": "Wähle, was du produzierst",
     "fecha": "Datum",
-    "iniciar": "Starten",
-    "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet"
+    "iniciar": "Starten"
   },
   "producciones_en_curso": "Laufende Produktionen",
   "en_curso_badge": "in Bearbeitung",

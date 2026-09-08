@@ -16,7 +16,7 @@ const ESTADO_BADGE = {
 
 function PedidosCompra() {
   const navigate = useNavigate()
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'compras_comun', 'pedidos_compra'])
   const [pedidos, setPedidos] = useState([])
   const [proveedores, setProveedores] = useState([])
   const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
@@ -93,7 +93,7 @@ function PedidosCompra() {
   function handleProveedorChange(nuevoProveedorId) {
     const hayLineasRellenas = lineas.some((l) => l.articulo_id || l.cantidad || l.precio_unitario)
     if (proveedorId && nuevoProveedorId !== proveedorId && hayLineasRellenas) {
-      if (!confirm('Cambiar de proveedor borrará las líneas ya introducidas, ¿continuar?')) {
+      if (!confirm(t('pedidos_compra:alertas.cambiar_proveedor_confirmacion'))) {
         return
       }
       setLineas([{ ...lineaVacia }])
@@ -136,13 +136,13 @@ function PedidosCompra() {
     e.preventDefault()
 
     if (fechaEntrega && fechaEntrega < fecha) {
-      alert('La fecha de entrega prevista no puede ser anterior a la fecha del pedido')
+      alert(t('pedidos_compra:alertas.fecha_entrega_invalida'))
       return
     }
 
     const lineasValidas = lineas.filter((l) => l.articulo_id && l.cantidad)
     if (lineasValidas.length === 0) {
-      alert('Añade al menos una línea con artículo y cantidad')
+      alert(t('pedidos_compra:alertas.sin_lineas_validas'))
       return
     }
 
@@ -159,7 +159,7 @@ function PedidosCompra() {
       .single()
 
     if (errorPedido) {
-      alert('Error al crear el pedido: ' + errorPedido.message)
+      alert(t('pedidos_compra:alertas.error_crear_pedido', { mensaje: errorPedido.message }))
       return
     }
 
@@ -176,7 +176,7 @@ function PedidosCompra() {
 
     if (errorLineas) {
       await supabase.from('pedidos_compra').delete().eq('id', pedidoCreado.id)
-      alert('Error al guardar las líneas: ' + errorLineas.message)
+      alert(t('pedidos_compra:alertas.error_guardar_lineas', { mensaje: errorLineas.message }))
       return
     }
 
@@ -185,10 +185,10 @@ function PedidosCompra() {
   }
 
   async function handleCancelar(id) {
-    if (!confirm('¿Cancelar este pedido de compra?')) return
+    if (!confirm(t('pedidos_compra:alertas.confirmar_cancelar'))) return
     const { error } = await supabase.from('pedidos_compra').update({ estado: 'cancelado' }).eq('id', id)
     if (error) {
-      alert('Error al cancelar: ' + error.message)
+      alert(t('pedidos_compra:alertas.error_cancelar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -196,49 +196,49 @@ function PedidosCompra() {
 
   return (
     <div>
-      <PageHeader title="Pedidos de compra" subtitle="Registra lo que se pide a un proveedor, y recíbelo como albarán de compra cuando llegue." />
+      <PageHeader title={t('pedidos_compra:titulo')} subtitle={t('pedidos_compra:subtitulo')} />
 
       <Card className="mb-6">
-        <CardHeader title="Nuevo pedido de compra" />
+        <CardHeader title={t('pedidos_compra:card_nuevo_titulo')} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Proveedor">
+              <Field label={t('pedidos_compra:campos.proveedor')}>
                 <Select value={proveedorId} onChange={(e) => handleProveedorChange(e.target.value)} required>
-                  <option value="">Selecciona proveedor</option>
+                  <option value="">{t('compras_comun:selecciona_proveedor')}</option>
                   {proveedores.map((p) => (
                     <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
                   ))}
                 </Select>
               </Field>
-              <Field label="Fecha">
+              <Field label={t('pedidos_compra:campos.fecha')}>
                 <DateInput value={fecha} onChange={setFecha} required />
               </Field>
-              <Field label="Fecha de entrega prevista (opcional)">
+              <Field label={t('pedidos_compra:campos.fecha_entrega_opcional')}>
                 <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
                 {fechaEntrega && fechaEntrega < fecha && (
-                  <p className="text-red-600 text-xs mt-1">No puede ser anterior a la fecha del pedido</p>
+                  <p className="text-red-600 text-xs mt-1">{t('pedidos_compra:fecha_entrega_anterior')}</p>
                 )}
               </Field>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Referencia del proveedor (opcional)">
+              <Field label={t('pedidos_compra:campos.referencia_proveedor_opcional')}>
                 <Input type="text" value={referenciaProveedor} onChange={(e) => setReferenciaProveedor(e.target.value)}
-                  placeholder="Nº de confirmación que da el proveedor a este pedido" />
+                  placeholder={t('pedidos_compra:referencia_proveedor_placeholder')} />
               </Field>
-              <Field label="Notas (opcional)">
+              <Field label={t('pedidos_compra:campos.notas_opcional')}>
                 <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
               </Field>
             </div>
 
             {proveedorId && articulosDelProveedor.length === 0 && (
               <p className="text-sm text-amber-600">
-                Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.
+                {t('compras_comun:articulo_no_asignado_aviso')}
               </p>
             )}
 
             <div>
-              <SectionLabel>Líneas del pedido</SectionLabel>
+              <SectionLabel>{t('pedidos_compra:lineas_titulo')}</SectionLabel>
               <div className="flex flex-col gap-3">
                 {lineas.map((linea, index) => (
                   <div key={index} className="border border-gray-200 rounded-md p-3">
@@ -247,7 +247,7 @@ function PedidosCompra() {
                         onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                         required disabled={!proveedorId}>
                         <option value="">
-                          {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
+                          {!proveedorId ? t('compras_comun:elige_proveedor_primero') : t('compras_comun:selecciona_articulo')}
                         </option>
                         {articulosDelProveedor.map((a) => (
                           <option key={a.id} value={a.id}>
@@ -255,10 +255,10 @@ function PedidosCompra() {
                           </option>
                         ))}
                       </Select>
-                      <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                      <Input type="number" step="0.001" placeholder={t('pedidos_compra:placeholders.cantidad')} value={linea.cantidad}
                         onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                        required title="Se redondeará a 3 decimales" />
-                      <Input type="number" step="0.01" placeholder="Precio" value={linea.precio_unitario}
+                        required title={t('common:redondea_3_decimales')} />
+                      <Input type="number" step="0.01" placeholder={t('pedidos_compra:placeholders.precio')} value={linea.precio_unitario}
                         onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
                       <button type="button" onClick={() => removeLinea(index)}
                         className="text-gray-400 hover:text-red-600 justify-self-center">
@@ -270,21 +270,21 @@ function PedidosCompra() {
               </div>
               <button type="button" onClick={addLinea}
                 className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
-                <IconPlus size={15} /> Añadir línea
+                <IconPlus size={15} /> {t('compras_comun:anadir_linea')}
               </button>
             </div>
 
-            <Button type="submit" className="self-start">Guardar pedido</Button>
+            <Button type="submit" className="self-start">{t('pedidos_compra:guardar_pedido')}</Button>
           </form>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
       ) : pedidos.length === 0 ? (
-        <Card><EmptyState>Todavía no hay pedidos de compra registrados.</EmptyState></Card>
+        <Card><EmptyState>{t('pedidos_compra:sin_pedidos')}</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
           {pedidos.map((p) => (
@@ -292,7 +292,7 @@ function PedidosCompra() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-[#1C2938] flex items-center gap-2 flex-wrap">
-                    {p.proveedores?.nombre_comercial ?? 'Sin proveedor'}
+                    {p.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}
                     {p.codigo_pedido && <span className="text-xs font-mono text-gray-400">{p.codigo_pedido}</span>}
                     <Badge color={ESTADO_BADGE[p.estado] ?? 'gray'}>{t(`enums:estado_pedido_compra.${p.estado}`, { defaultValue: p.estado })}</Badge>
                   </p>
@@ -305,11 +305,11 @@ function PedidosCompra() {
                 <div className="flex gap-3 shrink-0 items-start">
                   {p.estado !== 'recibido' && p.estado !== 'cancelado' && (
                     <LinkAction tone="blue" onClick={() => navigate(`/albaranes-compra?pedido_compra_id=${p.id}`)}>
-                      Recibir como albarán
+                      {t('pedidos_compra:recibir_como_albaran')}
                     </LinkAction>
                   )}
                   {p.estado !== 'recibido' && p.estado !== 'cancelado' && (
-                    <LinkAction tone="red" onClick={() => handleCancelar(p.id)}>Cancelar</LinkAction>
+                    <LinkAction tone="red" onClick={() => handleCancelar(p.id)}>{t('common:actions.cancel')}</LinkAction>
                   )}
                 </div>
               </div>
@@ -317,9 +317,9 @@ function PedidosCompra() {
               <table className="w-full mt-3 text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-1.5 font-medium">Artículo</th>
-                    <th className="py-1.5 font-medium">Pedido</th>
-                    <th className="py-1.5 font-medium">Recibido</th>
+                    <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.articulo')}</th>
+                    <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.pedido')}</th>
+                    <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.recibido')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

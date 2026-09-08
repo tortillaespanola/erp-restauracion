@@ -1,0 +1,8 @@
+{
+  "sin_proveedor": "Sin proveedor",
+  "selecciona_proveedor": "Selecciona proveedor",
+  "elige_proveedor_primero": "Elige primero un proveedor",
+  "selecciona_articulo": "Selecciona artículo",
+  "articulo_no_asignado_aviso": "Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.",
+  "anadir_linea": "Añadir línea"
+}

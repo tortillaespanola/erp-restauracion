@@ -1,0 +1,36 @@
+{
+  "tipo": {
+    "articulo": "Artículo de compra",
+    "semielaborado": "Semielaborado",
+    "producto_final": "Producto final"
+  },
+  "selecciona_tipo": {
+    "articulo": "artículo",
+    "semielaborado": "semielaborado",
+    "producto_final": "producto final"
+  },
+  "selecciona_item": "Selecciona {{tipo}}",
+  "sin_lotes_con_stock": "Este ítem no tiene lotes con stock",
+  "selecciona_lote": "Selecciona el lote a ajustar",
+  "mas_antiguo_badge": "✓ Más antiguo · ",
+  "lote_albaran": "Albarán {{numero}}",
+  "lote_sin_numero": "(s/n)",
+  "lote_stock_actual": "stock actual: {{stock}}",
+  "lote_produccion": "Producción {{fecha}}",
+  "lote_caduca": " · caduca {{fecha}}",
+  "stock_actual_del_lote": "Stock actual del lote: {{cantidad}} {{unidad}}",
+  "campos": {
+    "cantidad": "Cantidad (+ suma, - resta)",
+    "motivo": "Motivo",
+    "detalle_motivo_opcional": "Detalle del motivo (opcional)"
+  },
+  "motivo_placeholder": "Caducidad, rotura, error pesaje...",
+  "detalle_motivo_placeholder": "Aclaración adicional...",
+  "selecciona_motivo": "Selecciona motivo",
+  "registrar_ajuste": "Registrar ajuste",
+  "alertas": {
+    "faltan_campos_producto_final": "Selecciona el producto, el lote, la cantidad y el motivo",
+    "faltan_campos": "Selecciona el ítem, el lote, la cantidad y el motivo",
+    "error_guardar": "Error al guardar el ajuste: {{mensaje}}"
+  }
+}

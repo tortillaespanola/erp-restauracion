@@ -1,0 +1,36 @@
+{
+  "titulo": "Purchase orders",
+  "subtitulo": "Register what is ordered from a supplier, and receive it as a purchase delivery note when it arrives.",
+  "card_nuevo_titulo": "New purchase order",
+  "campos": {
+    "proveedor": "Supplier",
+    "fecha": "Date",
+    "fecha_entrega_opcional": "Expected delivery date (optional)",
+    "referencia_proveedor_opcional": "Supplier reference (optional)",
+    "notas_opcional": "Notes (optional)"
+  },
+  "referencia_proveedor_placeholder": "Confirmation number the supplier gives for this order",
+  "placeholders": {
+    "cantidad": "Quantity",
+    "precio": "Price"
+  },
+  "fecha_entrega_anterior": "Cannot be earlier than the order date",
+  "lineas_titulo": "Order lines",
+  "guardar_pedido": "Save order",
+  "sin_pedidos": "There are no purchase orders registered yet.",
+  "recibir_como_albaran": "Receive as delivery note",
+  "tabla": {
+    "articulo": "Article",
+    "pedido": "Ordered",
+    "recibido": "Received"
+  },
+  "alertas": {
+    "cambiar_proveedor_confirmacion": "Changing supplier will delete the lines already entered, continue?",
+    "fecha_entrega_invalida": "The expected delivery date cannot be earlier than the order date",
+    "sin_lineas_validas": "Add at least one line with article and quantity",
+    "error_crear_pedido": "Error creating the order: {{mensaje}}",
+    "error_guardar_lineas": "Error saving the lines: {{mensaje}}",
+    "confirmar_cancelar": "Cancel this purchase order?",
+    "error_cancelar": "Error cancelling: {{mensaje}}"
+  }
+}

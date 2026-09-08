@@ -24,7 +24,7 @@ const hoyIso = () => new Date().toISOString().slice(0, 10)
 //   selectores) -- caso Inventario.jsx, siempre tipo 'articulo' hoy porque es el único nivel que
 //   esa pantalla expone. `null` = modo manual, igual que el formulario original de AjustesStock.jsx.
 export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar }) {
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'ajuste_stock_form'])
   const [tipo, setTipo] = useState(fijo?.tipo || 'articulo')
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
@@ -95,11 +95,11 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
 
     if (tipo === 'producto_final') {
       if (!itemId || !loteId || !cantidad || !motivoCategoria) {
-        alert('Selecciona el producto, el lote, la cantidad y el motivo')
+        alert(t('ajuste_stock_form:alertas.faltan_campos_producto_final'))
         return
       }
     } else if (!itemId || !loteId || !cantidad || !motivo) {
-      alert('Selecciona el ítem, el lote, la cantidad y el motivo')
+      alert(t('ajuste_stock_form:alertas.faltan_campos'))
       return
     }
 
@@ -124,7 +124,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
 
     setGuardando(false)
     if (error) {
-      alert('Error al guardar el ajuste: ' + error.message)
+      alert(t('ajuste_stock_form:alertas.error_guardar', { mensaje: error.message }))
       return
     }
     onGuardado()
@@ -140,7 +140,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
           <p className="font-medium text-[#1C2938]">{fijo.itemNombre}</p>
           <p className="text-gray-500 text-xs mt-0.5">{fijo.loteLabel}</p>
           {stockActualLote != null && (
-            <p className="text-gray-500 text-xs mt-1">Stock actual del lote: {formatCantidad(stockActualLote, unidad)} {unidad}</p>
+            <p className="text-gray-500 text-xs mt-1">{t('ajuste_stock_form:stock_actual_del_lote', { cantidad: formatCantidad(stockActualLote, unidad), unidad })}</p>
           )}
         </div>
       ) : (
@@ -148,20 +148,20 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-1.5">
               <input type="radio" checked={tipo === 'articulo'} onChange={() => { setTipo('articulo'); setItemId('') }} />
-              Artículo de compra
+              {t('ajuste_stock_form:tipo.articulo')}
             </label>
             <label className="flex items-center gap-1.5">
               <input type="radio" checked={tipo === 'semielaborado'} onChange={() => { setTipo('semielaborado'); setItemId('') }} />
-              Semielaborado
+              {t('ajuste_stock_form:tipo.semielaborado')}
             </label>
             <label className="flex items-center gap-1.5">
               <input type="radio" checked={tipo === 'producto_final'} onChange={() => { setTipo('producto_final'); setItemId('') }} />
-              Producto final
+              {t('ajuste_stock_form:tipo.producto_final')}
             </label>
           </div>
 
           <Select value={itemId} onChange={(e) => setItemId(e.target.value)} required>
-            <option value="">Selecciona {tipo === 'articulo' ? 'artículo' : tipo === 'semielaborado' ? 'semielaborado' : 'producto final'}</option>
+            <option value="">{t('ajuste_stock_form:selecciona_item', { tipo: tipo === 'articulo' ? t('ajuste_stock_form:selecciona_tipo.articulo') : tipo === 'semielaborado' ? t('ajuste_stock_form:selecciona_tipo.semielaborado') : t('ajuste_stock_form:selecciona_tipo.producto_final') })}</option>
             {items.map((i) => (
               <option key={i.id} value={i.id}>{i.nombre} ({tipo === 'producto_final' ? 'ud' : i.unidad})</option>
             ))}
@@ -169,15 +169,17 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
 
           {itemId && (
             <Select value={loteId} onChange={(e) => seleccionarLote(e.target.value)} required>
-              <option value="">{lotes.length === 0 ? 'Este ítem no tiene lotes con stock' : 'Selecciona el lote a ajustar'}</option>
+              <option value="">{lotes.length === 0 ? t('ajuste_stock_form:sin_lotes_con_stock') : t('ajuste_stock_form:selecciona_lote')}</option>
               {lotes.map((l, index) => {
                 const id = tipo === 'articulo' ? l.entrada_material_id : l.produccion_id
                 const esMasAntiguo = index === 0
+                const masAntiguoPrefijo = esMasAntiguo ? t('ajuste_stock_form:mas_antiguo_badge') : ''
+                const stockActualSufijo = t('ajuste_stock_form:lote_stock_actual', { stock: Number(l.stock_disponible).toFixed(3) })
                 const label = tipo === 'articulo'
-                  ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}Albarán ${l.numero_albaran || '(s/n)'} · ${formatFecha(l.fecha_recepcion)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                  ? `${masAntiguoPrefijo}${t('ajuste_stock_form:lote_albaran', { numero: l.numero_albaran || t('ajuste_stock_form:lote_sin_numero') })} · ${formatFecha(l.fecha_recepcion)} · ${stockActualSufijo}`
                   : tipo === 'semielaborado'
-                  ? `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
-                  : `${esMasAntiguo ? '✓ Más antiguo · ' : ''}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}Producción ${formatFecha(l.fecha)}${l.fecha_caducidad ? ' · caduca ' + formatFecha(l.fecha_caducidad) : ''} · stock actual: ${Number(l.stock_disponible).toFixed(3)}`
+                  ? `${masAntiguoPrefijo}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}${t('ajuste_stock_form:lote_produccion', { fecha: formatFecha(l.fecha) })} · ${stockActualSufijo}`
+                  : `${masAntiguoPrefijo}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}${t('ajuste_stock_form:lote_produccion', { fecha: formatFecha(l.fecha) })}${l.fecha_caducidad ? t('ajuste_stock_form:lote_caduca', { fecha: formatFecha(l.fecha_caducidad) }) : ''} · ${stockActualSufijo}`
                 return <option key={id} value={id}>{label}</option>
               })}
             </Select>
@@ -185,35 +187,35 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
         </>
       )}
 
-      <Field label="Cantidad (+ suma, - resta)">
+      <Field label={t('ajuste_stock_form:campos.cantidad')}>
         <Input type="number" step="0.001" value={cantidad} onChange={(e) => setCantidad(e.target.value)}
-          required title="Se redondeará a 3 decimales" autoFocus={!!fijo} />
+          required title={t('common:redondea_3_decimales')} autoFocus={!!fijo} />
       </Field>
 
       {tipo === 'producto_final' ? (
-        <Field label="Motivo">
+        <Field label={t('ajuste_stock_form:campos.motivo')}>
           <Select value={motivoCategoria} onChange={(e) => setMotivoCategoria(e.target.value)} required>
-            <option value="">Selecciona motivo</option>
+            <option value="">{t('ajuste_stock_form:selecciona_motivo')}</option>
             {MOTIVOS_CATEGORIA.map((valor) => (
               <option key={valor} value={valor}>{t(`enums:motivo_categoria.${valor}`)}</option>
             ))}
           </Select>
         </Field>
       ) : (
-        <Field label="Motivo">
-          <Input type="text" placeholder="Caducidad, rotura, error pesaje..." value={motivo} onChange={(e) => setMotivo(e.target.value)} required />
+        <Field label={t('ajuste_stock_form:campos.motivo')}>
+          <Input type="text" placeholder={t('ajuste_stock_form:motivo_placeholder')} value={motivo} onChange={(e) => setMotivo(e.target.value)} required />
         </Field>
       )}
 
       {tipo === 'producto_final' && (
-        <Field label="Detalle del motivo (opcional)">
-          <Input type="text" placeholder="Aclaración adicional..." value={motivoDetalle} onChange={(e) => setMotivoDetalle(e.target.value)} />
+        <Field label={t('ajuste_stock_form:campos.detalle_motivo_opcional')}>
+          <Input type="text" placeholder={t('ajuste_stock_form:detalle_motivo_placeholder')} value={motivoDetalle} onChange={(e) => setMotivoDetalle(e.target.value)} />
         </Field>
       )}
 
       <div className="flex gap-2 mt-1">
-        <Button type="submit" disabled={guardando}>{guardando ? 'Guardando…' : 'Registrar ajuste'}</Button>
-        {onCancelar && <Button type="button" variant="secondary" onClick={onCancelar}>Cancelar</Button>}
+        <Button type="submit" disabled={guardando}>{guardando ? t('common:actions.saving') : t('ajuste_stock_form:registrar_ajuste')}</Button>
+        {onCancelar && <Button type="button" variant="secondary" onClick={onCancelar}>{t('common:actions.cancel')}</Button>}
       </div>
     </form>
   )

@@ -31,6 +31,15 @@
     "semielaborado": "Halbfertigprodukt",
     "producto_final": "Fertigprodukt"
   },
+  "tipo_cliente": {
+    "particular": "Privatperson",
+    "empresa": "Unternehmen"
+  },
+  "tipo_material": {
+    "RM": "Rohstoff (RM)",
+    "AUX": "Hilfsstoff (AUX)",
+    "TRD": "Handelsware (TRD)"
+  },
   "motivo_categoria": {
     "caducado": "Abgelaufen",
     "roto": "Beschädigt",

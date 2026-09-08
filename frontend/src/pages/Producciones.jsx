@@ -597,7 +597,7 @@ function Producciones() {
             </Field>
             <Field label={t('producciones:cantidad_a_producir_opcional')}>
               <Input type="number" step="0.001" value={cantidadPlan} onChange={(e) => setCantidadPlan(e.target.value)}
-                placeholder={t('producciones:sin_validar_placeholder')} title={t('produccion_comun:campos.redondea_3_decimales')} />
+                placeholder={t('producciones:sin_validar_placeholder')} title={t('common:redondea_3_decimales')} />
             </Field>
             <Button type="submit">{t('produccion_comun:campos.iniciar')}</Button>
           </form>
@@ -1085,7 +1085,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
           <Input type="number" step="0.001" placeholder={t('produccion_comun:cantidad_producida', { unidad: produccion.semielaborados?.unidad })}
             value={cantidadProducida} onChange={(e) => setCantidadProducida(e.target.value)}
-            autoFocus title={t('produccion_comun:campos.redondea_3_decimales')} />
+            autoFocus title={t('common:redondea_3_decimales')} />
           <Input type="text" placeholder={t('produccion_comun:notas_placeholder')}
             value={notas} onChange={(e) => setNotas(e.target.value)} />
           <Button variant="success" onClick={cerrarProduccion}>{t('produccion_comun:confirmar_cierre')}</Button>
@@ -1202,7 +1202,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
           </Select>
           <Input type="number" step="0.001" placeholder={t('cantidad_placeholder')} value={value.cantidad}
             onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-            className="text-sm" title={t('campos.redondea_3_decimales')} />
+            className="text-sm" title={t('common:redondea_3_decimales')} />
         </div>
       )}
 
@@ -1228,7 +1228,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
             {deReceta.length === 0 && (
               <Input type="number" step="0.001" placeholder={t('cantidad_placeholder')} value={value.cantidad}
                 onChange={(e) => onChange({ ...value, cantidad: e.target.value })}
-                className="text-sm" title={t('campos.redondea_3_decimales')} />
+                className="text-sm" title={t('common:redondea_3_decimales')} />
             )}
           </div>
           <Input type="text" placeholder={t('motivo_sustitucion_placeholder')} value={value.nota ?? ''}
@@ -1509,7 +1509,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         </Field>
         <Field label={t('produccion_comun:cantidad_producida', { unidad: produccion.semielaborados?.unidad })}>
           <Input type="number" step="0.001" value={cantidadProducida}
-            onChange={(e) => setCantidadProducida(e.target.value)} title={t('produccion_comun:campos.redondea_3_decimales')} />
+            onChange={(e) => setCantidadProducida(e.target.value)} title={t('common:redondea_3_decimales')} />
         </Field>
         <Field label={t('produccion_comun:notas_label')}>
           <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
@@ -1528,7 +1528,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
               <span className="text-sm text-gray-600">{linea._nombre}</span>
               <Input type="number" step="0.001" value={linea.cantidad}
                 onChange={(e) => cambiarCantidadLinea(index, e.target.value)}
-                className="text-sm" title={t('produccion_comun:campos.redondea_3_decimales')} />
+                className="text-sm" title={t('common:redondea_3_decimales')} />
               <button type="button" onClick={() => quitarLinea(index)} className="text-gray-400 hover:text-red-600 justify-self-center">
                 <IconTrash size={16} />
               </button>

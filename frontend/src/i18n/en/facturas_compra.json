@@ -1,0 +1,26 @@
+{
+  "titulo": "Purchase invoices",
+  "card_nuevo_titulo": "New invoice",
+  "campos": {
+    "proveedor": "Supplier",
+    "numero_factura": "Invoice No.",
+    "fecha": "Date",
+    "total_con_iva": "Invoice total (with VAT)"
+  },
+  "albaranes_a_incluir_titulo": "Delivery notes to include",
+  "elige_proveedor_para_albaranes": "First choose a supplier to see their delivery notes.",
+  "sin_albaranes_pendientes": "This supplier has no delivery notes pending invoicing.",
+  "albaran_checkbox_label": "Delivery note {{numero}} · {{fecha}}",
+  "guardar_factura": "Save invoice",
+  "sin_facturas": "There are no invoices registered yet.",
+  "borrar": "Delete",
+  "factura_linea": "Invoice {{numero}} · {{fecha}}",
+  "albaranes_incluidos": "Delivery notes included: ",
+  "alertas": {
+    "sin_albaranes_seleccionados": "Select at least one delivery note to associate with the invoice",
+    "error_crear_factura": "Error creating the invoice: {{mensaje}}",
+    "error_asociar_albaranes": "Error associating the delivery notes: {{mensaje}}",
+    "confirmar_borrar": "Are you sure you want to delete this invoice?",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

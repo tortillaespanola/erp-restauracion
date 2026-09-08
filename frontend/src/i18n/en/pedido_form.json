@@ -6,7 +6,6 @@
     "notas_opcional": "Notes (optional)"
   },
   "fecha_entrega_anterior": "Cannot be earlier than the order date",
-  "redondea_3_decimales": "Will be rounded to 3 decimals",
   "lineas_pedido_titulo": "Order lines",
   "tipo_producto_final": "Final product",
   "tipo_mercaderia": "Merchandise",

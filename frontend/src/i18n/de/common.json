@@ -66,5 +66,7 @@
     "download_pdf": "PDF herunterladen"
   },
   "listado_titulo": "Liste",
-  "sin_cliente": "Kein Kunde"
+  "sin_cliente": "Kein Kunde",
+  "sin_numero": "(o. Nr.)",
+  "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet"
 }

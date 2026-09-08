@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
@@ -8,6 +9,7 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Inpu
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
 
 function AlbaranesCompra() {
+  const { t } = useTranslation(['common', 'compras_comun', 'albaranes_compra'])
   const [searchParams] = useSearchParams()
   const [albaranes, setAlbaranes] = useState([])
   const [proveedores, setProveedores] = useState([])
@@ -189,7 +191,7 @@ function AlbaranesCompra() {
 
     const lineasValidas = lineas.filter((l) => l.articulo_id && l.cantidad)
     if (lineasValidas.length === 0) {
-      alert('Añade al menos una línea con artículo y cantidad')
+      alert(t('albaranes_compra:alertas.sin_lineas_validas'))
       return
     }
 
@@ -218,7 +220,7 @@ function AlbaranesCompra() {
         .eq('id', editandoId)
 
       if (errorUpdate) {
-        alert('Error al actualizar el albarán: ' + errorUpdate.message)
+        alert(t('albaranes_compra:alertas.error_actualizar_albaran', { mensaje: errorUpdate.message }))
         return
       }
 
@@ -228,7 +230,7 @@ function AlbaranesCompra() {
           .delete()
           .in('id', lineasABorrar)
         if (errorBorrar) {
-          alert('Error al borrar líneas: ' + errorBorrar.message)
+          alert(t('albaranes_compra:alertas.error_borrar_lineas', { mensaje: errorBorrar.message }))
           return
         }
       }
@@ -239,7 +241,7 @@ function AlbaranesCompra() {
           .update(calcularCamposLinea(l))
           .eq('id', l.id)
         if (error) {
-          alert('Error al actualizar una línea: ' + error.message)
+          alert(t('albaranes_compra:alertas.error_actualizar_linea', { mensaje: error.message }))
           return
         }
       }
@@ -250,7 +252,7 @@ function AlbaranesCompra() {
           .update({ fecha_caducidad: l.fecha_caducidad || null, notas: l.notas || null })
           .eq('id', l.id)
         if (error) {
-          alert('Error al actualizar caducidad/notas de una línea bloqueada: ' + error.message)
+          alert(t('albaranes_compra:alertas.error_actualizar_linea_bloqueada', { mensaje: error.message }))
           return
         }
       }
@@ -261,7 +263,7 @@ function AlbaranesCompra() {
           .from('entrada_material')
           .insert(nuevas.map((l) => ({ albaran_compra_id: editandoId, ...calcularCamposLinea(l) })))
         if (error) {
-          alert('Error al añadir nuevas líneas: ' + error.message)
+          alert(t('albaranes_compra:alertas.error_anadir_lineas', { mensaje: error.message }))
           return
         }
       }
@@ -284,7 +286,7 @@ function AlbaranesCompra() {
       .single()
 
     if (errorAlbaran) {
-      alert('Error al crear el albarán: ' + errorAlbaran.message)
+      alert(t('albaranes_compra:alertas.error_crear_albaran', { mensaje: errorAlbaran.message }))
       return
     }
 
@@ -298,7 +300,7 @@ function AlbaranesCompra() {
       .insert(lineasParaInsertar)
 
     if (errorLineas) {
-      alert('Error al guardar las líneas: ' + errorLineas.message)
+      alert(t('albaranes_compra:alertas.error_guardar_lineas', { mensaje: errorLineas.message }))
       return
     }
 
@@ -316,20 +318,20 @@ function AlbaranesCompra() {
         supabase.from('consumo_produccion_pf').select('*', { count: 'exact', head: true }).in('entrada_material_id', entradaIds),
         supabase.from('ajustes_articulo').select('*', { count: 'exact', head: true }).in('entrada_material_id', entradaIds),
       ])
-      if (c1.count > 0) avisos.push(`${c1.count} consumo(s) en producciones de semielaborados`)
-      if (c2.count > 0) avisos.push(`${c2.count} consumo(s) en producciones de productos finales`)
-      if (c3.count > 0) avisos.push(`${c3.count} ajuste(s) de stock`)
+      if (c1.count > 0) avisos.push(t('albaranes_compra:avisos.consumo_semi', { count: c1.count }))
+      if (c2.count > 0) avisos.push(t('albaranes_compra:avisos.consumo_pf', { count: c2.count }))
+      if (c3.count > 0) avisos.push(t('albaranes_compra:avisos.ajuste', { count: c3.count }))
     }
 
     const mensaje = avisos.length > 0
-      ? `⚠️ Este albarán tiene datos relacionados que se BORRARÁN también:\n\n${avisos.map((a) => '• ' + a).join('\n')}\n\n¿Seguro que quieres continuar?`
-      : '¿Seguro que quieres borrar este albarán?'
+      ? t('albaranes_compra:alertas.confirmar_borrar_con_avisos', { lista: avisos.map((a) => '• ' + a).join('\n') })
+      : t('albaranes_compra:alertas.confirmar_borrar_sin_avisos')
 
     if (!confirm(mensaje)) return
 
     const { error } = await supabase.from('albaranes_compra').delete().eq('id', alb.id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('albaranes_compra:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     if (editandoId === alb.id) resetForm()
@@ -338,10 +340,10 @@ function AlbaranesCompra() {
 
   return (
     <div>
-      <PageHeader title="Albaranes de compra" />
+      <PageHeader title={t('albaranes_compra:titulo')} />
 
       <Card className="mb-6">
-        <CardHeader title={editandoId ? 'Editar albarán' : 'Nuevo albarán'} />
+        <CardHeader title={editandoId ? t('albaranes_compra:card_editar_titulo') : t('albaranes_compra:card_nuevo_titulo')} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {!editandoId && (
@@ -349,49 +351,49 @@ function AlbaranesCompra() {
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={tipoOrigen === 'compra_directa'}
                     onChange={() => { setTipoOrigen('compra_directa'); setPedidoCompraId(''); setProveedorId(''); setLineas([{ ...lineaVacia }]) }} />
-                  Compra directa
+                  {t('albaranes_compra:tipo_origen.compra_directa')}
                 </label>
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={tipoOrigen === 'pedido'}
                     onChange={() => setTipoOrigen('pedido')} />
-                  Desde pedido existente
+                  {t('albaranes_compra:tipo_origen.pedido_existente')}
                 </label>
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {tipoOrigen === 'pedido' && !editandoId ? (
-                <Field label="Pedido de compra">
+                <Field label={t('albaranes_compra:campos.pedido_compra')}>
                   <Select value={pedidoCompraId} onChange={(e) => setPedidoCompraId(e.target.value)} required>
-                    <option value="">Selecciona pedido</option>
+                    <option value="">{t('albaranes_compra:selecciona_pedido')}</option>
                     {pedidosCompraPendientes.map((p) => (
                       <option key={p.id} value={p.id}>{p.codigo_pedido} · {p.proveedores?.nombre_comercial}</option>
                     ))}
                   </Select>
                   {proveedorId && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Proveedor: {proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
+                      {t('albaranes_compra:proveedor_label')}{proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
                       {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor && (
-                        <> · Ref. proveedor: {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor}</>
+                        <>{t('albaranes_compra:ref_proveedor_label')}{pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor}</>
                       )}
                     </p>
                   )}
                 </Field>
               ) : (
-                <Field label="Proveedor">
+                <Field label={t('albaranes_compra:campos.proveedor')}>
                   <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
                     required disabled={!!editandoId}>
-                    <option value="">Selecciona proveedor</option>
+                    <option value="">{t('compras_comun:selecciona_proveedor')}</option>
                     {proveedores.map((p) => (
                       <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
                     ))}
                   </Select>
                 </Field>
               )}
-              <Field label="Nº albarán del proveedor">
+              <Field label={t('albaranes_compra:campos.numero_albaran_proveedor')}>
                 <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
               </Field>
-              <Field label="Fecha">
+              <Field label={t('albaranes_compra:campos.fecha')}>
                 <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
@@ -399,12 +401,12 @@ function AlbaranesCompra() {
             {proveedorId && articulosDelProveedor.length === 0 && (
               <p className="text-sm text-amber-600 flex items-center gap-1.5">
                 <IconAlertTriangle size={15} />
-                Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.
+                {t('compras_comun:articulo_no_asignado_aviso')}
               </p>
             )}
 
             <div>
-              <SectionLabel>Líneas</SectionLabel>
+              <SectionLabel>{t('albaranes_compra:lineas_titulo')}</SectionLabel>
               <div className="flex flex-col gap-3">
                 {lineas.map((linea, index) => {
                   if (linea.locked) {
@@ -414,15 +416,15 @@ function AlbaranesCompra() {
                         <div className="flex items-start gap-2">
                           <IconLock size={15} className="mt-0.5 shrink-0" />
                           <div>
-                            {art?.nombre ?? 'Artículo'} · {linea.cantidad} · {linea.precio || '-'}
-                            <span className="block text-xs mt-1">Artículo, cantidad y precio ya consumidos/ajustados — no se pueden modificar. Fecha de caducidad y notas sí.</span>
+                            {art?.nombre ?? t('albaranes_compra:linea_bloqueada.articulo_generico')} · {linea.cantidad} · {linea.precio || '-'}
+                            <span className="block text-xs mt-1">{t('albaranes_compra:linea_bloqueada.aviso')}</span>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
-                          <DateInput placeholderText="Caducidad" value={linea.fecha_caducidad}
+                          <DateInput placeholderText={t('albaranes_compra:placeholders.caducidad')} value={linea.fecha_caducidad}
                             onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
-                            title="Fecha de caducidad (opcional)" />
-                          <Input type="text" placeholder="Notas" value={linea.notas}
+                            title={t('albaranes_compra:fecha_caducidad_opcional_title')} />
+                          <Input type="text" placeholder={t('albaranes_compra:placeholders.notas')} value={linea.notas}
                             onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
                         </div>
                       </div>
@@ -436,7 +438,7 @@ function AlbaranesCompra() {
                           onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                           required disabled={!proveedorId}>
                           <option value="">
-                            {!proveedorId ? 'Elige primero un proveedor' : 'Selecciona artículo'}
+                            {!proveedorId ? t('compras_comun:elige_proveedor_primero') : t('compras_comun:selecciona_articulo')}
                           </option>
                           {articulosDelProveedor.map((a) => (
                             <option key={a.id} value={a.id}>
@@ -444,14 +446,14 @@ function AlbaranesCompra() {
                             </option>
                           ))}
                         </Select>
-                        <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                        <Input type="number" step="0.001" placeholder={t('albaranes_compra:placeholders.cantidad')} value={linea.cantidad}
                           onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                          required title="Se redondeará a 3 decimales" />
-                        <Input type="number" step="0.01" placeholder="Precio" value={linea.precio}
+                          required title={t('common:redondea_3_decimales')} />
+                        <Input type="number" step="0.01" placeholder={t('albaranes_compra:placeholders.precio')} value={linea.precio}
                           onChange={(e) => handleLineaChange(index, 'precio', e.target.value)} />
-                        <DateInput placeholderText="Caducidad" value={linea.fecha_caducidad}
+                        <DateInput placeholderText={t('albaranes_compra:placeholders.caducidad')} value={linea.fecha_caducidad}
                           onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
-                          title="Fecha de caducidad (opcional)" />
+                          title={t('albaranes_compra:fecha_caducidad_opcional_title')} />
                         <button type="button" onClick={() => removeLinea(index)}
                           className="text-gray-400 hover:text-red-600 justify-self-center">
                           <IconTrash size={16} />
@@ -470,20 +472,20 @@ function AlbaranesCompra() {
                         return (
                           <div>
                             <input type="number" step="0.1"
-                              placeholder={`Temperatura de recepción (°C)${art.temperaturaMin != null && art.temperaturaMax != null ? ` — rango: ${art.temperaturaMin} a ${art.temperaturaMax}` : ''}`}
+                              placeholder={`${t('albaranes_compra:temperatura.placeholder_base')}${art.temperaturaMin != null && art.temperaturaMax != null ? t('albaranes_compra:temperatura.rango_sufijo', { min: art.temperaturaMin, max: art.temperaturaMax }) : ''}`}
                               value={linea.temperatura}
                               onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
                               className={`border rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-red-300 bg-red-50 focus:ring-red-100' : 'border-blue-200 focus:ring-blue-100'}`} />
                             {fueraDeRango && (
                               <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                                <IconAlertTriangle size={13} /> Fuera del rango aceptable ({art.temperaturaMin}°C a {art.temperaturaMax}°C)
+                                <IconAlertTriangle size={13} /> {t('albaranes_compra:temperatura.fuera_rango_aviso', { min: art.temperaturaMin, max: art.temperaturaMax })}
                               </p>
                             )}
                           </div>
                         )
                       })()}
 
-                      <Input type="text" placeholder="Notas (temperatura de recepción, incidencias...)"
+                      <Input type="text" placeholder={t('albaranes_compra:placeholders.notas_detalle')}
                         value={linea.notas}
                         onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
                     </div>
@@ -492,54 +494,54 @@ function AlbaranesCompra() {
               </div>
               <button type="button" onClick={addLinea}
                 className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
-                <IconPlus size={15} /> Añadir línea
+                <IconPlus size={15} /> {t('compras_comun:anadir_linea')}
               </button>
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar albarán'}</Button>
+              <Button type="submit">{editandoId ? t('albaranes_compra:guardar_cambios') : t('albaranes_compra:guardar_albaran')}</Button>
               {editandoId && (
-                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar edición</Button>
+                <Button type="button" variant="secondary" onClick={resetForm}>{t('albaranes_compra:cancelar_edicion')}</Button>
               )}
             </div>
           </form>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
       ) : albaranes.length === 0 ? (
-        <Card><EmptyState>Todavía no hay albaranes registrados.</EmptyState></Card>
+        <Card><EmptyState>{t('albaranes_compra:sin_albaranes')}</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
           {albaranes.map((alb) => (
             <Card key={alb.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{alb.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
+                  <p className="font-semibold text-[#1C2938]">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
                   <p className="text-sm text-gray-500">
-                    Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
+                    {t('albaranes_compra:albaran_linea', { numero: alb.numero_albaran || t('common:sin_numero') })} · {formatFecha(alb.fecha)}
                     {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{alb.codigo_interno}</span>}
                   </p>
                 </div>
                 <div className="flex gap-3 shrink-0">
-                  <LinkAction tone="blue" onClick={() => handleEditar(alb)}>Editar</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(alb)}>Borrar</LinkAction>
+                  <LinkAction tone="blue" onClick={() => handleEditar(alb)}>{t('albaranes_compra:editar')}</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(alb)}>{t('albaranes_compra:borrar')}</LinkAction>
                 </div>
               </div>
 
               <table className="w-full mt-3 text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-1.5 font-medium">Artículo</th>
-                    <th className="py-1.5 font-medium">Cantidad</th>
-                    <th className="py-1.5 font-medium">Precio</th>
-                    <th className="py-1.5 font-medium">Caducidad</th>
-                    <th className="py-1.5 font-medium">Notas</th>
-                    <th className="py-1.5 font-medium">Temp.</th>
-                    <th className="py-1.5 font-medium">Lote</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.articulo')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.cantidad')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.precio')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.caducidad')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.notas')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.temperatura')}</th>
+                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.lote')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

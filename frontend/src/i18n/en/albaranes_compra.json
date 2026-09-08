@@ -1,0 +1,73 @@
+{
+  "titulo": "Purchase delivery notes",
+  "card_nuevo_titulo": "New delivery note",
+  "card_editar_titulo": "Edit delivery note",
+  "tipo_origen": {
+    "compra_directa": "Direct purchase",
+    "pedido_existente": "From an existing order"
+  },
+  "campos": {
+    "pedido_compra": "Purchase order",
+    "proveedor": "Supplier",
+    "numero_albaran_proveedor": "Supplier's delivery note No.",
+    "fecha": "Date"
+  },
+  "albaran_linea": "Delivery note {{numero}}",
+  "proveedor_label": "Supplier: ",
+  "ref_proveedor_label": " · Supplier ref.: ",
+  "selecciona_pedido": "Select order",
+  "lineas_titulo": "Lines",
+  "linea_bloqueada": {
+    "articulo_generico": "Article",
+    "aviso": "Article, quantity and price already consumed/adjusted — cannot be modified. Expiry date and notes can."
+  },
+  "placeholders": {
+    "caducidad": "Expiry",
+    "notas": "Notes",
+    "cantidad": "Quantity",
+    "precio": "Price",
+    "notas_detalle": "Notes (reception temperature, issues...)"
+  },
+  "fecha_caducidad_opcional_title": "Expiry date (optional)",
+  "temperatura": {
+    "placeholder_base": "Reception temperature (°C)",
+    "rango_sufijo": " — range: {{min}} to {{max}}",
+    "fuera_rango_aviso": "Outside the acceptable range ({{min}}°C to {{max}}°C)"
+  },
+  "guardar_cambios": "Save changes",
+  "guardar_albaran": "Save delivery note",
+  "cancelar_edicion": "Cancel editing",
+  "sin_albaranes": "There are no delivery notes registered yet.",
+  "editar": "Edit",
+  "borrar": "Delete",
+  "tabla": {
+    "articulo": "Article",
+    "cantidad": "Quantity",
+    "precio": "Price",
+    "caducidad": "Expiry",
+    "notas": "Notes",
+    "temperatura": "Temp.",
+    "lote": "Lot"
+  },
+  "avisos": {
+    "consumo_semi_one": "{{count}} consumption in semi-finished good productions",
+    "consumo_semi_other": "{{count}} consumptions in semi-finished good productions",
+    "consumo_pf_one": "{{count}} consumption in final product productions",
+    "consumo_pf_other": "{{count}} consumptions in final product productions",
+    "ajuste_one": "{{count}} stock adjustment",
+    "ajuste_other": "{{count}} stock adjustments"
+  },
+  "alertas": {
+    "sin_lineas_validas": "Add at least one line with article and quantity",
+    "error_actualizar_albaran": "Error updating the delivery note: {{mensaje}}",
+    "error_borrar_lineas": "Error deleting lines: {{mensaje}}",
+    "error_actualizar_linea": "Error updating a line: {{mensaje}}",
+    "error_actualizar_linea_bloqueada": "Error updating expiry/notes of a locked line: {{mensaje}}",
+    "error_anadir_lineas": "Error adding new lines: {{mensaje}}",
+    "error_crear_albaran": "Error creating the delivery note: {{mensaje}}",
+    "error_guardar_lineas": "Error saving the lines: {{mensaje}}",
+    "confirmar_borrar_con_avisos": "⚠️ This delivery note has related data that will ALSO be deleted:\n\n{{lista}}\n\nAre you sure you want to continue?",
+    "confirmar_borrar_sin_avisos": "Are you sure you want to delete this delivery note?",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

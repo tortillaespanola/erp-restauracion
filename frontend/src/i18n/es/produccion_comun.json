@@ -3,8 +3,7 @@
     "iniciar_nueva_produccion": "Iniciar nueva producción",
     "selecciona_que_produces": "Selecciona qué vas a producir",
     "fecha": "Fecha",
-    "iniciar": "Iniciar",
-    "redondea_3_decimales": "Se redondeará a 3 decimales"
+    "iniciar": "Iniciar"
   },
   "producciones_en_curso": "Producciones en curso",
   "en_curso_badge": "en curso",

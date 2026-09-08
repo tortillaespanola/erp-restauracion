@@ -475,7 +475,7 @@ function AlbaranesVenta() {
                           </button>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(alb.fecha)}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('ventas_comun:sin_numero')}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('common:sin_numero')}</td>
                         <td className="px-3 py-3 font-medium text-[#1C2938]">{alb.clientes?.nombre ?? t('common:sin_cliente')}</td>
                         <td className="px-3 py-3">
                           {codigosPedido.length === 0 ? (

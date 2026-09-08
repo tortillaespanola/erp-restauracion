@@ -1,0 +1,21 @@
+{
+  "titulo": "Firmeneinstellungen",
+  "subtitulo": "Diese Angaben erscheinen im Briefkopf von Lieferscheinen und Rechnungen.",
+  "cargando": "Lädt...",
+  "campos": {
+    "logo": "Logo",
+    "nombre_comercial": "Handelsname",
+    "razon_fiscal": "Firmenbezeichnung",
+    "cif": "USt-IdNr.",
+    "direccion": "Adresse",
+    "telefono": "Telefon",
+    "email": "E-Mail"
+  },
+  "subiendo": "Wird hochgeladen...",
+  "guardar": "Speichern",
+  "alertas": {
+    "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+    "guardado_correctamente": "Daten erfolgreich gespeichert",
+    "error_subir_logo": "Fehler beim Hochladen des Logos: {{mensaje}}"
+  }
+}

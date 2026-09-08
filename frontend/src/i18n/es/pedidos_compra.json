@@ -1,0 +1,36 @@
+{
+  "titulo": "Pedidos de compra",
+  "subtitulo": "Registra lo que se pide a un proveedor, y recíbelo como albarán de compra cuando llegue.",
+  "card_nuevo_titulo": "Nuevo pedido de compra",
+  "campos": {
+    "proveedor": "Proveedor",
+    "fecha": "Fecha",
+    "fecha_entrega_opcional": "Fecha de entrega prevista (opcional)",
+    "referencia_proveedor_opcional": "Referencia del proveedor (opcional)",
+    "notas_opcional": "Notas (opcional)"
+  },
+  "referencia_proveedor_placeholder": "Nº de confirmación que da el proveedor a este pedido",
+  "placeholders": {
+    "cantidad": "Cantidad",
+    "precio": "Precio"
+  },
+  "fecha_entrega_anterior": "No puede ser anterior a la fecha del pedido",
+  "lineas_titulo": "Líneas del pedido",
+  "guardar_pedido": "Guardar pedido",
+  "sin_pedidos": "Todavía no hay pedidos de compra registrados.",
+  "recibir_como_albaran": "Recibir como albarán",
+  "tabla": {
+    "articulo": "Artículo",
+    "pedido": "Pedido",
+    "recibido": "Recibido"
+  },
+  "alertas": {
+    "cambiar_proveedor_confirmacion": "Cambiar de proveedor borrará las líneas ya introducidas, ¿continuar?",
+    "fecha_entrega_invalida": "La fecha de entrega prevista no puede ser anterior a la fecha del pedido",
+    "sin_lineas_validas": "Añade al menos una línea con artículo y cantidad",
+    "error_crear_pedido": "Error al crear el pedido: {{mensaje}}",
+    "error_guardar_lineas": "Error al guardar las líneas: {{mensaje}}",
+    "confirmar_cancelar": "¿Cancelar este pedido de compra?",
+    "error_cancelar": "Error al cancelar: {{mensaje}}"
+  }
+}

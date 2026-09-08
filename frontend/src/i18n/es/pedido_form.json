@@ -6,7 +6,6 @@
     "notas_opcional": "Notas (opcional)"
   },
   "fecha_entrega_anterior": "No puede ser anterior a la fecha del pedido",
-  "redondea_3_decimales": "Se redondeará a 3 decimales",
   "lineas_pedido_titulo": "Líneas del pedido",
   "tipo_producto_final": "Producto final",
   "tipo_mercaderia": "Mercadería",

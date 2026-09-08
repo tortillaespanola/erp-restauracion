@@ -1,0 +1,32 @@
+{
+  "titulo": "Ajustes de stock",
+  "subtitulo": "Histórico de correcciones de stock por mermas, caducidad, roturas o errores de pesaje.",
+  "movimientos_titulo": "Movimientos",
+  "nuevo_ajuste": "+ Nuevo ajuste",
+  "filtros": {
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "articulo_item": "Artículo / ítem",
+    "motivo": "Motivo"
+  },
+  "buscar_por_nombre_placeholder": "Buscar por nombre...",
+  "buscar_por_motivo_placeholder": "Buscar por motivo...",
+  "error_cargar_historico": "Error al cargar el histórico: {{mensaje}}",
+  "sin_ajustes_filtro": "No hay ajustes que coincidan con los filtros.",
+  "tabla": {
+    "fecha": "Fecha",
+    "item": "Ítem",
+    "cantidad": "Cantidad",
+    "motivo": "Motivo",
+    "usuario": "Usuario"
+  },
+  "borrar": "Borrar",
+  "movimiento_count_one": "{{count}} movimiento",
+  "movimiento_count_other": "{{count}} movimientos",
+  "pagina_de": "Página {{pagina}} de {{total}}",
+  "drawer_nuevo_ajuste_titulo": "Nuevo ajuste de stock",
+  "alertas": {
+    "confirmar_borrar": "¿Seguro que quieres eliminar este ajuste? El stock volverá a su valor anterior.",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

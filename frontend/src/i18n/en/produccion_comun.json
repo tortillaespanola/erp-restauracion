@@ -3,8 +3,7 @@
     "iniciar_nueva_produccion": "Start new production",
     "selecciona_que_produces": "Select what you're producing",
     "fecha": "Date",
-    "iniciar": "Start",
-    "redondea_3_decimales": "Will be rounded to 3 decimals"
+    "iniciar": "Start"
   },
   "producciones_en_curso": "Productions in progress",
   "en_curso_badge": "in progress",

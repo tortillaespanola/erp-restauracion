@@ -1,0 +1,21 @@
+{
+  "titulo": "Configuración de empresa",
+  "subtitulo": "Estos datos aparecerán en el membrete de albaranes y facturas.",
+  "cargando": "Cargando...",
+  "campos": {
+    "logo": "Logo",
+    "nombre_comercial": "Nombre comercial",
+    "razon_fiscal": "Razón fiscal",
+    "cif": "CIF",
+    "direccion": "Dirección",
+    "telefono": "Teléfono",
+    "email": "Email"
+  },
+  "subiendo": "Subiendo...",
+  "guardar": "Guardar",
+  "alertas": {
+    "error_guardar": "Error al guardar: {{mensaje}}",
+    "guardado_correctamente": "Datos guardados correctamente",
+    "error_subir_logo": "Error al subir el logo: {{mensaje}}"
+  }
+}

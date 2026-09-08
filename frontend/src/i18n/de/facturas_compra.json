@@ -1,0 +1,26 @@
+{
+  "titulo": "Rechnungen Einkauf",
+  "card_nuevo_titulo": "Neue Rechnung",
+  "campos": {
+    "proveedor": "Lieferant",
+    "numero_factura": "Rechnungs-Nr.",
+    "fecha": "Datum",
+    "total_con_iva": "Rechnungstotal (inkl. MWST)"
+  },
+  "albaranes_a_incluir_titulo": "Einzuschließende Lieferscheine",
+  "elige_proveedor_para_albaranes": "Wähle zuerst einen Lieferanten, um seine Lieferscheine zu sehen.",
+  "sin_albaranes_pendientes": "Dieser Lieferant hat keine Lieferscheine, die noch fakturiert werden müssen.",
+  "albaran_checkbox_label": "Lieferschein {{numero}} · {{fecha}}",
+  "guardar_factura": "Rechnung speichern",
+  "sin_facturas": "Es sind noch keine Rechnungen erfasst.",
+  "borrar": "Löschen",
+  "factura_linea": "Rechnung {{numero}} · {{fecha}}",
+  "albaranes_incluidos": "Enthaltene Lieferscheine: ",
+  "alertas": {
+    "sin_albaranes_seleccionados": "Wähle mindestens einen Lieferschein aus, um ihn der Rechnung zuzuordnen",
+    "error_crear_factura": "Fehler beim Erstellen der Rechnung: {{mensaje}}",
+    "error_asociar_albaranes": "Fehler beim Zuordnen der Lieferscheine: {{mensaje}}",
+    "confirmar_borrar": "Möchtest du diese Rechnung wirklich löschen?",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

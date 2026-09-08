@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatMoneda } from '../lib/formatCantidad'
 import { IconThermometer, IconPlus } from '@tabler/icons-react'
@@ -27,7 +28,10 @@ async function generarCodigoArticulo(categoriaId, categorias, ingredienteId) {
   return `${categoria.acronimo}-${String(contadorProveedor).padStart(2, '0')}-${String(contadorCalidad).padStart(2, '0')}`
 }
 
+const TIPOS_MATERIAL = ['RM', 'AUX', 'TRD']
+
 function Articulos() {
+  const { t } = useTranslation(['common', 'enums', 'compras_comun', 'articulos'])
   const [articulos, setArticulos] = useState([])
   const [categorias, setCategorias] = useState([])
   const [unidades, setUnidades] = useState([])
@@ -108,7 +112,7 @@ function Articulos() {
       // español, se muestra tal cual.
       const { error } = await supabase.from('articulos_compra').update(payload).eq('id', editandoId)
       if (error) {
-        alert('Error al actualizar: ' + error.message)
+        alert(t('articulos:alertas.error_actualizar', { mensaje: error.message }))
         return
       }
     } else {
@@ -116,7 +120,7 @@ function Articulos() {
 
       if (form.ingredienteId === NUEVO_INGREDIENTE) {
         if (!form.ingredienteNuevoNombre || !form.ingredienteNuevoUnidadId) {
-          alert('Indica nombre y unidad del ingrediente nuevo')
+          alert(t('articulos:alertas.sin_nombre_unidad_ingrediente'))
           return
         }
         const { data: nuevoIngrediente, error: errorIngrediente } = await supabase
@@ -125,7 +129,7 @@ function Articulos() {
           .select()
           .single()
         if (errorIngrediente) {
-          alert('Error al crear el ingrediente: ' + errorIngrediente.message)
+          alert(t('articulos:alertas.error_crear_ingrediente', { mensaje: errorIngrediente.message }))
           return
         }
         ingredienteId = nuevoIngrediente.id
@@ -139,7 +143,7 @@ function Articulos() {
         .select()
         .single()
       if (error) {
-        alert('Error al guardar: ' + error.message)
+        alert(t('articulos:alertas.error_guardar', { mensaje: error.message }))
         return
       }
 
@@ -148,7 +152,7 @@ function Articulos() {
           .from('articulo_ingrediente')
           .insert({ articulo_id: nuevoArticulo.id, ingrediente_id: ingredienteId })
         if (errorVinculo) {
-          alert('El artículo se guardó, pero no se pudo vincular al ingrediente: ' + errorVinculo.message)
+          alert(t('articulos:alertas.error_vincular_ingrediente', { mensaje: errorVinculo.message }))
         }
       }
     }
@@ -179,10 +183,10 @@ function Articulos() {
   }
 
   async function handleBorrar(id) {
-    if (!confirm('¿Seguro que quieres borrar este artículo?')) return
+    if (!confirm(t('articulos:alertas.confirmar_borrar'))) return
     const { error } = await supabase.from('articulos_compra').delete().eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('articulos:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -190,38 +194,38 @@ function Articulos() {
 
   return (
     <div>
-      <PageHeader title="Artículos de compra" />
+      <PageHeader title={t('articulos:titulo')} />
 
       <Card className="mb-6">
-        <CardHeader title={editandoId ? 'Editar artículo' : 'Nuevo artículo'} />
+        <CardHeader title={editandoId ? t('articulos:card_editar_titulo') : t('articulos:card_nuevo_titulo')} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <Field label="Nombre">
-              <Input type="text" placeholder="Ej. Tomate pera" value={form.nombre}
+            <Field label={t('articulos:campos.nombre')}>
+              <Input type="text" placeholder={t('articulos:nombre_placeholder')} value={form.nombre}
                 onChange={(e) => handleChange('nombre', e.target.value)} required />
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Field label="Categoría">
+              <Field label={t('articulos:campos.categoria')}>
                 <Select value={form.categoriaId} onChange={(e) => handleChangeCategoria(e.target.value)} required>
-                  <option value="">Selecciona categoría</option>
+                  <option value="">{t('articulos:selecciona_categoria')}</option>
                   {categorias.map((c) => (
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </Select>
               </Field>
-              <Field label="Tipo de material">
+              <Field label={t('articulos:campos.tipo_material')}>
                 <Select value={form.tipo_material} onChange={(e) => handleChange('tipo_material', e.target.value)}>
-                  <option value="RM">Materia prima (RM)</option>
-                  <option value="AUX">Material auxiliar (AUX)</option>
-                  <option value="TRD">Mercadería (TRD)</option>
+                  {TIPOS_MATERIAL.map((valor) => (
+                    <option key={valor} value={valor}>{t(`enums:tipo_material.${valor}`)}</option>
+                  ))}
                 </Select>
               </Field>
             </div>
 
-            <Field label="Unidad">
+            <Field label={t('articulos:campos.unidad')}>
               <Select value={form.unidadId} onChange={(e) => handleChange('unidadId', e.target.value)} required>
-                <option value="">Selecciona unidad</option>
+                <option value="">{t('articulos:selecciona_unidad')}</option>
                 {unidades.map((u) => (
                   <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
                 ))}
@@ -229,20 +233,20 @@ function Articulos() {
             </Field>
 
             {!editandoId && (
-              <Field label="Ingrediente (opcional — agrupa variantes intercambiables de proveedor/calidad)">
+              <Field label={t('articulos:campos.ingrediente_opcional')}>
                 <Select value={form.ingredienteId} onChange={(e) => handleChange('ingredienteId', e.target.value)} disabled={!form.categoriaId}>
-                  <option value="">{form.categoriaId ? 'Sin ingrediente' : 'Elige categoría primero'}</option>
-                  {form.categoriaId && <option value={NUEVO_INGREDIENTE}>+ Crear ingrediente nuevo</option>}
+                  <option value="">{form.categoriaId ? t('articulos:sin_ingrediente') : t('articulos:elige_categoria_primero')}</option>
+                  {form.categoriaId && <option value={NUEVO_INGREDIENTE}>{t('articulos:crear_ingrediente_nuevo')}</option>}
                   {ingredientesDeCategoria.map((i) => (
                     <option key={i.id} value={i.id}>{i.nombre}</option>
                   ))}
                 </Select>
                 {form.ingredienteId === NUEVO_INGREDIENTE && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    <Input type="text" placeholder="Nombre del ingrediente" value={form.ingredienteNuevoNombre}
+                    <Input type="text" placeholder={t('articulos:ingrediente_nuevo_nombre_placeholder')} value={form.ingredienteNuevoNombre}
                       onChange={(e) => handleChange('ingredienteNuevoNombre', e.target.value)} />
                     <Select value={form.ingredienteNuevoUnidadId || form.unidadId} onChange={(e) => handleChange('ingredienteNuevoUnidadId', e.target.value)}>
-                      <option value="">Selecciona unidad</option>
+                      <option value="">{t('articulos:selecciona_unidad')}</option>
                       {unidades.map((u) => (
                         <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
                       ))}
@@ -252,7 +256,7 @@ function Articulos() {
               </Field>
             )}
 
-            <Field label="IVA (%)">
+            <Field label={t('articulos:campos.iva')}>
               <Input type="number" step="0.01" placeholder="0.00" value={form.iva}
                 onChange={(e) => handleChange('iva', e.target.value)} />
             </Field>
@@ -260,16 +264,16 @@ function Articulos() {
             <label className="flex items-center gap-2 text-sm text-gray-600">
               <input type="checkbox" checked={form.requiere_control_temperatura}
                 onChange={(e) => handleChange('requiere_control_temperatura', e.target.checked)} />
-              Requiere control de temperatura en la recepción
+              {t('articulos:requiere_control_temperatura')}
             </label>
 
             {form.requiere_control_temperatura && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
-                <Field label="Temperatura mín. aceptable (°C)">
+                <Field label={t('articulos:campos.temperatura_min')}>
                   <Input type="number" step="0.1" value={form.temperatura_min}
                     onChange={(e) => handleChange('temperatura_min', e.target.value)} />
                 </Field>
-                <Field label="Temperatura máx. aceptable (°C)">
+                <Field label={t('articulos:campos.temperatura_max')}>
                   <Input type="number" step="0.1" value={form.temperatura_max}
                     onChange={(e) => handleChange('temperatura_max', e.target.value)} />
                 </Field>
@@ -278,25 +282,25 @@ function Articulos() {
 
             <div className="flex gap-2 mt-1 items-center">
               <Button type="submit">
-                {editandoId ? 'Guardar cambios' : <><IconPlus size={15} /> Guardar artículo</>}
+                {editandoId ? t('articulos:guardar_cambios') : <><IconPlus size={15} /> {t('articulos:guardar_articulo')}</>}
               </Button>
               {editandoId && (
-                <Button type="button" variant="secondary" onClick={handleCancelar}>Cancelar</Button>
+                <Button type="button" variant="secondary" onClick={handleCancelar}>{t('common:actions.cancel')}</Button>
               )}
               {!editandoId && (
-                <p className="text-xs text-gray-400">El código se genera automáticamente. Podrás asignar proveedores y precios después de guardar el artículo.</p>
+                <p className="text-xs text-gray-400">{t('articulos:codigo_automatico_aviso')}</p>
               )}
             </div>
           </form>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
       ) : articulos.length === 0 ? (
-        <Card><EmptyState>Todavía no hay artículos dados de alta.</EmptyState></Card>
+        <Card><EmptyState>{t('articulos:sin_articulos')}</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
           {articulos.map((a) => (
@@ -307,19 +311,19 @@ function Articulos() {
                     {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
                   </p>
                   <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
-                    <span>{a.unidad} · {a.categorias_articulo?.nombre ?? 'Sin categoría'} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
+                    <span>{a.unidad} · {a.categorias_articulo?.nombre ?? t('articulos:sin_categoria')} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
                     <Badge color="gray">{a.tipo_material}</Badge>
                     {a.requiere_control_temperatura && (
                       <span className="text-[#0854A0] flex items-center gap-1">
-                        <IconThermometer size={14} /> Control temperatura
+                        <IconThermometer size={14} /> {t('articulos:control_temperatura_badge')}
                         {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
                       </span>
                     )}
                   </p>
                 </div>
                 <div className="flex gap-3 shrink-0">
-                  <LinkAction tone="blue" onClick={() => handleEditar(a)}>Editar</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(a.id)}>Borrar</LinkAction>
+                  <LinkAction tone="blue" onClick={() => handleEditar(a)}>{t('articulos:editar')}</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(a.id)}>{t('articulos:borrar')}</LinkAction>
                 </div>
               </div>
 
@@ -333,6 +337,7 @@ function Articulos() {
 }
 
 function ProveedoresDelArticulo({ articulo, onCambio }) {
+  const { t } = useTranslation(['articulos'])
   const { negocio } = useNegocio()
   const [proveedores, setProveedores] = useState([])
   const [proveedorId, setProveedorId] = useState('')
@@ -355,7 +360,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
 
   async function handleAdd() {
     if (!proveedorId) {
-      alert('Selecciona un proveedor')
+      alert(t('articulos:alertas.selecciona_proveedor'))
       return
     }
 
@@ -370,7 +375,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
     })
 
     if (error) {
-      alert('Error al asignar proveedor: ' + error.message)
+      alert(t('articulos:alertas.error_asignar_proveedor', { mensaje: error.message }))
       return
     }
 
@@ -402,7 +407,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       .eq('id', id)
 
     if (error) {
-      alert('Error al actualizar: ' + error.message)
+      alert(t('articulos:alertas.error_actualizar_relacion', { mensaje: error.message }))
       return
     }
 
@@ -413,17 +418,17 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
   async function handleMarcarPreferente(id) {
     const { error } = await supabase.from('articulo_proveedor').update({ preferente: true }).eq('id', id)
     if (error) {
-      alert('Error: ' + error.message)
+      alert(t('articulos:alertas.error_marcar_preferente', { mensaje: error.message }))
       return
     }
     onCambio()
   }
 
   async function handleQuitar(id) {
-    if (!confirm('¿Quitar este proveedor del artículo?')) return
+    if (!confirm(t('articulos:alertas.confirmar_quitar_proveedor'))) return
     const { error } = await supabase.from('articulo_proveedor').delete().eq('id', id)
     if (error) {
-      alert('Error al quitar: ' + error.message)
+      alert(t('articulos:alertas.error_quitar_proveedor', { mensaje: error.message }))
       return
     }
     onCambio()
@@ -431,10 +436,10 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
 
   return (
     <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Proveedores</p>
+      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('articulos:proveedores.titulo')}</p>
 
       {articulo.articulo_proveedor.length === 0 ? (
-        <p className="text-sm text-gray-400 mb-2">Sin proveedores asignados todavía.</p>
+        <p className="text-sm text-gray-400 mb-2">{t('articulos:proveedores.sin_proveedores')}</p>
       ) : (
         <table className="w-full text-sm mb-2">
           <tbody className="divide-y divide-gray-100">
@@ -451,16 +456,16 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
                     <td className="py-1.5">
                       <Input type="number" step="0.01" value={precioEdit}
                         onChange={(e) => setPrecioEdit(e.target.value)}
-                        placeholder="Precio" className="w-24" />
+                        placeholder={t('articulos:proveedores.precio_placeholder')} className="w-24" />
                     </td>
                     <td className="py-1.5">
                       <Input type="text" value={referenciaEdit}
                         onChange={(e) => setReferenciaEdit(e.target.value)}
-                        placeholder="Ref." />
+                        placeholder={t('articulos:proveedores.referencia_placeholder')} />
                     </td>
                     <td className="py-1.5 text-right whitespace-nowrap">
-                      <LinkAction tone="green" onClick={() => handleGuardarEdicion(ap.id)} className="text-xs mr-3">Guardar</LinkAction>
-                      <LinkAction tone="gray" onClick={handleCancelarEdicion} className="text-xs">Cancelar</LinkAction>
+                      <LinkAction tone="green" onClick={() => handleGuardarEdicion(ap.id)} className="text-xs mr-3">{t('articulos:proveedores.guardar')}</LinkAction>
+                      <LinkAction tone="gray" onClick={handleCancelarEdicion} className="text-xs">{t('common:actions.cancel')}</LinkAction>
                     </td>
                   </tr>
                 )
@@ -475,11 +480,11 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
                   <td className="py-1.5">{ap.precio != null ? formatMoneda(ap.precio, negocio?.moneda) : '-'}</td>
                   <td className="py-1.5 text-gray-400">{ap.referencia_proveedor ?? '-'}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">
-                    <LinkAction tone="blue" onClick={() => handleEmpezarEdicion(ap)} className="text-xs mr-3">Editar</LinkAction>
+                    <LinkAction tone="blue" onClick={() => handleEmpezarEdicion(ap)} className="text-xs mr-3">{t('articulos:proveedores.editar')}</LinkAction>
                     {!ap.preferente && (
-                      <LinkAction tone="amber" onClick={() => handleMarcarPreferente(ap.id)} className="text-xs mr-3">Marcar preferente</LinkAction>
+                      <LinkAction tone="amber" onClick={() => handleMarcarPreferente(ap.id)} className="text-xs mr-3">{t('articulos:proveedores.marcar_preferente')}</LinkAction>
                     )}
-                    <LinkAction tone="red" onClick={() => handleQuitar(ap.id)} className="text-xs">Quitar</LinkAction>
+                    <LinkAction tone="red" onClick={() => handleQuitar(ap.id)} className="text-xs">{t('articulos:proveedores.quitar')}</LinkAction>
                   </td>
                 </tr>
               )
@@ -491,16 +496,16 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       {disponibles.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2">
           <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} className="text-sm">
-            <option value="">Añadir proveedor...</option>
+            <option value="">{t('articulos:proveedores.anadir_proveedor_placeholder')}</option>
             {disponibles.map((p) => (
               <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
             ))}
           </Select>
-          <Input type="number" step="0.01" placeholder="Precio" value={precio}
+          <Input type="number" step="0.01" placeholder={t('articulos:proveedores.precio_placeholder')} value={precio}
             onChange={(e) => setPrecio(e.target.value)} className="text-sm" />
-          <Input type="text" placeholder="Ref. proveedor" value={referencia}
+          <Input type="text" placeholder={t('articulos:proveedores.referencia_proveedor_placeholder')} value={referencia}
             onChange={(e) => setReferencia(e.target.value)} className="text-sm" />
-          <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+          <LinkAction tone="blue" onClick={handleAdd}>{t('articulos:proveedores.anadir')}</LinkAction>
         </div>
       )}
     </div>

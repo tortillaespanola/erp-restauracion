@@ -1,0 +1,35 @@
+{
+  "titulo": "Lagerbestand",
+  "subtitulo": "Bestand und aggregierter Bedarf pro Zutat, aufgeschlüsselt bis zum Paar Artikel-Lieferant.",
+  "filtros": {
+    "proveedor": "Lieferant",
+    "ingredientes": "Zutat(en)",
+    "semielaborados": "Halbfertigprodukt(e)",
+    "productos_finales": "Fertigprodukt(e)",
+    "solo_con_necesidad": "Nur mit Bedarf"
+  },
+  "necesidad_mayor_cero": "Bedarf > 0",
+  "nada_pendiente_comprar": "Nichts zu kaufen ausstehend.",
+  "sin_coincidencias_filtros": "Keine Zutat entspricht den ausgewählten Filtern.",
+  "tabla": {
+    "ingrediente": "Zutat",
+    "stock": "Bestand",
+    "necesidad_agregada": "Aggregierter Bedarf",
+    "articulo": "Artikel",
+    "proveedor": "Lieferant",
+    "precio": "Preis",
+    "ultimo_precio_compra": "Letzter Einkaufspreis",
+    "recepcion": "Empfang",
+    "lote": "Charge",
+    "entrado": "Eingegangen",
+    "consumido": "Verbraucht"
+  },
+  "sin_articulos_vinculados": "Noch keine Artikel verknüpft.",
+  "sin_proveedores_asignados": "Noch keine Lieferanten zugewiesen.",
+  "sin_lotes_vivos": "Keine aktiven Chargen für dieses Paar.",
+  "recibido_ajuste": "erhalten {{cantidad}} · Korrektur +{{ajuste}}",
+  "produccion_ajuste": "Prod. {{cantidad}} · Korrektur −{{ajuste}}",
+  "ajustar": "Anpassen",
+  "recepcion_lote_label": "Empfang {{fecha}}",
+  "drawer_ajustar_stock_titulo": "Bestand anpassen"
+}

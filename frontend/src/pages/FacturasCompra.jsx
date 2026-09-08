@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
@@ -6,6 +7,7 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Inpu
 import { useNegocio } from '../context/useNegocio'
 
 function FacturasCompra() {
+  const { t } = useTranslation(['common', 'compras_comun', 'facturas_compra'])
   const { negocio } = useNegocio()
   const [facturas, setFacturas] = useState([])
   const [proveedores, setProveedores] = useState([])
@@ -95,7 +97,7 @@ function FacturasCompra() {
     e.preventDefault()
 
     if (albaranesSeleccionados.length === 0) {
-      alert('Selecciona al menos un albarán para asociar a la factura')
+      alert(t('facturas_compra:alertas.sin_albaranes_seleccionados'))
       return
     }
 
@@ -111,7 +113,7 @@ function FacturasCompra() {
       .single()
 
     if (errorFactura) {
-      alert('Error al crear la factura: ' + errorFactura.message)
+      alert(t('facturas_compra:alertas.error_crear_factura', { mensaje: errorFactura.message }))
       return
     }
 
@@ -126,7 +128,7 @@ function FacturasCompra() {
 
     if (errorRelaciones) {
       await supabase.from('facturas_compra').delete().eq('id', facturaCreada.id)
-      alert('Error al asociar los albaranes: ' + errorRelaciones.message)
+      alert(t('facturas_compra:alertas.error_asociar_albaranes', { mensaje: errorRelaciones.message }))
       return
     }
 
@@ -135,11 +137,11 @@ function FacturasCompra() {
   }
 
   async function handleBorrar(id) {
-    if (!confirm('¿Seguro que quieres borrar esta factura?')) return
+    if (!confirm(t('facturas_compra:alertas.confirmar_borrar'))) return
 
     const { error } = await supabase.from('facturas_compra').delete().eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('facturas_compra:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -147,40 +149,40 @@ function FacturasCompra() {
 
   return (
     <div>
-      <PageHeader title="Facturas de compra" />
+      <PageHeader title={t('facturas_compra:titulo')} />
 
       <Card className="mb-6">
-        <CardHeader title="Nueva factura" />
+        <CardHeader title={t('facturas_compra:card_nuevo_titulo')} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Proveedor">
+              <Field label={t('facturas_compra:campos.proveedor')}>
                 <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} required>
-                  <option value="">Selecciona proveedor</option>
+                  <option value="">{t('compras_comun:selecciona_proveedor')}</option>
                   {proveedores.map((p) => (
                     <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
                   ))}
                 </Select>
               </Field>
-              <Field label="Nº de factura">
+              <Field label={t('facturas_compra:campos.numero_factura')}>
                 <Input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} />
               </Field>
-              <Field label="Fecha">
+              <Field label={t('facturas_compra:campos.fecha')}>
                 <DateInput value={fecha} onChange={setFecha} required />
               </Field>
             </div>
 
-            <Field label="Total factura (con IVA)" className="md:w-1/3">
+            <Field label={t('facturas_compra:campos.total_con_iva')} className="md:w-1/3">
               <Input type="number" step="0.01" placeholder="0.00" value={total} onChange={(e) => setTotal(e.target.value)} />
             </Field>
 
             <div>
-              <SectionLabel>Albaranes a incluir</SectionLabel>
+              <SectionLabel>{t('facturas_compra:albaranes_a_incluir_titulo')}</SectionLabel>
 
               {!proveedorId ? (
-                <p className="text-sm text-gray-400">Elige primero un proveedor para ver sus albaranes.</p>
+                <p className="text-sm text-gray-400">{t('facturas_compra:elige_proveedor_para_albaranes')}</p>
               ) : albaranesDisponibles.length === 0 ? (
-                <p className="text-sm text-gray-400">Este proveedor no tiene albaranes pendientes de facturar.</p>
+                <p className="text-sm text-gray-400">{t('facturas_compra:sin_albaranes_pendientes')}</p>
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {albaranesDisponibles.map((alb) => (
@@ -190,46 +192,46 @@ function FacturasCompra() {
                         checked={albaranesSeleccionados.includes(alb.id)}
                         onChange={() => toggleAlbaran(alb.id)}
                       />
-                      Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
+                      {t('facturas_compra:albaran_checkbox_label', { numero: alb.numero_albaran || t('common:sin_numero'), fecha: formatFecha(alb.fecha) })}
                     </label>
                   ))}
                 </div>
               )}
             </div>
 
-            <Button type="submit" className="self-start">Guardar factura</Button>
+            <Button type="submit" className="self-start">{t('facturas_compra:guardar_factura')}</Button>
           </form>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
       ) : facturas.length === 0 ? (
-        <Card><EmptyState>Todavía no hay facturas registradas.</EmptyState></Card>
+        <Card><EmptyState>{t('facturas_compra:sin_facturas')}</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
           {facturas.map((f) => (
             <Card key={f.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{f.proveedores?.nombre_comercial ?? 'Sin proveedor'}</p>
+                  <p className="font-semibold text-[#1C2938]">{f.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
                   <p className="text-sm text-gray-500">
-                    Factura {f.numero_factura || '(sin número)'} · {formatFecha(f.fecha)}
+                    {t('facturas_compra:factura_linea', { numero: f.numero_factura || t('common:sin_numero'), fecha: formatFecha(f.fecha) })}
                     {f.total != null && ` · ${formatMoneda(f.total, negocio?.moneda)}`}
                     {f.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{f.codigo_interno}</span>}
                   </p>
                 </div>
-                <LinkAction tone="red" onClick={() => handleBorrar(f.id)}>Borrar</LinkAction>
+                <LinkAction tone="red" onClick={() => handleBorrar(f.id)}>{t('facturas_compra:borrar')}</LinkAction>
               </div>
 
               <div className="mt-2 text-sm text-gray-600">
-                <span className="font-medium">Albaranes incluidos: </span>
+                <span className="font-medium">{t('facturas_compra:albaranes_incluidos')}</span>
                 {f.factura_compra_albaran.length === 0
                   ? '—'
                   : f.factura_compra_albaran
-                      .map((rel) => `${rel.albaranes_compra?.numero_albaran || '(sin número)'} (${formatFecha(rel.albaranes_compra?.fecha)})`)
+                      .map((rel) => `${rel.albaranes_compra?.numero_albaran || t('common:sin_numero')} (${formatFecha(rel.albaranes_compra?.fecha)})`)
                       .join(', ')}
               </div>
             </Card>
