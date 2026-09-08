@@ -11,6 +11,12 @@ proveedores, artículos, notas), que permanece en el idioma en que se escribió.
 - Traducción automática de datos ya existentes
 - Idiomas adicionales a los tres acordados
 - Traducción de contenido generado por IA (si en el futuro se usa) — solo interfaz fija
+- **Generación de documentos PDF (facturas, albaranes, etc.)** — decisión tomada
+  durante la Fase 2: los PDFs son documentos oficiales, personalizables por código
+  para cada negocio (marca, tono, disposición propios), no interfaz de aplicación.
+  El sistema de i18n cambia el idioma de la UI; los documentos van aparte, con su
+  propia lógica de personalización por negocio cuando llegue el momento (fuera de
+  este contrato).
 
 ## Decisiones de alcance pendientes (a confirmar antes de implementar)
 
@@ -108,6 +114,18 @@ en español. Los 5 con más volumen: `PedidosDelDia.jsx` (~291 líneas), `Produc
 Cambiar el idioma debe reflejarse de inmediato en toda la interfaz visible sin recargar
 la página, y debe persistir entre sesiones (usuario) sin pisar el idioma por defecto
 del negocio para otros usuarios del mismo negocio.
+
+## Estado de las fases
+
+- **Fase 0:** completa y verificada en los 3 idiomas en navegador.
+- **Fase 1:** completa y verificada en los 3 idiomas en navegador (Firefox y Chrome).
+- **Fase 2 (`AlbaranesVenta`, `FacturasVenta`, `Pagos`/`RegistrarPagoForm`):** código
+  aplicado y comiteado, verificado en flujo real en **español** (producción y
+  albaraneo con normalidad). **Pendiente:** verificación explícita en navegador en
+  **inglés y alemán**, incluido el desbordamiento de layout en alemán (tablas anchas
+  como `AlbaranesVenta.jsx`/`FacturasVenta.jsx`) — mismo criterio de cierre que las
+  fases anteriores (decisión de alcance confirmada #3). La Fase 2 no se da por
+  cerrada del todo hasta completar esta verificación.
 
 ## Limitaciones conocidas (documentadas, no bugs pendientes de esta fase)
 

@@ -1,0 +1,28 @@
+{
+  "titulo": "Sales payments",
+  "tabla": {
+    "fecha": "Date",
+    "cliente": "Customer",
+    "monto_recibido": "Amount received",
+    "metodo": "Method",
+    "aplicado": "Applied",
+    "sin_aplicar": "Unapplied",
+    "acciones": "Actions"
+  },
+  "sin_pagos": "There are no payments registered yet.",
+  "anular": "Cancel",
+  "sin_aplicaciones": "This payment has no application registered.",
+  "tabla_aplicaciones": {
+    "tipo": "Type",
+    "documento": "Document",
+    "monto_aplicado": "Amount applied"
+  },
+  "tipo_factura": "Invoice",
+  "tipo_albaran": "Delivery note",
+  "pago_pagina_count_one": "{{count}} payment · page {{pagina}} of {{total}}",
+  "pago_pagina_count_other": "{{count}} payments · page {{pagina}} of {{total}}",
+  "alertas": {
+    "confirmar_anular": "This action cancels the payment permanently, it cannot be undone. Continue?",
+    "error_anular": "Error cancelling: {{mensaje}}"
+  }
+}

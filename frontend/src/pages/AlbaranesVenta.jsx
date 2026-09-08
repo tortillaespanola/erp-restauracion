@@ -101,7 +101,7 @@ const PAGINA_TAMANO = 20
 function AlbaranesVenta() {
   const [searchParams] = useSearchParams()
   const pedidoIdParam = searchParams.get('pedido_id')
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'ventas_comun', 'albaranes_venta'])
   const FACTURACION_OPCIONES = [
     { value: 'pendiente', label: t('enums:estado_facturacion.pendiente_facturar') },
     { value: 'facturado', label: t('enums:estado_facturacion.facturado') },
@@ -330,14 +330,14 @@ function AlbaranesVenta() {
       .eq('albaran_venta_id', id)
 
     const mensaje = count > 0
-      ? `⚠️ Este albarán está incluido en ${count} factura(s). Al borrarlo, se quitará de esa factura, pero la factura en sí NO se borrará (podría quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?`
-      : '¿Seguro que quieres borrar este albarán? Se revertirá el stock vendido.'
+      ? t('albaranes_venta:alertas.confirmar_borrar_con_facturas', { count })
+      : t('albaranes_venta:alertas.confirmar_borrar_sin_facturas')
 
     if (!confirm(mensaje)) return
 
     const { error } = await supabase.from('albaranes_venta').delete().eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('albaranes_venta:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -359,40 +359,40 @@ function AlbaranesVenta() {
 
   return (
     <div>
-      <PageHeader title="Albaranes de venta" />
+      <PageHeader title={t('albaranes_venta:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">Listado</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
-          <IconPlus size={15} /> Nuevo albarán
+          <IconPlus size={15} /> {t('albaranes_venta:nuevo_albaran')}
         </Button>
       </div>
 
       {/* BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): dos MultiSelect de estado independientes
           (Facturación / Cobro, sección 3 del contrato) -- nunca mezclados en uno solo. */}
       <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
-        <Field label="Cliente" className="w-48">
+        <Field label={t('albaranes_venta:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
-            <option value="">Todos</option>
+            <option value="">{t('common:actions.all')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Facturación" className="w-48">
-          <MultiSelect options={FACTURACION_OPCIONES} selected={filtroFacturacion} onChange={cambiarFiltroFacturacion} placeholder="Todos" />
+        <Field label={t('albaranes_venta:filtros.facturacion')} className="w-48">
+          <MultiSelect options={FACTURACION_OPCIONES} selected={filtroFacturacion} onChange={cambiarFiltroFacturacion} placeholder={t('common:actions.all')} />
         </Field>
-        <Field label="Cobro" className="w-48">
-          <MultiSelect options={COBRO_OPCIONES} selected={filtroCobro} onChange={cambiarFiltroCobro} placeholder="Todos" />
+        <Field label={t('albaranes_venta:filtros.cobro')} className="w-48">
+          <MultiSelect options={COBRO_OPCIONES} selected={filtroCobro} onChange={cambiarFiltroCobro} placeholder={t('common:actions.all')} />
         </Field>
-        <Field label="Desde" className="w-40">
+        <Field label={t('albaranes_venta:filtros.desde')} className="w-40">
           <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
         </Field>
-        <Field label="Hasta" className="w-40">
+        <Field label={t('albaranes_venta:filtros.hasta')} className="w-40">
           <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
         </Field>
         {hayFiltrosActivos && (
-          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>{t('albaranes_venta:filtros.limpiar_filtros')}</Button>
         )}
       </div>
 
@@ -401,7 +401,7 @@ function AlbaranesVenta() {
       ) : albaranes.length === 0 ? (
         <Card>
           <EmptyState>
-            {hayFiltrosActivos ? 'Ningún albarán coincide con los filtros aplicados.' : 'Todavía no hay albaranes de venta registrados.'}
+            {hayFiltrosActivos ? t('albaranes_venta:sin_albaranes_filtro') : t('albaranes_venta:sin_albaranes')}
           </EmptyState>
         </Card>
       ) : (
@@ -413,15 +413,15 @@ function AlbaranesVenta() {
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
-                      Fecha {iconoOrden('fecha')}
+                      {t('albaranes_venta:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Nº Albarán</th>
-                  <th className="px-3 py-2.5 font-medium">Cliente</th>
-                  <th className="px-3 py-2.5 font-medium">Pedido origen</th>
-                  <th className="px-3 py-2.5 font-medium text-center">Facturación</th>
-                  <th className="px-3 py-2.5 font-medium text-center">Cobro</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_venta:tabla.numero')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_venta:tabla.cliente')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_venta:tabla.pedido_origen')}</th>
+                  <th className="px-3 py-2.5 font-medium text-center">{t('albaranes_venta:tabla.facturacion')}</th>
+                  <th className="px-3 py-2.5 font-medium text-center">{t('albaranes_venta:tabla.cobro')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('albaranes_venta:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -475,8 +475,8 @@ function AlbaranesVenta() {
                           </button>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(alb.fecha)}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || '(sin número)'}</td>
-                        <td className="px-3 py-3 font-medium text-[#1C2938]">{alb.clientes?.nombre ?? 'Sin cliente'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('ventas_comun:sin_numero')}</td>
+                        <td className="px-3 py-3 font-medium text-[#1C2938]">{alb.clientes?.nombre ?? t('common:sin_cliente')}</td>
                         <td className="px-3 py-3">
                           {codigosPedido.length === 0 ? (
                             <span className="text-gray-400">—</span>
@@ -484,7 +484,7 @@ function AlbaranesVenta() {
                             <Badge color="blue">{codigosPedido[0]}</Badge>
                           ) : (
                             <span title={codigosPedido.join(', ')}>
-                              <Badge color="blue">Varios</Badge>
+                              <Badge color="blue">{t('albaranes_venta:varios')}</Badge>
                             </span>
                           )}
                         </td>
@@ -499,22 +499,22 @@ function AlbaranesVenta() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" title="Imprimir" onClick={() => imprimirAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-[#0854A0]">
+                            <button type="button" title={t('common:actions.print')} onClick={() => imprimirAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-[#0854A0]">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title="Descargar PDF" onClick={() => descargarAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-[#0854A0]">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={() => descargarAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-[#0854A0]">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
                               <button
-                                type="button" title="Registrar cobro"
+                                type="button" title={t('ventas_comun:tooltip_registrar_cobro')}
                                 onClick={() => setPagoDrawer({ clienteId: alb.cliente_id, clienteNombre: alb.clientes?.nombre, documento: { tipo: 'albaran', id: alb.id, saldo } })}
                                 className="text-gray-400 hover:text-green-700"
                               >
                                 <IconCash size={16} />
                               </button>
                             )}
-                            <button type="button" title="Borrar" onClick={() => handleBorrar(alb.id)} className="text-gray-400 hover:text-red-600">
+                            <button type="button" title={t('albaranes_venta:borrar')} onClick={() => handleBorrar(alb.id)} className="text-gray-400 hover:text-red-600">
                               <IconTrash size={16} />
                             </button>
                           </div>
@@ -531,9 +531,9 @@ function AlbaranesVenta() {
                                 <table className="w-full text-sm">
                                   <thead>
                                     <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
-                                      <th className="py-1.5 font-medium">Producto</th>
-                                      <th className="py-1.5 font-medium">Cantidad</th>
-                                      <th className="py-1.5 font-medium">Precio</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.producto')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.cantidad')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.precio')}</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100">
@@ -563,7 +563,7 @@ function AlbaranesVenta() {
       {!cargando && totalAlbaranes > 0 && (
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-gray-400">
-            {totalAlbaranes} {totalAlbaranes === 1 ? 'albarán' : 'albaranes'} · página {pagina} de {totalPaginas}
+            {t('albaranes_venta:albaran_pagina_count', { count: totalAlbaranes, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -571,7 +571,7 @@ function AlbaranesVenta() {
               disabled={pagina === 1}
               onClick={() => setPagina((p) => p - 1)}
             >
-              Anterior
+              {t('common:actions.previous')}
             </Button>
             {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
               <button
@@ -588,7 +588,7 @@ function AlbaranesVenta() {
               disabled={pagina === totalPaginas}
               onClick={() => setPagina((p) => p + 1)}
             >
-              Siguiente
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
@@ -597,7 +597,7 @@ function AlbaranesVenta() {
       <Drawer
         open={drawerAbierto}
         onClose={() => setDrawerAbierto(false)}
-        title="Nuevo albarán"
+        title={t('albaranes_venta:nuevo_albaran')}
         anchoClase="max-w-2xl"
       >
         {drawerAbierto && (
@@ -612,7 +612,7 @@ function AlbaranesVenta() {
         )}
       </Drawer>
 
-      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title="Registrar pago">
+      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title={t('ventas_comun:registrar_pago')}>
         {pagoDrawer !== null && (
           <RegistrarPagoForm
             clientes={clientesParaDrawer(clientesActivos, pagoDrawer)}

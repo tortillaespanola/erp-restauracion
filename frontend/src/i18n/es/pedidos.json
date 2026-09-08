@@ -1,7 +1,6 @@
 {
   "titulo": "Pedidos",
   "subtitulo": "Registra lo que pide un cliente, lanza la producción que haga falta, y créalo como albarán de venta cuando esté listo.",
-  "listado_titulo": "Listado",
   "nuevo_pedido": "Nuevo pedido",
   "editar_pedido": "Editar pedido",
   "filtros": {
@@ -21,7 +20,6 @@
     "progreso": "Progreso",
     "acciones": "Acciones"
   },
-  "sin_cliente": "Sin cliente",
   "lineas_servidas": "{{servidas}}/{{total}} líneas servidas",
   "aviso_stock_insuficiente_title": "Alguna línea tiene stock insuficiente en la tanda asignada",
   "editar_title": "Editar",

@@ -119,7 +119,7 @@ function agregarPorNivel(resultadosPorPedido, nivel, t) {
       necesidadesAgregadas.set(f.item_id, acc)
 
       const lista = pedidosPorItem.get(f.item_id) ?? []
-      lista.push({ pedidoId: pedido.id, codigo: pedido.codigo_pedido, cliente: pedido.clientes?.nombre ?? t('pedidos_del_dia:sin_cliente'), fechaEntrega: pedido.fecha_entrega_prevista })
+      lista.push({ pedidoId: pedido.id, codigo: pedido.codigo_pedido, cliente: pedido.clientes?.nombre ?? t('common:sin_cliente'), fechaEntrega: pedido.fecha_entrega_prevista })
       pedidosPorItem.set(f.item_id, lista)
     }
   }

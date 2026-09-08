@@ -29,7 +29,6 @@
     "entrega_prevista": "Expected delivery",
     "previsto": "Planned"
   },
-  "sin_cliente": "No customer",
   "sin_fecha": "no date",
   "confirmar_cancelar": "Cancel this open production? Any consumption already registered will be reverted.",
   "confirmar_borrar": "Are you sure you want to delete this production? Its consumption and stock will be reverted.",

@@ -1,0 +1,38 @@
+{
+  "titulo": "Albaranes de venta",
+  "nuevo_albaran": "Nuevo albarán",
+  "filtros": {
+    "cliente": "Cliente",
+    "facturacion": "Facturación",
+    "cobro": "Cobro",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "sin_albaranes_filtro": "Ningún albarán coincide con los filtros aplicados.",
+  "sin_albaranes": "Todavía no hay albaranes de venta registrados.",
+  "tabla": {
+    "fecha": "Fecha",
+    "numero": "Nº Albarán",
+    "cliente": "Cliente",
+    "pedido_origen": "Pedido origen",
+    "facturacion": "Facturación",
+    "cobro": "Cobro",
+    "acciones": "Acciones"
+  },
+  "varios": "Varios",
+  "borrar": "Borrar",
+  "tabla_detalle": {
+    "producto": "Producto",
+    "cantidad": "Cantidad",
+    "precio": "Precio"
+  },
+  "albaran_pagina_count_one": "{{count}} albarán · página {{pagina}} de {{total}}",
+  "albaran_pagina_count_other": "{{count}} albaranes · página {{pagina}} de {{total}}",
+  "alertas": {
+    "confirmar_borrar_con_facturas_one": "⚠️ Este albarán está incluido en {{count}} factura. Al borrarlo, se quitará de esa factura, pero la factura en sí NO se borrará (podría quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?",
+    "confirmar_borrar_con_facturas_other": "⚠️ Este albarán está incluido en {{count}} facturas. Al borrarlo, se quitará de esas facturas, pero las facturas en sí NO se borrarán (podrían quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?",
+    "confirmar_borrar_sin_facturas": "¿Seguro que quieres borrar este albarán? Se revertirá el stock vendido.",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

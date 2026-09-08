@@ -1,0 +1,29 @@
+{
+  "titulo": "Rechnungen Verkauf",
+  "nueva_factura": "Neue Rechnung",
+  "filtros": {
+    "cliente": "Kunde",
+    "estado": "Status",
+    "desde": "Von",
+    "hasta": "Bis",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "sin_facturas_filtro": "Keine Rechnung entspricht den angewendeten Filtern.",
+  "sin_facturas": "Es sind noch keine Rechnungen erfasst.",
+  "tabla": {
+    "fecha": "Datum",
+    "numero": "Rechnungs-Nr.",
+    "cliente": "Kunde",
+    "estado": "Status",
+    "total": "Total",
+    "acciones": "Aktionen"
+  },
+  "anular": "Stornieren",
+  "albaranes_incluidos": "Enthaltene Lieferscheine: ",
+  "factura_pagina_count_one": "{{count}} Rechnung · Seite {{pagina}} von {{total}}",
+  "factura_pagina_count_other": "{{count}} Rechnungen · Seite {{pagina}} von {{total}}",
+  "alertas": {
+    "confirmar_anular": "Diese Aktion storniert die Rechnung dauerhaft, sie kann nicht rückgängig gemacht werden. Fortfahren?",
+    "error_anular": "Fehler beim Stornieren: {{mensaje}}"
+  }
+}

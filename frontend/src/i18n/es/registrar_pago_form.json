@@ -1,0 +1,27 @@
+{
+  "campos": {
+    "cliente": "Cliente",
+    "fecha": "Fecha",
+    "monto_recibido": "Monto recibido ({{moneda}})",
+    "metodo": "Método"
+  },
+  "selecciona_cliente": "Selecciona cliente",
+  "selecciona_metodo": "Selecciona método",
+  "aplicado_recibido": "Aplicado: {{aplicado}} / Recibido: {{recibido}}",
+  "excede_lo_recibido_aviso": " — supera lo recibido, corrige antes de guardar",
+  "notas_opcional": "Notas (opcional)",
+  "documentos_saldo_pendiente_titulo": "Documentos con saldo pendiente",
+  "elige_cliente_primero": "Elige primero un cliente para ver sus documentos pendientes.",
+  "cargando_documentos": "Cargando documentos…",
+  "sin_documentos_pendientes": "Este cliente no tiene documentos con saldo pendiente.",
+  "grupo_facturas": "Facturas",
+  "grupo_albaranes": "Albaranes",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · saldo {{saldo}}",
+  "guardar_pago": "Guardar pago",
+  "alertas": {
+    "error_cargar_documentos": "Error al cargar los documentos pendientes del cliente: {{mensaje}}",
+    "excede_lo_recibido": "No se puede aplicar más monto del recibido.",
+    "error_registrar_pago": "Error al registrar el pago: {{mensaje}}",
+    "error_aplicar_pago": "Error al aplicar el pago a los documentos: {{mensaje}}"
+  }
+}

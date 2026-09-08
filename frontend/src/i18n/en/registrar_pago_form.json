@@ -1,0 +1,27 @@
+{
+  "campos": {
+    "cliente": "Customer",
+    "fecha": "Date",
+    "monto_recibido": "Amount received ({{moneda}})",
+    "metodo": "Method"
+  },
+  "selecciona_cliente": "Select customer",
+  "selecciona_metodo": "Select method",
+  "aplicado_recibido": "Applied: {{aplicado}} / Received: {{recibido}}",
+  "excede_lo_recibido_aviso": " — exceeds the amount received, fix it before saving",
+  "notas_opcional": "Notes (optional)",
+  "documentos_saldo_pendiente_titulo": "Documents with outstanding balance",
+  "elige_cliente_primero": "First choose a customer to see their pending documents.",
+  "cargando_documentos": "Loading documents…",
+  "sin_documentos_pendientes": "This customer has no documents with an outstanding balance.",
+  "grupo_facturas": "Invoices",
+  "grupo_albaranes": "Delivery notes",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · balance {{saldo}}",
+  "guardar_pago": "Save payment",
+  "alertas": {
+    "error_cargar_documentos": "Error loading the customer's pending documents: {{mensaje}}",
+    "excede_lo_recibido": "You cannot apply more than the amount received.",
+    "error_registrar_pago": "Error registering the payment: {{mensaje}}",
+    "error_aplicar_pago": "Error applying the payment to the documents: {{mensaje}}"
+  }
+}

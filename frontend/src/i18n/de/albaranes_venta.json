@@ -1,0 +1,38 @@
+{
+  "titulo": "Lieferscheine Verkauf",
+  "nuevo_albaran": "Neuer Lieferschein",
+  "filtros": {
+    "cliente": "Kunde",
+    "facturacion": "Fakturierung",
+    "cobro": "Zahlungseingang",
+    "desde": "Von",
+    "hasta": "Bis",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "sin_albaranes_filtro": "Kein Lieferschein entspricht den angewendeten Filtern.",
+  "sin_albaranes": "Es sind noch keine Lieferscheine erfasst.",
+  "tabla": {
+    "fecha": "Datum",
+    "numero": "Lieferschein-Nr.",
+    "cliente": "Kunde",
+    "pedido_origen": "Ursprungsbestellung",
+    "facturacion": "Fakturierung",
+    "cobro": "Zahlungseingang",
+    "acciones": "Aktionen"
+  },
+  "varios": "Mehrere",
+  "borrar": "Löschen",
+  "tabla_detalle": {
+    "producto": "Produkt",
+    "cantidad": "Menge",
+    "precio": "Preis"
+  },
+  "albaran_pagina_count_one": "{{count}} Lieferschein · Seite {{pagina}} von {{total}}",
+  "albaran_pagina_count_other": "{{count}} Lieferscheine · Seite {{pagina}} von {{total}}",
+  "alertas": {
+    "confirmar_borrar_con_facturas_one": "⚠️ Dieser Lieferschein ist in {{count}} Rechnung enthalten. Beim Löschen wird er aus dieser Rechnung entfernt, aber die Rechnung selbst wird NICHT gelöscht (ihr Total stimmt danach möglicherweise nicht mehr mit ihren Positionen überein). Bist du sicher, dass du fortfahren willst?",
+    "confirmar_borrar_con_facturas_other": "⚠️ Dieser Lieferschein ist in {{count}} Rechnungen enthalten. Beim Löschen wird er aus diesen Rechnungen entfernt, aber die Rechnungen selbst werden NICHT gelöscht (ihr Total stimmt danach möglicherweise nicht mehr mit ihren Positionen überein). Bist du sicher, dass du fortfahren willst?",
+    "confirmar_borrar_sin_facturas": "Möchtest du diesen Lieferschein wirklich löschen? Der verkaufte Bestand wird rückgängig gemacht.",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

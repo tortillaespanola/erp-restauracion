@@ -1,0 +1,38 @@
+{
+  "titulo": "Sales delivery notes",
+  "nuevo_albaran": "New delivery note",
+  "filtros": {
+    "cliente": "Customer",
+    "facturacion": "Invoicing",
+    "cobro": "Collection",
+    "desde": "From",
+    "hasta": "To",
+    "limpiar_filtros": "Clear filters"
+  },
+  "sin_albaranes_filtro": "No delivery note matches the applied filters.",
+  "sin_albaranes": "There are no sales delivery notes registered yet.",
+  "tabla": {
+    "fecha": "Date",
+    "numero": "Delivery note No.",
+    "cliente": "Customer",
+    "pedido_origen": "Source order",
+    "facturacion": "Invoicing",
+    "cobro": "Collection",
+    "acciones": "Actions"
+  },
+  "varios": "Several",
+  "borrar": "Delete",
+  "tabla_detalle": {
+    "producto": "Product",
+    "cantidad": "Quantity",
+    "precio": "Price"
+  },
+  "albaran_pagina_count_one": "{{count}} delivery note · page {{pagina}} of {{total}}",
+  "albaran_pagina_count_other": "{{count}} delivery notes · page {{pagina}} of {{total}}",
+  "alertas": {
+    "confirmar_borrar_con_facturas_one": "⚠️ This delivery note is included in {{count}} invoice. Deleting it will remove it from that invoice, but the invoice itself will NOT be deleted (it might end up with a total that no longer matches its lines). Are you sure you want to continue?",
+    "confirmar_borrar_con_facturas_other": "⚠️ This delivery note is included in {{count}} invoices. Deleting it will remove it from those invoices, but the invoices themselves will NOT be deleted (they might end up with a total that no longer matches their lines). Are you sure you want to continue?",
+    "confirmar_borrar_sin_facturas": "Are you sure you want to delete this delivery note? The sold stock will be reverted.",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

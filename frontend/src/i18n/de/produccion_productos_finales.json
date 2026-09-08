@@ -29,7 +29,6 @@
     "entrega_prevista": "Voraussichtliche Lieferung",
     "previsto": "Geplant"
   },
-  "sin_cliente": "Kein Kunde",
   "sin_fecha": "kein Datum",
   "confirmar_cancelar": "Diese laufende Produktion abbrechen? Bereits erfasste Verbräuche werden rückgängig gemacht.",
   "confirmar_borrar": "Möchtest du diese Produktion wirklich löschen? Ihr Verbrauch und Bestand werden rückgängig gemacht.",

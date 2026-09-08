@@ -1191,7 +1191,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
                         <tbody className="divide-y divide-gray-100">
                           {detalleReparto.map((d, i) => (
                             <tr key={i}>
-                              <td className="py-1.5 text-gray-500">{d.cliente ?? t('produccion_productos_finales:sin_cliente')}</td>
+                              <td className="py-1.5 text-gray-500">{d.cliente ?? t('common:sin_cliente')}</td>
                               <td className="py-1.5 text-gray-500 font-mono text-xs">{d.codigoPedido ?? `#${d.linea_pedido_id}`}</td>
                               <td className="py-1.5 text-gray-500">{d.fechaEntrega ? formatFecha(d.fechaEntrega) : t('produccion_productos_finales:sin_fecha')}</td>
                               <td className="py-1.5">{d.cantidad_prevista.toFixed(3)} {t('produccion_productos_finales:unidad_corta')}</td>

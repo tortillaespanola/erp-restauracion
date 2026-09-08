@@ -10,6 +10,11 @@ import produccionProductosFinalesEs from './es/produccion_productos_finales.json
 import pedidosDelDiaEs from './es/pedidos_del_dia.json'
 import pedidosEs from './es/pedidos.json'
 import pedidoFormEs from './es/pedido_form.json'
+import ventasComunEs from './es/ventas_comun.json'
+import albaranesVentaEs from './es/albaranes_venta.json'
+import facturasVentaEs from './es/facturas_venta.json'
+import pagosEs from './es/pagos.json'
+import registrarPagoFormEs from './es/registrar_pago_form.json'
 
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
@@ -20,6 +25,11 @@ import produccionProductosFinalesEn from './en/produccion_productos_finales.json
 import pedidosDelDiaEn from './en/pedidos_del_dia.json'
 import pedidosEn from './en/pedidos.json'
 import pedidoFormEn from './en/pedido_form.json'
+import ventasComunEn from './en/ventas_comun.json'
+import albaranesVentaEn from './en/albaranes_venta.json'
+import facturasVentaEn from './en/facturas_venta.json'
+import pagosEn from './en/pagos.json'
+import registrarPagoFormEn from './en/registrar_pago_form.json'
 
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
@@ -30,6 +40,11 @@ import produccionProductosFinalesDe from './de/produccion_productos_finales.json
 import pedidosDelDiaDe from './de/pedidos_del_dia.json'
 import pedidosDe from './de/pedidos.json'
 import pedidoFormDe from './de/pedido_form.json'
+import ventasComunDe from './de/ventas_comun.json'
+import albaranesVentaDe from './de/albaranes_venta.json'
+import facturasVentaDe from './de/facturas_venta.json'
+import pagosDe from './de/pagos.json'
+import registrarPagoFormDe from './de/registrar_pago_form.json'
 
 // CONTRATO_I18N.md, Fase 0. El idioma real por usuario vive en usuarios_negocios.idioma (con
 // fallback a empresa_config.idioma) -- NegocioProvider sincroniza ese valor aquí en cuanto carga
@@ -60,18 +75,24 @@ i18n.use(initReactI18next).init({
       produccion_comun: produccionComunEs, producciones: produccionesEs,
       produccion_productos_finales: produccionProductosFinalesEs,
       pedidos_del_dia: pedidosDelDiaEs, pedidos: pedidosEs, pedido_form: pedidoFormEs,
+      ventas_comun: ventasComunEs, albaranes_venta: albaranesVentaEs,
+      facturas_venta: facturasVentaEs, pagos: pagosEs, registrar_pago_form: registrarPagoFormEs,
     },
     en: {
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
       produccion_comun: produccionComunEn, producciones: produccionesEn,
       produccion_productos_finales: produccionProductosFinalesEn,
       pedidos_del_dia: pedidosDelDiaEn, pedidos: pedidosEn, pedido_form: pedidoFormEn,
+      ventas_comun: ventasComunEn, albaranes_venta: albaranesVentaEn,
+      facturas_venta: facturasVentaEn, pagos: pagosEn, registrar_pago_form: registrarPagoFormEn,
     },
     de: {
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
       produccion_comun: produccionComunDe, producciones: produccionesDe,
       produccion_productos_finales: produccionProductosFinalesDe,
       pedidos_del_dia: pedidosDelDiaDe, pedidos: pedidosDe, pedido_form: pedidoFormDe,
+      ventas_comun: ventasComunDe, albaranes_venta: albaranesVentaDe,
+      facturas_venta: facturasVentaDe, pagos: pagosDe, registrar_pago_form: registrarPagoFormDe,
     },
   },
   lng: idiomaInicial(),
@@ -79,6 +100,7 @@ i18n.use(initReactI18next).init({
   ns: [
     'common', 'enums', 'estados_calculados', 'produccion_comun', 'producciones',
     'produccion_productos_finales', 'pedidos_del_dia', 'pedidos', 'pedido_form',
+    'ventas_comun', 'albaranes_venta', 'facturas_venta', 'pagos', 'registrar_pago_form',
   ],
   defaultNS: 'common',
   interpolation: { escapeValue: false },

@@ -1,7 +1,6 @@
 {
   "titulo": "Orders",
   "subtitulo": "Register what a customer orders, launch the production that's needed, and turn it into a sales delivery note once it's ready.",
-  "listado_titulo": "List",
   "nuevo_pedido": "New order",
   "editar_pedido": "Edit order",
   "filtros": {
@@ -21,7 +20,6 @@
     "progreso": "Progress",
     "acciones": "Actions"
   },
-  "sin_cliente": "No customer",
   "lineas_servidas": "{{servidas}}/{{total}} lines served",
   "aviso_stock_insuficiente_title": "Some line has insufficient stock in the assigned batch",
   "editar_title": "Edit",

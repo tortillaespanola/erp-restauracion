@@ -1,0 +1,29 @@
+{
+  "titulo": "Facturas de venta",
+  "nueva_factura": "Nueva factura",
+  "filtros": {
+    "cliente": "Cliente",
+    "estado": "Estado",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "sin_facturas_filtro": "Ninguna factura coincide con los filtros aplicados.",
+  "sin_facturas": "Todavía no hay facturas registradas.",
+  "tabla": {
+    "fecha": "Fecha",
+    "numero": "Nº Factura",
+    "cliente": "Cliente",
+    "estado": "Estado",
+    "total": "Total",
+    "acciones": "Acciones"
+  },
+  "anular": "Anular",
+  "albaranes_incluidos": "Albaranes incluidos: ",
+  "factura_pagina_count_one": "{{count}} factura · página {{pagina}} de {{total}}",
+  "factura_pagina_count_other": "{{count}} facturas · página {{pagina}} de {{total}}",
+  "alertas": {
+    "confirmar_anular": "Esta acción anula la factura de forma permanente, no se puede deshacer. ¿Continuar?",
+    "error_anular": "Error al anular: {{mensaje}}"
+  }
+}

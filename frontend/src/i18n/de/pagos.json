@@ -1,0 +1,28 @@
+{
+  "titulo": "Verkaufszahlungen",
+  "tabla": {
+    "fecha": "Datum",
+    "cliente": "Kunde",
+    "monto_recibido": "Erhaltener Betrag",
+    "metodo": "Methode",
+    "aplicado": "Zugeordnet",
+    "sin_aplicar": "Nicht zugeordnet",
+    "acciones": "Aktionen"
+  },
+  "sin_pagos": "Es sind noch keine Zahlungen erfasst.",
+  "anular": "Stornieren",
+  "sin_aplicaciones": "Diese Zahlung hat keine erfasste Zuordnung.",
+  "tabla_aplicaciones": {
+    "tipo": "Typ",
+    "documento": "Dokument",
+    "monto_aplicado": "Zugeordneter Betrag"
+  },
+  "tipo_factura": "Rechnung",
+  "tipo_albaran": "Lieferschein",
+  "pago_pagina_count_one": "{{count}} Zahlung · Seite {{pagina}} von {{total}}",
+  "pago_pagina_count_other": "{{count}} Zahlungen · Seite {{pagina}} von {{total}}",
+  "alertas": {
+    "confirmar_anular": "Diese Aktion storniert die Zahlung dauerhaft, sie kann nicht rückgängig gemacht werden. Fortfahren?",
+    "error_anular": "Fehler beim Stornieren: {{mensaje}}"
+  }
+}

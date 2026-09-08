@@ -1,7 +1,6 @@
 {
   "titulo": "Bestellungen",
   "subtitulo": "Erfasse, was ein Kunde bestellt, starte die nötige Produktion und wandle sie in einen Lieferschein um, sobald sie fertig ist.",
-  "listado_titulo": "Liste",
   "nuevo_pedido": "Neue Bestellung",
   "editar_pedido": "Bestellung bearbeiten",
   "filtros": {
@@ -21,7 +20,6 @@
     "progreso": "Fortschritt",
     "acciones": "Aktionen"
   },
-  "sin_cliente": "Kein Kunde",
   "lineas_servidas": "{{servidas}}/{{total}} Zeilen geliefert",
   "aviso_stock_insuficiente_title": "Eine Zeile hat unzureichenden Bestand in der zugewiesenen Charge",
   "editar_title": "Bearbeiten",

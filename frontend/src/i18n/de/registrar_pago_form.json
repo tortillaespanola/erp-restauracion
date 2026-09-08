@@ -1,0 +1,27 @@
+{
+  "campos": {
+    "cliente": "Kunde",
+    "fecha": "Datum",
+    "monto_recibido": "Erhaltener Betrag ({{moneda}})",
+    "metodo": "Methode"
+  },
+  "selecciona_cliente": "Kunde auswählen",
+  "selecciona_metodo": "Methode auswählen",
+  "aplicado_recibido": "Zugeordnet: {{aplicado}} / Erhalten: {{recibido}}",
+  "excede_lo_recibido_aviso": " — übersteigt den erhaltenen Betrag, bitte vor dem Speichern korrigieren",
+  "notas_opcional": "Notizen (optional)",
+  "documentos_saldo_pendiente_titulo": "Dokumente mit offenem Saldo",
+  "elige_cliente_primero": "Wähle zuerst einen Kunden, um seine offenen Dokumente zu sehen.",
+  "cargando_documentos": "Dokumente werden geladen…",
+  "sin_documentos_pendientes": "Dieser Kunde hat keine Dokumente mit offenem Saldo.",
+  "grupo_facturas": "Rechnungen",
+  "grupo_albaranes": "Lieferscheine",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · Saldo {{saldo}}",
+  "guardar_pago": "Zahlung speichern",
+  "alertas": {
+    "error_cargar_documentos": "Fehler beim Laden der offenen Dokumente des Kunden: {{mensaje}}",
+    "excede_lo_recibido": "Es kann nicht mehr als der erhaltene Betrag zugeordnet werden.",
+    "error_registrar_pago": "Fehler beim Erfassen der Zahlung: {{mensaje}}",
+    "error_aplicar_pago": "Fehler beim Zuordnen der Zahlung zu den Dokumenten: {{mensaje}}"
+  }
+}

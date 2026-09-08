@@ -64,7 +64,6 @@
   "tooltip_pedidos_titulo": "Pedidos que generan esta necesidad:",
   "tooltip_pedido_linea": "{{codigo}} · {{cliente}} · entrega {{fecha}}",
   "sin_fecha": "sin fecha",
-  "sin_cliente": "Sin cliente",
   "tooltip_faltantes_linea": "Falta {{falta}} {{unidad}} de {{nombre}} (disponible: {{disponible}} {{unidad}})",
   "nota_en_curso": "{{valor}} {{unidad}} en curso",
   "tooltip_en_curso_titulo": "Producciones en curso:",

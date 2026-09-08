@@ -1,0 +1,29 @@
+{
+  "titulo": "Sales invoices",
+  "nueva_factura": "New invoice",
+  "filtros": {
+    "cliente": "Customer",
+    "estado": "Status",
+    "desde": "From",
+    "hasta": "To",
+    "limpiar_filtros": "Clear filters"
+  },
+  "sin_facturas_filtro": "No invoice matches the applied filters.",
+  "sin_facturas": "There are no invoices registered yet.",
+  "tabla": {
+    "fecha": "Date",
+    "numero": "Invoice No.",
+    "cliente": "Customer",
+    "estado": "Status",
+    "total": "Total",
+    "acciones": "Actions"
+  },
+  "anular": "Cancel",
+  "albaranes_incluidos": "Delivery notes included: ",
+  "factura_pagina_count_one": "{{count}} invoice · page {{pagina}} of {{total}}",
+  "factura_pagina_count_other": "{{count}} invoices · page {{pagina}} of {{total}}",
+  "alertas": {
+    "confirmar_anular": "This action cancels the invoice permanently, it cannot be undone. Continue?",
+    "error_anular": "Error cancelling: {{mensaje}}"
+  }
+}

@@ -64,7 +64,6 @@
   "tooltip_pedidos_titulo": "Orders generating this need:",
   "tooltip_pedido_linea": "{{codigo}} · {{cliente}} · delivery {{fecha}}",
   "sin_fecha": "no date",
-  "sin_cliente": "No customer",
   "tooltip_faltantes_linea": "Missing {{falta}} {{unidad}} of {{nombre}} (available: {{disponible}} {{unidad}})",
   "nota_en_curso": "{{valor}} {{unidad}} in progress",
   "tooltip_en_curso_titulo": "Productions in progress:",

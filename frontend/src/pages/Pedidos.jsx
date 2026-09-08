@@ -330,7 +330,7 @@ function Pedidos() {
       <PageHeader title={t('pedidos:titulo')} subtitle={t('pedidos:subtitulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">{t('pedidos:listado_titulo')}</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setModoDrawer('nuevo')}>
           <IconPlus size={15} /> {t('pedidos:nuevo_pedido')}
         </Button>
@@ -413,7 +413,7 @@ function Pedidos() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3">
-                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? t('pedidos:sin_cliente')}</div>
+                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? t('common:sin_cliente')}</div>
                           {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">

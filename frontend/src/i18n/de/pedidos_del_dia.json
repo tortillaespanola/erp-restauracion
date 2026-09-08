@@ -64,7 +64,6 @@
   "tooltip_pedidos_titulo": "Bestellungen, die diesen Bedarf erzeugen:",
   "tooltip_pedido_linea": "{{codigo}} · {{cliente}} · Lieferung {{fecha}}",
   "sin_fecha": "kein Datum",
-  "sin_cliente": "Kein Kunde",
   "tooltip_faltantes_linea": "Es fehlen {{falta}} {{unidad}} von {{nombre}} (verfügbar: {{disponible}} {{unidad}})",
   "nota_en_curso": "{{valor}} {{unidad}} in Bearbeitung",
   "tooltip_en_curso_titulo": "Laufende Produktionen:",

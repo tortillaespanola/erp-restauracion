@@ -20,7 +20,7 @@ function claveDoc(d) {
 // rápido de Facturas/Albaranes (Bloque 6, con clienteIdInicial + documentoPreseleccionado ya
 // resueltos por el llamador).
 export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, documentoPreseleccionado = null, onGuardado, onCancelar }) {
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'registrar_pago_form'])
   const { negocio } = useNegocio()
   const METODOS = METODOS_PAGO.map((value) => ({ value, label: t(`enums:metodo_pago.${value}`) }))
   const [clienteId, setClienteId] = useState(clienteIdInicial != null ? String(clienteIdInicial) : '')
@@ -52,7 +52,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
         setDocumentos(docs)
       } catch (error) {
         console.error(error)
-        alert('Error al cargar los documentos pendientes del cliente: ' + error.message)
+        alert(t('registrar_pago_form:alertas.error_cargar_documentos', { mensaje: error.message }))
         setDocumentos([])
       }
       setAplicaciones({})
@@ -155,7 +155,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
   async function handleSubmit(e) {
     e.preventDefault()
     if (excedeLoRecibido) {
-      alert('No se puede aplicar más monto del recibido.')
+      alert(t('registrar_pago_form:alertas.excede_lo_recibido'))
       return
     }
 
@@ -174,7 +174,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
       .single()
 
     if (errorPago) {
-      alert('Error al registrar el pago: ' + errorPago.message)
+      alert(t('registrar_pago_form:alertas.error_registrar_pago', { mensaje: errorPago.message }))
       setGuardando(false)
       return
     }
@@ -193,7 +193,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
       const { error: errorAplicacion } = await supabase.from('pago_aplicacion').insert(filasAplicacion)
       if (errorAplicacion) {
         await supabase.from('pagos').delete().eq('id', pagoCreado.id)
-        alert('Error al aplicar el pago a los documentos: ' + errorAplicacion.message)
+        alert(t('registrar_pago_form:alertas.error_aplicar_pago', { mensaje: errorAplicacion.message }))
         setGuardando(false)
         return
       }
@@ -206,23 +206,23 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Cliente">
+        <Field label={t('registrar_pago_form:campos.cliente')}>
           <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
-            <option value="">Selecciona cliente</option>
+            <option value="">{t('registrar_pago_form:selecciona_cliente')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Fecha">
+        <Field label={t('registrar_pago_form:campos.fecha')}>
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
-        <Field label={`Monto recibido (${negocio?.moneda || 'CHF'})`}>
+        <Field label={t('registrar_pago_form:campos.monto_recibido', { moneda: negocio?.moneda || 'CHF' })}>
           <Input type="number" step="0.01" min="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} required />
         </Field>
-        <Field label="Método">
+        <Field label={t('registrar_pago_form:campos.metodo')}>
           <Select value={metodo} onChange={(e) => setMetodo(e.target.value)} required>
-            <option value="">Selecciona método</option>
+            <option value="">{t('registrar_pago_form:selecciona_metodo')}</option>
             {METODOS.map((m) => (
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
@@ -231,23 +231,23 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
       </div>
 
       <div className={`text-sm font-medium ${colorIndicador}`}>
-        Aplicado: {formatMoneda(totalAplicado, negocio?.moneda)} / Recibido: {formatMoneda(montoRecibido, negocio?.moneda)}
-        {excedeLoRecibido && ' — supera lo recibido, corrige antes de guardar'}
+        {t('registrar_pago_form:aplicado_recibido', { aplicado: formatMoneda(totalAplicado, negocio?.moneda), recibido: formatMoneda(montoRecibido, negocio?.moneda) })}
+        {excedeLoRecibido && t('registrar_pago_form:excede_lo_recibido_aviso')}
       </div>
 
-      <Field label="Notas (opcional)">
+      <Field label={t('registrar_pago_form:notas_opcional')}>
         <Textarea value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} />
       </Field>
 
       <div>
-        <SectionLabel>Documentos con saldo pendiente</SectionLabel>
+        <SectionLabel>{t('registrar_pago_form:documentos_saldo_pendiente_titulo')}</SectionLabel>
 
         {!clienteId ? (
-          <p className="text-sm text-gray-400">Elige primero un cliente para ver sus documentos pendientes.</p>
+          <p className="text-sm text-gray-400">{t('registrar_pago_form:elige_cliente_primero')}</p>
         ) : cargandoDocumentos ? (
-          <p className="text-sm text-gray-400">Cargando documentos…</p>
+          <p className="text-sm text-gray-400">{t('registrar_pago_form:cargando_documentos')}</p>
         ) : documentos.length === 0 ? (
-          <p className="text-sm text-gray-400">Este cliente no tiene documentos con saldo pendiente.</p>
+          <p className="text-sm text-gray-400">{t('registrar_pago_form:sin_documentos_pendientes')}</p>
         ) : (
           // Ajuste tras pruebas reales (sección 5 del contrato, actualizada): una lista plana
           // mezclando facturas y albaranes hacía que una factura real pasara desapercibida entre
@@ -257,8 +257,8 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
           // renderiza, no qué ni en qué orden se procesa.
           <div className="flex flex-col gap-3">
             {[
-              { tipo: 'factura', titulo: 'Facturas' },
-              { tipo: 'albaran', titulo: 'Albaranes' },
+              { tipo: 'factura', titulo: t('registrar_pago_form:grupo_facturas') },
+              { tipo: 'albaran', titulo: t('registrar_pago_form:grupo_albaranes') },
             ].map(({ tipo, titulo }) => {
               const docsDelGrupo = documentos.filter((d) => d.tipo === tipo)
               if (docsDelGrupo.length === 0) return null
@@ -273,7 +273,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
                         <label key={key} className="flex items-center gap-2 text-sm">
                           <input type="checkbox" checked={!!apl?.checked} onChange={() => toggleDocumento(d)} />
                           <span className="flex-1">
-                            {d.codigo} · {formatFecha(d.fecha)} · saldo {formatMoneda(d.saldo, negocio?.moneda)}
+                            {t('registrar_pago_form:doc_saldo_linea', { codigo: d.codigo, fecha: formatFecha(d.fecha), saldo: formatMoneda(d.saldo, negocio?.moneda) })}
                           </span>
                           <Input
                             type="number" step="0.01" min="0"
@@ -295,9 +295,9 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
 
       <div className="flex gap-2 mt-1">
         <Button type="submit" disabled={guardando || excedeLoRecibido} className="flex-1">
-          {guardando ? 'Guardando…' : 'Guardar pago'}
+          {guardando ? t('common:actions.saving') : t('registrar_pago_form:guardar_pago')}
         </Button>
-        <Button type="button" variant="secondary" onClick={onCancelar}>Cancelar</Button>
+        <Button type="button" variant="secondary" onClick={onCancelar}>{t('common:actions.cancel')}</Button>
       </div>
     </form>
   )

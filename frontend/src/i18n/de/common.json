@@ -61,6 +61,10 @@
     "loading": "Lädt...",
     "saving": "Speichert...",
     "all": "Alle",
-    "default_user": "Benutzer"
-  }
+    "default_user": "Benutzer",
+    "print": "Drucken",
+    "download_pdf": "PDF herunterladen"
+  },
+  "listado_titulo": "Liste",
+  "sin_cliente": "Kein Kunde"
 }

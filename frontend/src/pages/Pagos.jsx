@@ -24,15 +24,15 @@ const METODO_BADGE = {
 
 // Detalle de una aplicación (fila expandida): resuelve a qué documento apunta -- factura o
 // albarán, nunca ambos (CHECK de BD, Bloque 2) -- sin query aparte, ya viene embebido.
-function documentoDeAplicacion(pa) {
+function documentoDeAplicacion(pa, t) {
   if (pa.factura_venta_id != null) {
-    return { tipo: 'Factura', codigo: pa.facturas_venta?.numero_factura || `#${pa.factura_venta_id}` }
+    return { tipo: t('pagos:tipo_factura'), codigo: pa.facturas_venta?.numero_factura || `#${pa.factura_venta_id}` }
   }
-  return { tipo: 'Albarán', codigo: pa.albaranes_venta?.numero_albaran || `#${pa.albaran_venta_id}` }
+  return { tipo: t('pagos:tipo_albaran'), codigo: pa.albaranes_venta?.numero_albaran || `#${pa.albaran_venta_id}` }
 }
 
 function Pagos() {
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'ventas_comun', 'pagos'])
   const { negocio } = useNegocio()
   const [pagos, setPagos] = useState([])
   const [clientes, setClientes] = useState([])
@@ -76,11 +76,11 @@ function Pagos() {
   // saldosVenta.js ya excluye pago_aplicacion cuyo pago.anulada sea true -- ningún cambio de
   // lógica de saldo hace falta aquí, ya estaba cubierto desde el Bloque 3.
   async function handleAnular(id) {
-    if (!confirm('Esta acción anula el pago de forma permanente, no se puede deshacer. ¿Continuar?')) return
+    if (!confirm(t('pagos:alertas.confirmar_anular'))) return
 
     const { error } = await supabase.from('pagos').update({ anulada: true }).eq('id', id)
     if (error) {
-      alert('Error al anular: ' + error.message)
+      alert(t('pagos:alertas.error_anular', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -134,19 +134,19 @@ function Pagos() {
 
   return (
     <div>
-      <PageHeader title="Pagos de venta" />
+      <PageHeader title={t('pagos:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">Listado</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
-          <IconPlus size={15} /> Registrar pago
+          <IconPlus size={15} /> {t('ventas_comun:registrar_pago')}
         </Button>
       </div>
 
       {cargando ? (
         <LoadingState />
       ) : pagos.length === 0 ? (
-        <Card><EmptyState>Todavía no hay pagos registrados.</EmptyState></Card>
+        <Card><EmptyState>{t('pagos:sin_pagos')}</EmptyState></Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
@@ -156,15 +156,15 @@ function Pagos() {
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
-                      Fecha {iconoOrden('fecha')}
+                      {t('pagos:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Cliente</th>
-                  <th className="px-3 py-2.5 font-medium">Monto recibido</th>
-                  <th className="px-3 py-2.5 font-medium">Método</th>
-                  <th className="px-3 py-2.5 font-medium">Aplicado</th>
-                  <th className="px-3 py-2.5 font-medium">Sin aplicar</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.cliente')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.monto_recibido')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.metodo')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.aplicado')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.sin_aplicar')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('pagos:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,8 +187,8 @@ function Pagos() {
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3 font-medium text-[#1C2938]">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {p.clientes?.nombre ?? 'Sin cliente'}
-                            {p.anulada && <Badge color="red">Anulada</Badge>}
+                            {p.clientes?.nombre ?? t('common:sin_cliente')}
+                            {p.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
                           </div>
                         </td>
                         <td className={`px-3 py-3 whitespace-nowrap text-gray-600 ${p.anulada ? 'line-through' : ''}`}>{formatMoneda(p.monto, negocio?.moneda)}</td>
@@ -205,7 +205,7 @@ function Pagos() {
                         </td>
                         <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {!p.anulada && (
-                            <LinkAction tone="red" onClick={() => handleAnular(p.id)}>Anular</LinkAction>
+                            <LinkAction tone="red" onClick={() => handleAnular(p.id)}>{t('pagos:anular')}</LinkAction>
                           )}
                         </td>
                       </tr>
@@ -216,19 +216,19 @@ function Pagos() {
                               <div className="bg-gray-50/60 px-3 py-3">
                                 {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
                                 {aplicaciones.length === 0 ? (
-                                  <p className="text-sm text-gray-400">Este pago no tiene ninguna aplicación registrada.</p>
+                                  <p className="text-sm text-gray-400">{t('pagos:sin_aplicaciones')}</p>
                                 ) : (
                                   <table className="w-full text-sm">
                                     <thead>
                                       <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
-                                        <th className="py-1.5 font-medium">Tipo</th>
-                                        <th className="py-1.5 font-medium">Documento</th>
-                                        <th className="py-1.5 font-medium">Monto aplicado</th>
+                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.tipo')}</th>
+                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.documento')}</th>
+                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.monto_aplicado')}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
                                       {aplicaciones.map((pa) => {
-                                        const { tipo, codigo } = documentoDeAplicacion(pa)
+                                        const { tipo, codigo } = documentoDeAplicacion(pa, t)
                                         return (
                                           <tr key={pa.id}>
                                             <td className="py-1.5">{tipo}</td>
@@ -257,7 +257,7 @@ function Pagos() {
       {!cargando && totalPagos > 0 && (
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-gray-400">
-            {totalPagos} pago{totalPagos === 1 ? '' : 's'} · página {pagina} de {totalPaginas}
+            {t('pagos:pago_pagina_count', { count: totalPagos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -265,7 +265,7 @@ function Pagos() {
               disabled={pagina === 1}
               onClick={() => setPagina((p) => p - 1)}
             >
-              Anterior
+              {t('common:actions.previous')}
             </Button>
             {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
               <button
@@ -282,13 +282,13 @@ function Pagos() {
               disabled={pagina === totalPaginas}
               onClick={() => setPagina((p) => p + 1)}
             >
-              Siguiente
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
       )}
 
-      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title="Registrar pago">
+      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title={t('ventas_comun:registrar_pago')}>
         {drawerAbierto && (
           <RegistrarPagoForm
             clientes={clientes}

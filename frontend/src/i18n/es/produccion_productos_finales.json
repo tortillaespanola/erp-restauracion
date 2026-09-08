@@ -29,7 +29,6 @@
     "entrega_prevista": "Entrega prevista",
     "previsto": "Previsto"
   },
-  "sin_cliente": "Sin cliente",
   "sin_fecha": "sin fecha",
   "confirmar_cancelar": "¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados.",
   "confirmar_borrar": "¿Seguro que quieres borrar esta producción? Se revertirán sus consumos y su stock.",

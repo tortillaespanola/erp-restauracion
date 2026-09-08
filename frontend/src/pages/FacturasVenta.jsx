@@ -25,7 +25,7 @@ const PAGINA_TAMANO = 20
 const ESTADOS_FILTRO_FACTURA = ['pendiente', 'parcial', 'pagada', 'anulada']
 
 function FacturasVenta() {
-  const { t } = useTranslation(['common', 'enums'])
+  const { t } = useTranslation(['common', 'enums', 'ventas_comun', 'facturas_venta'])
   const { negocio } = useNegocio()
   const ESTADO_FILTRO_OPCIONES = ESTADOS_FILTRO_FACTURA.map((value) => ({ value, label: t(`enums:estado_pago.${value}`) }))
   const [facturas, setFacturas] = useState([])
@@ -218,11 +218,11 @@ function FacturasVenta() {
   // "quemado" para siempre y factura_venta_albaran conserva sus filas (los albaranes vuelven a
   // estar disponibles, ver el filtro de cargarAlbaranesDelCliente más arriba). Sin reactivar.
   async function handleAnular(id) {
-    if (!confirm('Esta acción anula la factura de forma permanente, no se puede deshacer. ¿Continuar?')) return
+    if (!confirm(t('facturas_venta:alertas.confirmar_anular'))) return
 
     const { error } = await supabase.from('facturas_venta').update({ anulada: true }).eq('id', id)
     if (error) {
-      alert('Error al anular: ' + error.message)
+      alert(t('facturas_venta:alertas.error_anular', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -264,37 +264,37 @@ function FacturasVenta() {
 
   return (
     <div>
-      <PageHeader title="Facturas de venta" />
+      <PageHeader title={t('facturas_venta:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">Listado</h2>
+        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
-          <IconPlus size={15} /> Nueva factura
+          <IconPlus size={15} /> {t('facturas_venta:nueva_factura')}
         </Button>
       </div>
 
       {/* BLOQUE 3 (CONTRATO_FILTROS_VENTA.md): barra de filtros server-side -- Cliente, Estado
           (contra facturas_venta_con_saldo, ver cargarDatos), rango de fechas. */}
       <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
-        <Field label="Cliente" className="w-48">
+        <Field label={t('facturas_venta:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
-            <option value="">Todos</option>
+            <option value="">{t('common:actions.all')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Estado" className="w-56">
-          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder="Todos" />
+        <Field label={t('facturas_venta:filtros.estado')} className="w-56">
+          <MultiSelect options={ESTADO_FILTRO_OPCIONES} selected={filtroEstados} onChange={cambiarFiltroEstados} placeholder={t('common:actions.all')} />
         </Field>
-        <Field label="Desde" className="w-40">
+        <Field label={t('facturas_venta:filtros.desde')} className="w-40">
           <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
         </Field>
-        <Field label="Hasta" className="w-40">
+        <Field label={t('facturas_venta:filtros.hasta')} className="w-40">
           <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
         </Field>
         {hayFiltrosActivos && (
-          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>Limpiar filtros</Button>
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>{t('facturas_venta:filtros.limpiar_filtros')}</Button>
         )}
       </div>
 
@@ -303,7 +303,7 @@ function FacturasVenta() {
       ) : facturas.length === 0 ? (
         <Card>
           <EmptyState>
-            {hayFiltrosActivos ? 'Ninguna factura coincide con los filtros aplicados.' : 'Todavía no hay facturas registradas.'}
+            {hayFiltrosActivos ? t('facturas_venta:sin_facturas_filtro') : t('facturas_venta:sin_facturas')}
           </EmptyState>
         </Card>
       ) : (
@@ -315,14 +315,14 @@ function FacturasVenta() {
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
-                      Fecha {iconoOrden('fecha')}
+                      {t('facturas_venta:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Nº Factura</th>
-                  <th className="px-3 py-2.5 font-medium">Cliente</th>
-                  <th className="px-3 py-2.5 font-medium">Estado</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Total</th>
-                  <th className="px-3 py-2.5 font-medium text-right">Acciones</th>
+                  <th className="px-3 py-2.5 font-medium">{t('facturas_venta:tabla.numero')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('facturas_venta:tabla.cliente')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('facturas_venta:tabla.estado')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('facturas_venta:tabla.total')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('facturas_venta:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -348,9 +348,9 @@ function FacturasVenta() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(f.fecha)}</td>
                         <td className={`px-3 py-3 whitespace-nowrap text-[#1C2938] ${f.anulada ? 'line-through' : ''}`}>
-                          {f.numero_factura || '(sin número)'}
+                          {f.numero_factura || t('ventas_comun:sin_numero')}
                         </td>
-                        <td className="px-3 py-3">{f.clientes?.nombre ?? 'Sin cliente'}</td>
+                        <td className="px-3 py-3">{f.clientes?.nombre ?? t('common:sin_cliente')}</td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {f.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
@@ -362,15 +362,15 @@ function FacturasVenta() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" title="Imprimir" onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
+                            <button type="button" title={t('common:actions.print')} onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title="Descargar PDF" onClick={async () => descargarPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-[#0854A0]">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-[#0854A0]">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
                               <button
-                                type="button" title="Registrar cobro"
+                                type="button" title={t('ventas_comun:tooltip_registrar_cobro')}
                                 onClick={() => setPagoDrawer({ clienteId: f.cliente_id, clienteNombre: f.clientes?.nombre, documento: { tipo: 'factura', id: f.id, saldo } })}
                                 className="text-gray-400 hover:text-green-700"
                               >
@@ -378,7 +378,7 @@ function FacturasVenta() {
                               </button>
                             )}
                             {!f.anulada && (
-                              <button type="button" title="Anular" onClick={() => handleAnular(f.id)} className="text-gray-400 hover:text-red-600">
+                              <button type="button" title={t('facturas_venta:anular')} onClick={() => handleAnular(f.id)} className="text-gray-400 hover:text-red-600">
                                 <IconBan size={16} />
                               </button>
                             )}
@@ -392,11 +392,11 @@ function FacturasVenta() {
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
                               <div className="bg-gray-50/60 px-3 py-3 text-sm text-gray-600">
-                                <span className="font-medium">Albaranes incluidos: </span>
+                                <span className="font-medium">{t('facturas_venta:albaranes_incluidos')}</span>
                                 {f.factura_venta_albaran.length === 0
                                   ? '—'
                                   : f.factura_venta_albaran
-                                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || '(sin número)'} (${formatFecha(rel.albaranes_venta?.fecha)})`)
+                                      .map((rel) => `${rel.albaranes_venta?.numero_albaran || t('ventas_comun:sin_numero')} (${formatFecha(rel.albaranes_venta?.fecha)})`)
                                       .join(', ')}
                               </div>
                             </div>
@@ -415,7 +415,7 @@ function FacturasVenta() {
       {!cargando && totalFacturas > 0 && (
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-gray-400">
-            {totalFacturas} factura{totalFacturas === 1 ? '' : 's'} · página {pagina} de {totalPaginas}
+            {t('facturas_venta:factura_pagina_count', { count: totalFacturas, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -423,7 +423,7 @@ function FacturasVenta() {
               disabled={pagina === 1}
               onClick={() => setPagina((p) => p - 1)}
             >
-              Anterior
+              {t('common:actions.previous')}
             </Button>
             {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
               <button
@@ -440,13 +440,13 @@ function FacturasVenta() {
               disabled={pagina === totalPaginas}
               onClick={() => setPagina((p) => p + 1)}
             >
-              Siguiente
+              {t('common:actions.next')}
             </Button>
           </div>
         </div>
       )}
 
-      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title="Registrar pago">
+      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title={t('ventas_comun:registrar_pago')}>
         {pagoDrawer !== null && (
           <RegistrarPagoForm
             clientes={clientesParaDrawer(clientesActivos, pagoDrawer)}
@@ -465,7 +465,7 @@ function FacturasVenta() {
           el LARGO de la lista de albaranes (hasta 8 en un caso real visto), no su ancho -- ya
           resuelto por el scroll interno del propio Drawer. max-w-lg da algo más de aire que el
           default sin dejar espacio en blanco de sobra. */}
-      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title="Nueva factura" anchoClase="max-w-lg">
+      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title={t('facturas_venta:nueva_factura')} anchoClase="max-w-lg">
         {drawerAbierto && (
           <FacturaVentaForm
             clientes={clientes}
