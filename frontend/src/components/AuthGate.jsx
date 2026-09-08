@@ -49,7 +49,7 @@ function AuthGate({ children }) {
             <div className="w-11 h-11 rounded-lg bg-[#0854A0] flex items-center justify-center">
               <IconToolsKitchen2 size={24} stroke={1.75} className="text-white" />
             </div>
-            <h1 className="text-lg font-semibold text-[#1C2938]">ERP Restauración</h1>
+            <h1 className="text-lg font-semibold text-[#1C2938]">FlowBase</h1>
             <p className="text-sm text-gray-400">Inicia sesión para continuar</p>
           </div>
           <div>

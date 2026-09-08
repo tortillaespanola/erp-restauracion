@@ -83,7 +83,7 @@ function Layout({ children, session, onLogout }) {
   const location = useLocation()
   const { t, i18n } = useTranslation('common')
   const claveRuta = RUTA_A_CLAVE[location.pathname]
-  const titulo = claveRuta ? t(`titles.${claveRuta}.title`) : 'ERP Restauración'
+  const titulo = claveRuta ? t(`titles.${claveRuta}.title`) : 'FlowBase'
   const breadcrumb = claveRuta ? t(`titles.${claveRuta}.breadcrumb`) : ''
 
   return (
@@ -93,7 +93,7 @@ function Layout({ children, session, onLogout }) {
           <div className="w-7 h-7 rounded bg-white/15 flex items-center justify-center shrink-0">
             <IconToolsKitchen2 size={18} stroke={1.75} />
           </div>
-          <span className="font-semibold text-sm tracking-wide">ERP RESTAURACIÓN</span>
+          <span className="font-semibold text-sm tracking-wide">FLOWBASE</span>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 text-sm">
