@@ -24,6 +24,13 @@ import inventarioEs from './es/inventario.json'
 import ajustesStockEs from './es/ajustes_stock.json'
 import ajusteStockFormEs from './es/ajuste_stock_form.json'
 import configuracionEs from './es/configuracion.json'
+import contactosComunEs from './es/contactos_comun.json'
+import proveedoresEs from './es/proveedores.json'
+import clientesEs from './es/clientes.json'
+import ingredientesEs from './es/ingredientes.json'
+import recetasComunEs from './es/recetas_comun.json'
+import semielaboradosEs from './es/semielaborados.json'
+import productosFinalesEs from './es/productos_finales.json'
 
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
@@ -48,6 +55,13 @@ import inventarioEn from './en/inventario.json'
 import ajustesStockEn from './en/ajustes_stock.json'
 import ajusteStockFormEn from './en/ajuste_stock_form.json'
 import configuracionEn from './en/configuracion.json'
+import contactosComunEn from './en/contactos_comun.json'
+import proveedoresEn from './en/proveedores.json'
+import clientesEn from './en/clientes.json'
+import ingredientesEn from './en/ingredientes.json'
+import recetasComunEn from './en/recetas_comun.json'
+import semielaboradosEn from './en/semielaborados.json'
+import productosFinalesEn from './en/productos_finales.json'
 
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
@@ -72,6 +86,13 @@ import inventarioDe from './de/inventario.json'
 import ajustesStockDe from './de/ajustes_stock.json'
 import ajusteStockFormDe from './de/ajuste_stock_form.json'
 import configuracionDe from './de/configuracion.json'
+import contactosComunDe from './de/contactos_comun.json'
+import proveedoresDe from './de/proveedores.json'
+import clientesDe from './de/clientes.json'
+import ingredientesDe from './de/ingredientes.json'
+import recetasComunDe from './de/recetas_comun.json'
+import semielaboradosDe from './de/semielaborados.json'
+import productosFinalesDe from './de/productos_finales.json'
 
 // CONTRATO_I18N.md, Fase 0. El idioma real por usuario vive en usuarios_negocios.idioma (con
 // fallback a empresa_config.idioma) -- NegocioProvider sincroniza ese valor aquí en cuanto carga
@@ -108,6 +129,9 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraEs, facturas_compra: facturasCompraEs,
       articulos: articulosEs, inventario: inventarioEs, ajustes_stock: ajustesStockEs,
       ajuste_stock_form: ajusteStockFormEs, configuracion: configuracionEs,
+      contactos_comun: contactosComunEs, proveedores: proveedoresEs, clientes: clientesEs,
+      ingredientes: ingredientesEs, recetas_comun: recetasComunEs,
+      semielaborados: semielaboradosEs, productos_finales: productosFinalesEs,
     },
     en: {
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
@@ -120,6 +144,9 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraEn, facturas_compra: facturasCompraEn,
       articulos: articulosEn, inventario: inventarioEn, ajustes_stock: ajustesStockEn,
       ajuste_stock_form: ajusteStockFormEn, configuracion: configuracionEn,
+      contactos_comun: contactosComunEn, proveedores: proveedoresEn, clientes: clientesEn,
+      ingredientes: ingredientesEn, recetas_comun: recetasComunEn,
+      semielaborados: semielaboradosEn, productos_finales: productosFinalesEn,
     },
     de: {
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
@@ -132,6 +159,9 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraDe, facturas_compra: facturasCompraDe,
       articulos: articulosDe, inventario: inventarioDe, ajustes_stock: ajustesStockDe,
       ajuste_stock_form: ajusteStockFormDe, configuracion: configuracionDe,
+      contactos_comun: contactosComunDe, proveedores: proveedoresDe, clientes: clientesDe,
+      ingredientes: ingredientesDe, recetas_comun: recetasComunDe,
+      semielaborados: semielaboradosDe, productos_finales: productosFinalesDe,
     },
   },
   lng: idiomaInicial(),
@@ -142,6 +172,8 @@ i18n.use(initReactI18next).init({
     'ventas_comun', 'albaranes_venta', 'facturas_venta', 'pagos', 'registrar_pago_form',
     'compras_comun', 'albaranes_compra', 'pedidos_compra', 'facturas_compra',
     'articulos', 'inventario', 'ajustes_stock', 'ajuste_stock_form', 'configuracion',
+    'contactos_comun', 'proveedores', 'clientes', 'ingredientes', 'recetas_comun',
+    'semielaborados', 'productos_finales',
   ],
   defaultNS: 'common',
   interpolation: { escapeValue: false },

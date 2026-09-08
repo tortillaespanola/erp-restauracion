@@ -1,0 +1,34 @@
+{
+  "tipo_articulo": "Artículo de compra",
+  "tipo_ingrediente": "Ingrediente (varias variantes)",
+  "selecciona_articulo": "Selecciona artículo",
+  "selecciona_ingrediente": "Selecciona ingrediente",
+  "selecciona_semielaborado": "Selecciona semielaborado",
+  "anadir_ingrediente": "Añadir ingrediente",
+  "receta_titulo": "Receta (ingredientes)",
+  "editar": "Editar",
+  "borrar": "Borrar",
+  "campos": {
+    "nombre": "Nombre",
+    "codigo_corto": "Código corto",
+    "notas_opcional": "Notas (opcional)",
+    "dias_caducidad_opcional": "Días de caducidad por defecto (opcional)"
+  },
+  "tabla": {
+    "ingrediente": "Ingrediente",
+    "tipo": "Tipo",
+    "cantidad": "Cantidad"
+  },
+  "tipo_label": {
+    "articulo": "Artículo",
+    "ingrediente": "Ingrediente",
+    "semielaborado": "Semielaborado"
+  },
+  "alertas": {
+    "sin_ingredientes_receta": "Añade al menos un ingrediente a la receta",
+    "error_actualizar": "Error al actualizar: {{mensaje}}",
+    "error_actualizar_receta": "Error al actualizar la receta: {{mensaje}}",
+    "error_guardar_receta": "Error al guardar la receta: {{mensaje}}",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "tipo_articulo": "Einkaufsartikel",
+  "tipo_ingrediente": "Zutat (mehrere Varianten)",
+  "selecciona_articulo": "Artikel auswählen",
+  "selecciona_ingrediente": "Zutat auswählen",
+  "selecciona_semielaborado": "Halbfertigprodukt auswählen",
+  "anadir_ingrediente": "Zutat hinzufügen",
+  "receta_titulo": "Rezept (Zutaten)",
+  "editar": "Bearbeiten",
+  "borrar": "Löschen",
+  "campos": {
+    "nombre": "Name",
+    "codigo_corto": "Kurzcode",
+    "notas_opcional": "Notizen (optional)",
+    "dias_caducidad_opcional": "Standard-Verfallstage (optional)"
+  },
+  "tabla": {
+    "ingrediente": "Zutat",
+    "tipo": "Typ",
+    "cantidad": "Menge"
+  },
+  "tipo_label": {
+    "articulo": "Artikel",
+    "ingrediente": "Zutat",
+    "semielaborado": "Halbfertigprodukt"
+  },
+  "alertas": {
+    "sin_ingredientes_receta": "Füge mindestens eine Zutat zum Rezept hinzu",
+    "error_actualizar": "Fehler beim Aktualisieren: {{mensaje}}",
+    "error_actualizar_receta": "Fehler beim Aktualisieren des Rezepts: {{mensaje}}",
+    "error_guardar_receta": "Fehler beim Speichern des Rezepts: {{mensaje}}",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

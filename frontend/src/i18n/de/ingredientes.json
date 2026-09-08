@@ -1,0 +1,31 @@
+{
+  "titulo": "Zutaten",
+  "subtitulo": "Gruppiert austauschbare Einkaufsartikel (z. B. verschiedene Varianten desselben Produkts), damit Rezepte die Zutat statt eines bestimmten Artikels referenzieren können.",
+  "card_nuevo_titulo": "Neue Zutat",
+  "card_editar_titulo": "Zutat bearbeiten",
+  "campos": {
+    "nombre": "Name",
+    "categoria": "Kategorie",
+    "unidad": "Einheit"
+  },
+  "nombre_placeholder": "Z. B. Flüssigei",
+  "selecciona_categoria": "Kategorie auswählen",
+  "selecciona_unidad": "Einheit auswählen",
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_ingrediente": "Zutat speichern",
+  "sin_ingredientes": "Es sind noch keine Zutaten angelegt.",
+  "editar": "Bearbeiten",
+  "sin_categoria": "Keine Kategorie",
+  "articulos_vinculados_titulo": "Verknüpfte Artikel",
+  "sin_articulos_vinculados": "Noch keine Artikel verknüpft.",
+  "desvincular": "Verknüpfung lösen",
+  "vincular_articulo_placeholder": "Artikel verknüpfen (gleiche Kategorie)...",
+  "vincular": "+ Verknüpfen",
+  "alertas": {
+    "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+    "selecciona_articulo": "Wähle einen Artikel",
+    "error_vincular": "Fehler beim Verknüpfen: {{mensaje}}",
+    "confirmar_desvincular": "Diesen Artikel von der Zutat lösen? Er erscheint dann nicht mehr als verfügbare Variante in Rezepten, die diese Zutat verwenden.",
+    "error_desvincular": "Fehler beim Lösen der Verknüpfung: {{mensaje}}"
+  }
+}

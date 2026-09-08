@@ -1,0 +1,20 @@
+{
+  "titulo": "Halbfertigprodukte",
+  "card_nuevo_titulo": "Neues Halbfertigprodukt",
+  "card_editar_titulo": "Halbfertigprodukt bearbeiten",
+  "campos": {
+    "unidad_produccion": "Produktionseinheit"
+  },
+  "nombre_placeholder": "Z. B. Sofrito-Basis",
+  "codigo_placeholder": "Z. B. SOF",
+  "selecciona_unidad": "Einheit auswählen",
+  "tipo_otro_semielaborado": "Anderes Halbfertigprodukt",
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_semielaborado": "Halbfertigprodukt speichern",
+  "sin_semielaborados": "Es sind noch keine Halbfertigprodukte angelegt.",
+  "unidad_label": "Einheit: {{unidad}}",
+  "alertas": {
+    "error_crear_semielaborado": "Fehler beim Erstellen des Halbfertigprodukts: {{mensaje}}",
+    "confirmar_borrar": "Möchtest du dieses Halbfertigprodukt wirklich löschen? Sein Rezept wird ebenfalls gelöscht."
+  }
+}

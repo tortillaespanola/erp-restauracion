@@ -1,0 +1,20 @@
+{
+  "titulo": "Semielaborados",
+  "card_nuevo_titulo": "Nuevo semielaborado",
+  "card_editar_titulo": "Editar semielaborado",
+  "campos": {
+    "unidad_produccion": "Unidad de producción"
+  },
+  "nombre_placeholder": "Ej. Sofrito base",
+  "codigo_placeholder": "Ej. SOF",
+  "selecciona_unidad": "Selecciona unidad",
+  "tipo_otro_semielaborado": "Otro semielaborado",
+  "guardar_cambios": "Guardar cambios",
+  "guardar_semielaborado": "Guardar semielaborado",
+  "sin_semielaborados": "Todavía no hay semielaborados dados de alta.",
+  "unidad_label": "Unidad: {{unidad}}",
+  "alertas": {
+    "error_crear_semielaborado": "Error al crear el semielaborado: {{mensaje}}",
+    "confirmar_borrar": "¿Seguro que quieres borrar este semielaborado? Se borrará también su receta."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "titulo": "Kunden",
+  "sin_clientes": "Es sind noch keine Kunden erfasst.",
+  "card_nuevo_titulo": "Neuer Kunde",
+  "card_editar_titulo": "Kunde bearbeiten",
+  "campos": {
+    "nombre_comercial": "Handelsname",
+    "nombre_y_apellidos": "Vor- und Nachname"
+  },
+  "tabla": {
+    "tipo": "Typ",
+    "nombre": "Name",
+    "estado": "Status"
+  },
+  "activo": "Aktiv",
+  "inactivo": "Inaktiv",
+  "clic_cambiar_estado_title": "Klicken, um den Status zu ändern",
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_cliente": "Kunde speichern",
+  "editar": "Bearbeiten",
+  "borrar": "Löschen",
+  "cliente_count_one": "{{count}} Kunde",
+  "cliente_count_other": "{{count}} Kunden",
+  "alertas": {
+    "error_actualizar": "Fehler beim Aktualisieren: {{mensaje}}",
+    "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+    "confirmar_borrar": "Möchtest du diesen Kunden wirklich löschen?",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}",
+    "error_cambiar_estado": "Fehler beim Ändern des Status: {{mensaje}}"
+  }
+}

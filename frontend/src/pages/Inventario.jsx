@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad, formatMoneda } from '../lib/formatCantidad'
@@ -15,6 +16,7 @@ const datosVacios = {
 }
 
 function Inventario() {
+  const { t } = useTranslation(['common', 'inventario'])
   const { negocio } = useNegocio()
   const [datos, setDatos] = useState(datosVacios)
   const [demandaPorIngrediente, setDemandaPorIngrediente] = useState(new Map())
@@ -326,44 +328,48 @@ function Inventario() {
   return (
     <div>
       <PageHeader
-        title="Inventario"
-        subtitle="Stock y necesidad agregada por ingrediente, con desglose hasta la dupla artículo-proveedor."
+        title={t('inventario:titulo')}
+        subtitle={t('inventario:subtitulo')}
       />
 
       <Card className="mb-6">
         <CardBody className="flex flex-wrap gap-3">
-          <Field label="Proveedor" className="w-56">
+          <Field label={t('inventario:filtros.proveedor')} className="w-56">
             <MultiSelect
               options={datos.proveedores.map((p) => ({ value: p.id, label: p.nombre_comercial }))}
               selected={proveedorSel}
               onChange={setProveedorSel}
+              placeholder={t('common:actions.all')}
             />
           </Field>
-          <Field label="Ingrediente(s)" className="w-56">
+          <Field label={t('inventario:filtros.ingredientes')} className="w-56">
             <MultiSelect
               options={datos.ingredientes.map((i) => ({ value: i.id, label: i.nombre }))}
               selected={ingredienteSel}
               onChange={setIngredienteSel}
+              placeholder={t('common:actions.all')}
             />
           </Field>
-          <Field label="Semielaborado(s)" className="w-56">
+          <Field label={t('inventario:filtros.semielaborados')} className="w-56">
             <MultiSelect
               options={datos.semielaborados.map((s) => ({ value: s.id, label: s.nombre }))}
               selected={semiSel}
               onChange={setSemiSel}
+              placeholder={t('common:actions.all')}
             />
           </Field>
-          <Field label="Producto(s) final(es)" className="w-56">
+          <Field label={t('inventario:filtros.productos_finales')} className="w-56">
             <MultiSelect
               options={datos.productosFinales.map((p) => ({ value: p.id, label: p.nombre }))}
               selected={pfSel}
               onChange={setPfSel}
+              placeholder={t('common:actions.all')}
             />
           </Field>
-          <Field label="Solo con necesidad" className="w-52">
+          <Field label={t('inventario:filtros.solo_con_necesidad')} className="w-52">
             <label className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer">
               <input type="checkbox" checked={soloConNecesidad} onChange={(e) => setSoloConNecesidad(e.target.checked)} />
-              Necesidad {'>'} 0
+              {t('inventario:necesidad_mayor_cero')}
             </label>
           </Field>
         </CardBody>
@@ -374,7 +380,7 @@ function Inventario() {
       ) : filasVisibles.length === 0 ? (
         <Card>
           <EmptyState>
-            {soloConNecesidad ? 'Nada pendiente de comprar.' : 'Ningún ingrediente coincide con los filtros seleccionados.'}
+            {soloConNecesidad ? t('inventario:nada_pendiente_comprar') : t('inventario:sin_coincidencias_filtros')}
           </EmptyState>
         </Card>
       ) : (
@@ -382,9 +388,9 @@ function Inventario() {
           <Table>
             <Thead>
               <Th></Th>
-              <Th>Ingrediente</Th>
-              <Th>Stock</Th>
-              <Th>Necesidad agregada</Th>
+              <Th>{t('inventario:tabla.ingrediente')}</Th>
+              <Th>{t('inventario:tabla.stock')}</Th>
+              <Th>{t('inventario:tabla.necesidad_agregada')}</Th>
             </Thead>
             <tbody className="divide-y divide-gray-100">
               {filasVisibles.map((ing) => {
@@ -415,14 +421,14 @@ function Inventario() {
                       <tr>
                         <Td colSpan={4} className="bg-gray-50/60 py-2">
                           {ing.articulos.length === 0 ? (
-                            <p className="text-sm text-gray-400 px-2 py-1">Sin artículos vinculados todavía.</p>
+                            <p className="text-sm text-gray-400 px-2 py-1">{t('inventario:sin_articulos_vinculados')}</p>
                           ) : (
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                                   <th className="pl-8 pr-2 py-1 font-medium"></th>
-                                  <th className="px-2 py-1 font-medium">Artículo</th>
-                                  <th className="px-2 py-1 font-medium">Stock</th>
+                                  <th className="px-2 py-1 font-medium">{t('inventario:tabla.articulo')}</th>
+                                  <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-100">
@@ -444,16 +450,16 @@ function Inventario() {
                                         <tr>
                                           <td colSpan={3} className="bg-white py-1.5">
                                             {art.duplas.length === 0 ? (
-                                              <p className="text-xs text-gray-400 pl-16 py-1">Sin proveedores asignados todavía.</p>
+                                              <p className="text-xs text-gray-400 pl-16 py-1">{t('inventario:sin_proveedores_asignados')}</p>
                                             ) : (
                                               <table className="w-full text-sm">
                                                 <thead>
                                                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                                                     <th className="pl-16 pr-2 py-1 font-medium"></th>
-                                                    <th className="px-2 py-1 font-medium">Proveedor</th>
-                                                    <th className="px-2 py-1 font-medium">Precio</th>
-                                                    <th className="px-2 py-1 font-medium">Último precio de compra</th>
-                                                    <th className="px-2 py-1 font-medium">Stock</th>
+                                                    <th className="px-2 py-1 font-medium">{t('inventario:tabla.proveedor')}</th>
+                                                    <th className="px-2 py-1 font-medium">{t('inventario:tabla.precio')}</th>
+                                                    <th className="px-2 py-1 font-medium">{t('inventario:tabla.ultimo_precio_compra')}</th>
+                                                    <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
                                                   </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
@@ -481,16 +487,16 @@ function Inventario() {
                                                           <tr>
                                                             <td colSpan={5} className="bg-gray-50/40 py-1.5">
                                                               {d.lotes.length === 0 ? (
-                                                                <p className="text-xs text-gray-400 pl-24 py-1">Sin lotes vivos de esta dupla.</p>
+                                                                <p className="text-xs text-gray-400 pl-24 py-1">{t('inventario:sin_lotes_vivos')}</p>
                                                               ) : (
                                                                 <table className="w-full text-sm">
                                                                   <thead>
                                                                     <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
-                                                                      <th className="pl-24 pr-2 py-1 font-medium">Recepción</th>
-                                                                      <th className="px-2 py-1 font-medium">Lote</th>
-                                                                      <th className="px-2 py-1 font-medium">Entrado</th>
-                                                                      <th className="px-2 py-1 font-medium">Consumido</th>
-                                                                      <th className="px-2 py-1 font-medium">Stock</th>
+                                                                      <th className="pl-24 pr-2 py-1 font-medium">{t('inventario:tabla.recepcion')}</th>
+                                                                      <th className="px-2 py-1 font-medium">{t('inventario:tabla.lote')}</th>
+                                                                      <th className="px-2 py-1 font-medium">{t('inventario:tabla.entrado')}</th>
+                                                                      <th className="px-2 py-1 font-medium">{t('inventario:tabla.consumido')}</th>
+                                                                      <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
                                                                       <th className="px-2 py-1 font-medium"></th>
                                                                     </tr>
                                                                   </thead>
@@ -503,7 +509,7 @@ function Inventario() {
                                                                           {formatCantidad(lote.entrado, art.unidad)} {art.unidad}
                                                                           {lote.ajustesPositivos > 0 && (
                                                                             <div className="text-[10px] text-gray-400">
-                                                                              recibido {formatCantidad(lote.cantidadRecibida, art.unidad)} · ajuste +{formatCantidad(lote.ajustesPositivos, art.unidad)}
+                                                                              {t('inventario:recibido_ajuste', { cantidad: formatCantidad(lote.cantidadRecibida, art.unidad), ajuste: formatCantidad(lote.ajustesPositivos, art.unidad) })}
                                                                             </div>
                                                                           )}
                                                                         </td>
@@ -511,7 +517,7 @@ function Inventario() {
                                                                           {formatCantidad(lote.consumido, art.unidad)} {art.unidad}
                                                                           {lote.ajustesNegativos > 0 && (
                                                                             <div className="text-[10px] text-gray-400">
-                                                                              prod. {formatCantidad(lote.consumoProduccionTotal, art.unidad)} · ajuste −{formatCantidad(lote.ajustesNegativos, art.unidad)}
+                                                                              {t('inventario:produccion_ajuste', { cantidad: formatCantidad(lote.consumoProduccionTotal, art.unidad), ajuste: formatCantidad(lote.ajustesNegativos, art.unidad) })}
                                                                             </div>
                                                                           )}
                                                                         </td>
@@ -525,11 +531,11 @@ function Inventario() {
                                                                               itemNombre: art.nombre,
                                                                               itemUnidad: art.unidad,
                                                                               loteId: lote.entradaMaterialId,
-                                                                              loteLabel: `${lote.codigoLote ? lote.codigoLote + ' · ' : ''}Recepción ${lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—'}`,
+                                                                              loteLabel: `${lote.codigoLote ? lote.codigoLote + ' · ' : ''}${t('inventario:recepcion_lote_label', { fecha: lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—' })}`,
                                                                               stockActual: lote.stock,
                                                                             })}
                                                                           >
-                                                                            Ajustar
+                                                                            {t('inventario:ajustar')}
                                                                           </LinkAction>
                                                                         </td>
                                                                       </tr>
@@ -566,7 +572,7 @@ function Inventario() {
         </Card>
       )}
 
-      <Drawer open={!!ajusteDrawer} onClose={() => setAjusteDrawer(null)} title="Ajustar stock">
+      <Drawer open={!!ajusteDrawer} onClose={() => setAjusteDrawer(null)} title={t('inventario:drawer_ajustar_stock_titulo')}>
         {ajusteDrawer && (
           <AjusteStockForm
             fijo={ajusteDrawer}

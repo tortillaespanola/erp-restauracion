@@ -1,0 +1,20 @@
+{
+  "titulo": "Semi-finished goods",
+  "card_nuevo_titulo": "New semi-finished good",
+  "card_editar_titulo": "Edit semi-finished good",
+  "campos": {
+    "unidad_produccion": "Production unit"
+  },
+  "nombre_placeholder": "E.g. Base sofrito",
+  "codigo_placeholder": "E.g. SOF",
+  "selecciona_unidad": "Select unit",
+  "tipo_otro_semielaborado": "Another semi-finished good",
+  "guardar_cambios": "Save changes",
+  "guardar_semielaborado": "Save semi-finished good",
+  "sin_semielaborados": "There are no semi-finished goods registered yet.",
+  "unidad_label": "Unit: {{unidad}}",
+  "alertas": {
+    "error_crear_semielaborado": "Error creating the semi-finished good: {{mensaje}}",
+    "confirmar_borrar": "Are you sure you want to delete this semi-finished good? Its recipe will also be deleted."
+  }
+}

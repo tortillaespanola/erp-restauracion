@@ -1,0 +1,25 @@
+{
+  "titulo": "Proveedores",
+  "sin_proveedores": "Todavía no hay proveedores dados de alta.",
+  "card_nuevo_titulo": "Nuevo proveedor",
+  "card_editar_titulo": "Editar proveedor",
+  "campos": {
+    "nombre_comercial": "Nombre comercial"
+  },
+  "tabla": {
+    "razon_fiscal": "Razón fiscal",
+    "nombre_comercial": "Nombre comercial"
+  },
+  "guardar_cambios": "Guardar cambios",
+  "guardar_proveedor": "Guardar proveedor",
+  "editar": "Editar",
+  "borrar": "Borrar",
+  "proveedor_count_one": "{{count}} proveedor",
+  "proveedor_count_other": "{{count}} proveedores",
+  "alertas": {
+    "error_actualizar": "Error al actualizar: {{mensaje}}",
+    "error_guardar": "Error al guardar: {{mensaje}}",
+    "confirmar_borrar": "¿Seguro que quieres borrar este proveedor?",
+    "error_borrar": "Error al borrar: {{mensaje}}"
+  }
+}

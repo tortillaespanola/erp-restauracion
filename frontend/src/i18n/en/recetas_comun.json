@@ -1,0 +1,34 @@
+{
+  "tipo_articulo": "Purchase article",
+  "tipo_ingrediente": "Ingredient (several variants)",
+  "selecciona_articulo": "Select article",
+  "selecciona_ingrediente": "Select ingredient",
+  "selecciona_semielaborado": "Select semi-finished good",
+  "anadir_ingrediente": "Add ingredient",
+  "receta_titulo": "Recipe (ingredients)",
+  "editar": "Edit",
+  "borrar": "Delete",
+  "campos": {
+    "nombre": "Name",
+    "codigo_corto": "Short code",
+    "notas_opcional": "Notes (optional)",
+    "dias_caducidad_opcional": "Default expiry days (optional)"
+  },
+  "tabla": {
+    "ingrediente": "Ingredient",
+    "tipo": "Type",
+    "cantidad": "Quantity"
+  },
+  "tipo_label": {
+    "articulo": "Article",
+    "ingrediente": "Ingredient",
+    "semielaborado": "Semi-finished good"
+  },
+  "alertas": {
+    "sin_ingredientes_receta": "Add at least one ingredient to the recipe",
+    "error_actualizar": "Error updating: {{mensaje}}",
+    "error_actualizar_receta": "Error updating the recipe: {{mensaje}}",
+    "error_guardar_receta": "Error saving the recipe: {{mensaje}}",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

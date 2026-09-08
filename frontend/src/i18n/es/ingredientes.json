@@ -1,0 +1,31 @@
+{
+  "titulo": "Ingredientes",
+  "subtitulo": "Agrupa artículos de compra intercambiables entre sí (ej. distintas variantes del mismo producto) para que las recetas puedan referenciar el ingrediente en vez de un artículo concreto.",
+  "card_nuevo_titulo": "Nuevo ingrediente",
+  "card_editar_titulo": "Editar ingrediente",
+  "campos": {
+    "nombre": "Nombre",
+    "categoria": "Categoría",
+    "unidad": "Unidad"
+  },
+  "nombre_placeholder": "Ej. Huevina",
+  "selecciona_categoria": "Selecciona categoría",
+  "selecciona_unidad": "Selecciona unidad",
+  "guardar_cambios": "Guardar cambios",
+  "guardar_ingrediente": "Guardar ingrediente",
+  "sin_ingredientes": "Todavía no hay ingredientes dados de alta.",
+  "editar": "Editar",
+  "sin_categoria": "Sin categoría",
+  "articulos_vinculados_titulo": "Artículos vinculados",
+  "sin_articulos_vinculados": "Sin artículos vinculados todavía.",
+  "desvincular": "Desvincular",
+  "vincular_articulo_placeholder": "Vincular artículo (misma categoría)...",
+  "vincular": "+ Vincular",
+  "alertas": {
+    "error_guardar": "Error al guardar: {{mensaje}}",
+    "selecciona_articulo": "Selecciona un artículo",
+    "error_vincular": "Error al vincular: {{mensaje}}",
+    "confirmar_desvincular": "¿Desvincular este artículo del ingrediente? Dejará de aparecer como variante disponible en las recetas que usen este ingrediente.",
+    "error_desvincular": "Error al desvincular: {{mensaje}}"
+  }
+}

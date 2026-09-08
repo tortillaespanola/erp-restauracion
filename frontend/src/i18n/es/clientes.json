@@ -1,0 +1,31 @@
+{
+  "titulo": "Clientes",
+  "sin_clientes": "Todavía no hay clientes dados de alta.",
+  "card_nuevo_titulo": "Nuevo cliente",
+  "card_editar_titulo": "Editar cliente",
+  "campos": {
+    "nombre_comercial": "Nombre comercial",
+    "nombre_y_apellidos": "Nombre y apellidos"
+  },
+  "tabla": {
+    "tipo": "Tipo",
+    "nombre": "Nombre",
+    "estado": "Estado"
+  },
+  "activo": "Activo",
+  "inactivo": "Inactivo",
+  "clic_cambiar_estado_title": "Clic para cambiar el estado",
+  "guardar_cambios": "Guardar cambios",
+  "guardar_cliente": "Guardar cliente",
+  "editar": "Editar",
+  "borrar": "Borrar",
+  "cliente_count_one": "{{count}} cliente",
+  "cliente_count_other": "{{count}} clientes",
+  "alertas": {
+    "error_actualizar": "Error al actualizar: {{mensaje}}",
+    "error_guardar": "Error al guardar: {{mensaje}}",
+    "confirmar_borrar": "¿Seguro que quieres borrar este cliente?",
+    "error_borrar": "Error al borrar: {{mensaje}}",
+    "error_cambiar_estado": "Error al cambiar el estado: {{mensaje}}"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "titulo": "Suppliers",
+  "sin_proveedores": "There are no suppliers registered yet.",
+  "card_nuevo_titulo": "New supplier",
+  "card_editar_titulo": "Edit supplier",
+  "campos": {
+    "nombre_comercial": "Trade name"
+  },
+  "tabla": {
+    "razon_fiscal": "Legal name",
+    "nombre_comercial": "Trade name"
+  },
+  "guardar_cambios": "Save changes",
+  "guardar_proveedor": "Save supplier",
+  "editar": "Edit",
+  "borrar": "Delete",
+  "proveedor_count_one": "{{count}} supplier",
+  "proveedor_count_other": "{{count}} suppliers",
+  "alertas": {
+    "error_actualizar": "Error updating: {{mensaje}}",
+    "error_guardar": "Error saving: {{mensaje}}",
+    "confirmar_borrar": "Are you sure you want to delete this supplier?",
+    "error_borrar": "Error deleting: {{mensaje}}"
+  }
+}

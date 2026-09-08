@@ -1,0 +1,25 @@
+{
+  "titulo": "Lieferanten",
+  "sin_proveedores": "Es sind noch keine Lieferanten erfasst.",
+  "card_nuevo_titulo": "Neuer Lieferant",
+  "card_editar_titulo": "Lieferant bearbeiten",
+  "campos": {
+    "nombre_comercial": "Handelsname"
+  },
+  "tabla": {
+    "razon_fiscal": "Firmenbezeichnung",
+    "nombre_comercial": "Handelsname"
+  },
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_proveedor": "Lieferant speichern",
+  "editar": "Bearbeiten",
+  "borrar": "Löschen",
+  "proveedor_count_one": "{{count}} Lieferant",
+  "proveedor_count_other": "{{count}} Lieferanten",
+  "alertas": {
+    "error_actualizar": "Fehler beim Aktualisieren: {{mensaje}}",
+    "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+    "confirmar_borrar": "Möchtest du diesen Lieferanten wirklich löschen?",
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  }
+}

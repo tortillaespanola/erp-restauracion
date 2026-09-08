@@ -1,0 +1,20 @@
+{
+  "titulo": "Productos finales",
+  "card_nuevo_titulo": "Nuevo producto final",
+  "card_editar_titulo": "Editar producto final",
+  "campos": {
+    "precio_venta": "Precio de venta"
+  },
+  "nombre_placeholder": "Ej. Paella valenciana",
+  "codigo_placeholder": "Ej. PAE",
+  "guardar_cambios": "Guardar cambios",
+  "guardar_producto": "Guardar producto final",
+  "sin_productos": "Todavía no hay productos finales dados de alta.",
+  "precio_label": "Precio: {{precio}}",
+  "alertas": {
+    "error_crear_producto": "Error al crear el producto: {{mensaje}}",
+    "confirmar_borrar": "¿Seguro que quieres borrar este producto final? Se borrará también su receta.",
+    "tiene_producciones_one": "No puedes borrar este producto: tiene {{count}} producción registrada. Bórrala primero desde \"Producción de productos finales\" si de verdad quieres eliminar el producto.",
+    "tiene_producciones_other": "No puedes borrar este producto: tiene {{count}} producciones registradas. Bórralas primero desde \"Producción de productos finales\" si de verdad quieres eliminar el producto."
+  }
+}

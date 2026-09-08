@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatMoneda } from '../lib/formatCantidad'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
@@ -8,6 +9,7 @@ import { useNegocio } from '../context/useNegocio'
 const lineaVacia = { tipo: 'articulo', articulo_id: '', ingrediente_semielaborado_id: '', ingrediente_id: '', cantidad: '' }
 
 function ProductosFinales() {
+  const { t } = useTranslation(['common', 'recetas_comun', 'productos_finales'])
   const { negocio } = useNegocio()
   const [productos, setProductos] = useState([])
   const [articulos, setArticulos] = useState([])
@@ -121,7 +123,7 @@ function ProductosFinales() {
       (l) => l.cantidad && (l.articulo_id || l.ingrediente_semielaborado_id || l.ingrediente_id)
     )
     if (lineasValidas.length === 0) {
-      alert('Añade al menos un ingrediente a la receta')
+      alert(t('recetas_comun:alertas.sin_ingredientes_receta'))
       return
     }
 
@@ -140,7 +142,7 @@ function ProductosFinales() {
         .eq('id', editandoId)
 
       if (errorUpdate) {
-        alert('Error al actualizar: ' + errorUpdate.message)
+        alert(t('recetas_comun:alertas.error_actualizar', { mensaje: errorUpdate.message }))
         return
       }
 
@@ -150,7 +152,7 @@ function ProductosFinales() {
         .eq('producto_final_id', editandoId)
 
       if (errorDelete) {
-        alert('Error al actualizar la receta: ' + errorDelete.message)
+        alert(t('recetas_comun:alertas.error_actualizar_receta', { mensaje: errorDelete.message }))
         return
       }
     } else {
@@ -167,7 +169,7 @@ function ProductosFinales() {
         .single()
 
       if (errorProd) {
-        alert('Error al crear el producto: ' + errorProd.message)
+        alert(t('productos_finales:alertas.error_crear_producto', { mensaje: errorProd.message }))
         return
       }
       productoId = prodCreado.id
@@ -186,7 +188,7 @@ function ProductosFinales() {
       .insert(lineasParaInsertar)
 
     if (errorLineas) {
-      alert('Error al guardar la receta: ' + errorLineas.message)
+      alert(t('recetas_comun:alertas.error_guardar_receta', { mensaje: errorLineas.message }))
       return
     }
 
@@ -201,15 +203,15 @@ function ProductosFinales() {
       .eq('producto_final_id', id)
 
     if (count > 0) {
-      alert(`No puedes borrar este producto: tiene ${count} producción(es) registrada(s). Bórralas primero desde "Producción de productos finales" si de verdad quieres eliminar el producto.`)
+      alert(t('productos_finales:alertas.tiene_producciones', { count }))
       return
     }
 
-    if (!confirm('¿Seguro que quieres borrar este producto final? Se borrará también su receta.')) return
+    if (!confirm(t('productos_finales:alertas.confirmar_borrar'))) return
 
     const { error } = await supabase.from('productos_finales').delete().eq('id', id)
     if (error) {
-      alert('Error al borrar: ' + error.message)
+      alert(t('recetas_comun:alertas.error_borrar', { mensaje: error.message }))
       return
     }
     if (editandoId === id) resetForm()
@@ -218,33 +220,33 @@ function ProductosFinales() {
 
   return (
     <div>
-      <PageHeader title="Productos finales" />
+      <PageHeader title={t('productos_finales:titulo')} />
 
       <Card className="mb-6">
-        <CardHeader title={editandoId ? 'Editar producto final' : 'Nuevo producto final'} />
+        <CardHeader title={editandoId ? t('productos_finales:card_editar_titulo') : t('productos_finales:card_nuevo_titulo')} />
         <CardBody>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Field label="Nombre">
-                <Input type="text" placeholder="Ej. Paella valenciana" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+              <Field label={t('recetas_comun:campos.nombre')}>
+                <Input type="text" placeholder={t('productos_finales:nombre_placeholder')} value={nombre} onChange={(e) => setNombre(e.target.value)} required />
               </Field>
-              <Field label="Código corto">
-                <Input type="text" placeholder="Ej. PAE" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              <Field label={t('recetas_comun:campos.codigo_corto')}>
+                <Input type="text" placeholder={t('productos_finales:codigo_placeholder')} value={codigo} onChange={(e) => setCodigo(e.target.value)} />
               </Field>
-              <Field label="Precio de venta">
+              <Field label={t('productos_finales:campos.precio_venta')}>
                 <Input type="number" step="0.01" value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} />
               </Field>
-              <Field label="Días de caducidad por defecto (opcional)">
+              <Field label={t('recetas_comun:campos.dias_caducidad_opcional')}>
                 <Input type="number" step="1" min="0" placeholder="Ej. 3" value={diasCaducidadDefault}
                   onChange={(e) => setDiasCaducidadDefault(e.target.value)} />
               </Field>
             </div>
-            <Field label="Notas (opcional)">
+            <Field label={t('recetas_comun:campos.notas_opcional')}>
               <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
             </Field>
 
             <div>
-              <SectionLabel>Receta (ingredientes)</SectionLabel>
+              <SectionLabel>{t('recetas_comun:receta_titulo')}</SectionLabel>
               <div className="flex flex-col gap-3">
                 {lineas.map((linea, index) => (
                   <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
@@ -252,17 +254,17 @@ function ProductosFinales() {
                       <label className="flex items-center gap-1.5">
                         <input type="radio" checked={linea.tipo === 'articulo'}
                           onChange={() => handleLineaChange(index, 'tipo', 'articulo')} />
-                        Artículo de compra
+                        {t('recetas_comun:tipo_articulo')}
                       </label>
                       <label className="flex items-center gap-1.5">
                         <input type="radio" checked={linea.tipo === 'ingrediente'}
                           onChange={() => handleLineaChange(index, 'tipo', 'ingrediente')} />
-                        Ingrediente (varias variantes)
+                        {t('recetas_comun:tipo_ingrediente')}
                       </label>
                       <label className="flex items-center gap-1.5">
                         <input type="radio" checked={linea.tipo === 'semielaborado'}
                           onChange={() => handleLineaChange(index, 'tipo', 'semielaborado')} />
-                        Semielaborado
+                        {t('recetas_comun:tipo_label.semielaborado')}
                       </label>
                     </div>
 
@@ -271,7 +273,7 @@ function ProductosFinales() {
                         <Select value={linea.articulo_id}
                           onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
                           required>
-                          <option value="">Selecciona artículo</option>
+                          <option value="">{t('recetas_comun:selecciona_articulo')}</option>
                           {articulos.map((a) => (
                             <option key={a.id} value={a.id}>{a.nombre} ({a.unidad})</option>
                           ))}
@@ -281,7 +283,7 @@ function ProductosFinales() {
                         <Select value={linea.ingrediente_id}
                           onChange={(e) => handleLineaChange(index, 'ingrediente_id', e.target.value)}
                           required>
-                          <option value="">Selecciona ingrediente</option>
+                          <option value="">{t('recetas_comun:selecciona_ingrediente')}</option>
                           {ingredientes.map((i) => (
                             <option key={i.id} value={i.id}>{i.nombre} ({i.unidad})</option>
                           ))}
@@ -291,15 +293,15 @@ function ProductosFinales() {
                         <Select value={linea.ingrediente_semielaborado_id}
                           onChange={(e) => handleLineaChange(index, 'ingrediente_semielaborado_id', e.target.value)}
                           required>
-                          <option value="">Selecciona semielaborado</option>
+                          <option value="">{t('recetas_comun:selecciona_semielaborado')}</option>
                           {semielaborados.map((s) => (
                             <option key={s.id} value={s.id}>{s.nombre} ({s.unidad})</option>
                           ))}
                         </Select>
                       )}
-                      <Input type="number" step="0.001" placeholder="Cantidad" value={linea.cantidad}
+                      <Input type="number" step="0.001" placeholder={t('recetas_comun:tabla.cantidad')} value={linea.cantidad}
                         onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                        required title="Se redondeará a 3 decimales" />
+                        required title={t('common:redondea_3_decimales')} />
                       <button type="button" onClick={() => removeLinea(index)}
                         className="text-gray-400 hover:text-red-600 justify-self-center">
                         <IconTrash size={16} />
@@ -310,26 +312,26 @@ function ProductosFinales() {
               </div>
               <button type="button" onClick={addLinea}
                 className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
-                <IconPlus size={15} /> Añadir ingrediente
+                <IconPlus size={15} /> {t('recetas_comun:anadir_ingrediente')}
               </button>
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit">{editandoId ? 'Guardar cambios' : 'Guardar producto final'}</Button>
+              <Button type="submit">{editandoId ? t('productos_finales:guardar_cambios') : t('productos_finales:guardar_producto')}</Button>
               {editandoId && (
-                <Button type="button" variant="secondary" onClick={resetForm}>Cancelar</Button>
+                <Button type="button" variant="secondary" onClick={resetForm}>{t('common:actions.cancel')}</Button>
               )}
             </div>
           </form>
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">Listado</h2>
+      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
       ) : productos.length === 0 ? (
-        <Card><EmptyState>Todavía no hay productos finales dados de alta.</EmptyState></Card>
+        <Card><EmptyState>{t('productos_finales:sin_productos')}</EmptyState></Card>
       ) : (
         <div className="flex flex-col gap-4">
           {productos.map((p) => (
@@ -339,26 +341,26 @@ function ProductosFinales() {
                   <p className="font-semibold text-[#1C2938]">
                     {p.nombre} {p.codigo && <span className="text-gray-400 font-mono text-xs">({p.codigo})</span>}
                   </p>
-                  {p.precio_venta != null && <p className="text-sm text-gray-500">Precio: {formatMoneda(p.precio_venta, negocio?.moneda)}</p>}
+                  {p.precio_venta != null && <p className="text-sm text-gray-500">{t('productos_finales:precio_label', { precio: formatMoneda(p.precio_venta, negocio?.moneda) })}</p>}
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0">
-                  <LinkAction tone="blue" onClick={() => handleEditar(p)}>Editar</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(p.id)}>Borrar</LinkAction>
+                  <LinkAction tone="blue" onClick={() => handleEditar(p)}>{t('recetas_comun:editar')}</LinkAction>
+                  <LinkAction tone="red" onClick={() => handleBorrar(p.id)}>{t('recetas_comun:borrar')}</LinkAction>
                 </div>
               </div>
 
               <table className="w-full mt-3 text-sm">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-1.5 font-medium">Ingrediente</th>
-                    <th className="py-1.5 font-medium">Tipo</th>
-                    <th className="py-1.5 font-medium">Cantidad</th>
+                    <th className="py-1.5 font-medium">{t('recetas_comun:tabla.ingrediente')}</th>
+                    <th className="py-1.5 font-medium">{t('recetas_comun:tabla.tipo')}</th>
+                    <th className="py-1.5 font-medium">{t('recetas_comun:tabla.cantidad')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {p.receta_producto_final.map((linea) => {
-                    const tipo = linea.articulos_compra ? 'Artículo' : linea.ingredientes ? 'Ingrediente' : 'Semielaborado'
+                    const tipo = linea.articulos_compra ? t('recetas_comun:tipo_label.articulo') : linea.ingredientes ? t('recetas_comun:tipo_label.ingrediente') : t('recetas_comun:tipo_label.semielaborado')
                     const fuente = linea.articulos_compra ?? linea.ingredientes ?? linea.semielaborados
                     return (
                       <tr key={linea.id}>

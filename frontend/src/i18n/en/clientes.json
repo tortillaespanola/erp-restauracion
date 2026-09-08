@@ -1,0 +1,31 @@
+{
+  "titulo": "Customers",
+  "sin_clientes": "There are no customers registered yet.",
+  "card_nuevo_titulo": "New customer",
+  "card_editar_titulo": "Edit customer",
+  "campos": {
+    "nombre_comercial": "Trade name",
+    "nombre_y_apellidos": "Full name"
+  },
+  "tabla": {
+    "tipo": "Type",
+    "nombre": "Name",
+    "estado": "Status"
+  },
+  "activo": "Active",
+  "inactivo": "Inactive",
+  "clic_cambiar_estado_title": "Click to change the status",
+  "guardar_cambios": "Save changes",
+  "guardar_cliente": "Save customer",
+  "editar": "Edit",
+  "borrar": "Delete",
+  "cliente_count_one": "{{count}} customer",
+  "cliente_count_other": "{{count}} customers",
+  "alertas": {
+    "error_actualizar": "Error updating: {{mensaje}}",
+    "error_guardar": "Error saving: {{mensaje}}",
+    "confirmar_borrar": "Are you sure you want to delete this customer?",
+    "error_borrar": "Error deleting: {{mensaje}}",
+    "error_cambiar_estado": "Error changing the status: {{mensaje}}"
+  }
+}

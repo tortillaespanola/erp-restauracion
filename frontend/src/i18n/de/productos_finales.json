@@ -1,0 +1,20 @@
+{
+  "titulo": "Fertigprodukte",
+  "card_nuevo_titulo": "Neues Fertigprodukt",
+  "card_editar_titulo": "Fertigprodukt bearbeiten",
+  "campos": {
+    "precio_venta": "Verkaufspreis"
+  },
+  "nombre_placeholder": "Z. B. Paella Valenciana",
+  "codigo_placeholder": "Z. B. PAE",
+  "guardar_cambios": "Änderungen speichern",
+  "guardar_producto": "Fertigprodukt speichern",
+  "sin_productos": "Es sind noch keine Fertigprodukte angelegt.",
+  "precio_label": "Preis: {{precio}}",
+  "alertas": {
+    "error_crear_producto": "Fehler beim Erstellen des Produkts: {{mensaje}}",
+    "confirmar_borrar": "Möchtest du dieses Fertigprodukt wirklich löschen? Sein Rezept wird ebenfalls gelöscht.",
+    "tiene_producciones_one": "Du kannst dieses Produkt nicht löschen: Es hat {{count}} erfasste Produktion. Lösche sie zuerst unter \"Produktion der Fertigprodukte\", wenn du das Produkt wirklich entfernen willst.",
+    "tiene_producciones_other": "Du kannst dieses Produkt nicht löschen: Es hat {{count}} erfasste Produktionen. Lösche sie zuerst unter \"Produktion der Fertigprodukte\", wenn du das Produkt wirklich entfernen willst."
+  }
+}
