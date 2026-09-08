@@ -101,6 +101,12 @@ Antes de escribir ninguna traducción, pedir a Claude Code:
   de PDF). Si se confirma el bug €/CHF, se corrige aquí también (mismos archivos).
 - **Fase 3 (back office):** `AlbaranesCompra`, `PedidosCompra`, `FacturasCompra`,
   `Articulos`, `Inventario`, `AjustesStock`, `Configuración`.
+- **Fase 3-bis (hueco de planificación, añadida tras cerrar Fase 3):** `Proveedores`,
+  `Clientes`, `Ingredientes`, `Semielaborados`, `ProductosFinales` — estas 5 pantallas
+  de catálogo/recetas nunca entraron en el alcance original de ninguna fase (0-3), no
+  por fallo de ejecución sino por un hueco real en la planificación inicial del
+  contrato, descubierto en pruebas de navegador tras cerrar Fase 3. Ver "Estado de las
+  fases" para el detalle del cierre.
 
 ## Inventario real (auditado, no estimado)
 
@@ -126,6 +132,21 @@ del negocio para otros usuarios del mismo negocio.
   como `AlbaranesVenta.jsx`/`FacturasVenta.jsx`) — mismo criterio de cierre que las
   fases anteriores (decisión de alcance confirmada #3). La Fase 2 no se da por
   cerrada del todo hasta completar esta verificación.
+- **Fase 3 (`AlbaranesCompra`, `PedidosCompra`, `FacturasCompra`, `Articulos`,
+  `Inventario`, `AjustesStock`/`AjusteStockForm`, `Configuracion`):** completa,
+  comiteada y verificada en los 3 idiomas en navegador. Incluye `enums:tipo_material`
+  y la promoción de `sin_numero` y `redondea_3_decimales` a `common.json` (con las
+  actualizaciones correspondientes en `AlbaranesVenta.jsx`, `FacturasVenta.jsx`,
+  `Producciones.jsx`, `ProduccionProductosFinales.jsx` y `PedidoForm.jsx` de fases
+  anteriores).
+- **Fase 3-bis (`Proveedores`, `Clientes`, `Ingredientes`, `Semielaborados`,
+  `ProductosFinales`, más un fix puntual de placeholder en `Inventario.jsx`):**
+  completa, comiteada y verificada en los 3 idiomas en navegador — layout en alemán
+  confirmado sin desbordamiento en los formularios de receta de `Semielaborados`/
+  `ProductosFinales`. Cierra el hueco de planificación de catálogos señalado arriba.
+
+**Único cabo suelto del contrato:** la verificación en inglés/alemán de la Fase 2
+descrita en el punto anterior sigue pendiente de confirmación explícita.
 
 ## Limitaciones conocidas (documentadas, no bugs pendientes de esta fase)
 
