@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { NegocioContext } from './useNegocio'
+import logoIcon from '../assets/logos/flowbase-icon.svg'
 
 // CONTRATO_MULTITENANT.md, Tarea 5 (alcance reducido): no hay selector multi-negocio -- el
 // escenario real es un usuario por negocio. Lo unico que hace falta es no dejar que la app
@@ -38,7 +39,8 @@ function NegocioProvider({ children }) {
 
   if (cargando) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F6F8] text-gray-400 text-sm">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-canvas text-ink-subtle text-body">
+        <img src={logoIcon} alt="" width={40} height={40} />
         Cargando...
       </div>
     )
@@ -47,12 +49,12 @@ function NegocioProvider({ children }) {
   if (error) {
     const sinNegocioAsignado = error.code === 'P0001'
     return (
-      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-lg border border-gray-200 max-w-sm w-full text-center flex flex-col gap-3">
-          <h1 className="text-lg font-semibold text-[#1C2938]">
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+        <div className="bg-surface p-8 rounded-modal border border-border shadow-overlay max-w-sm w-full text-center flex flex-col gap-3">
+          <h1 className="text-title text-ink">
             {sinNegocioAsignado ? 'Tu usuario no tiene ningún negocio asignado' : 'No se pudo cargar tu negocio'}
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-body text-ink-muted">
             {sinNegocioAsignado
               ? 'Contacta al administrador para que te asigne a un negocio antes de continuar.'
               : 'Ha ocurrido un error inesperado. Inténtalo de nuevo o contacta al administrador.'}

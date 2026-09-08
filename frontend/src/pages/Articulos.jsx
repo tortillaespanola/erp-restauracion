@@ -295,7 +295,7 @@ function Articulos() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -307,14 +307,14 @@ function Articulos() {
             <Card key={a.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">
+                  <p className="font-semibold text-ink">
                     {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
                   </p>
                   <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
                     <span>{a.unidad} · {a.categorias_articulo?.nombre ?? t('articulos:sin_categoria')} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
                     <Badge color="gray">{a.tipo_material}</Badge>
                     {a.requiere_control_temperatura && (
-                      <span className="text-[#0854A0] flex items-center gap-1">
+                      <span className="text-primary-600 flex items-center gap-1">
                         <IconThermometer size={14} /> {t('articulos:control_temperatura_badge')}
                         {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
                       </span>

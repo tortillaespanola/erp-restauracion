@@ -131,7 +131,7 @@ function Ingredientes() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -143,7 +143,7 @@ function Ingredientes() {
             <Card key={i.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{i.nombre}</p>
+                  <p className="font-semibold text-ink">{i.nombre}</p>
                   <p className="text-sm text-gray-500">{i.unidad} · {i.categorias_articulo?.nombre ?? t('ingredientes:sin_categoria')}</p>
                 </div>
                 <LinkAction tone="blue" onClick={() => handleEditar(i)} className="shrink-0">{t('ingredientes:editar')}</LinkAction>

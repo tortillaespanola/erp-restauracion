@@ -281,7 +281,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
           ))}
         </div>
         <button type="button" onClick={addLinea}
-          className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+          className="mt-2 text-sm text-primary-600 font-medium flex items-center gap-1 hover:underline">
           <IconPlus size={15} /> {t('pedido_form:anadir_linea')}
         </button>
       </div>

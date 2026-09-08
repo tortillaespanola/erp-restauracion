@@ -527,7 +527,7 @@ function DesgloseDistribucionPF({
                                     <button
                                       type="button"
                                       onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
-                                      className="text-gray-400 hover:text-[#0854A0]"
+                                      className="text-gray-400 hover:text-primary-600"
                                       title={t('pedidos_del_dia:cambiar_tanda_title')}
                                     >
                                       <IconArrowsExchange size={15} />
@@ -596,7 +596,7 @@ function DesgloseDistribucionPF({
                             <button
                               type="button"
                               onClick={() => onGuardarNuevoSplit(grupo.linea_pedido_id, tandasUsadasPorLinea)}
-                              className="text-xs text-[#0854A0] hover:underline"
+                              className="text-xs text-primary-600 hover:underline"
                             >
                               {t('common:actions.save')}
                             </button>
@@ -617,7 +617,7 @@ function DesgloseDistribucionPF({
                           <button
                             type="button"
                             onClick={() => onAbrirNuevoSplit(grupo.linea_pedido_id)}
-                            className="text-xs text-[#0854A0] hover:underline"
+                            className="text-xs text-primary-600 hover:underline"
                           >
                             {t('pedidos_del_dia:repartir_otra_tanda')}
                           </button>
@@ -1227,7 +1227,7 @@ function PedidosDelDia() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('pedidos_del_dia:productos_finales_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('pedidos_del_dia:productos_finales_titulo')}</h2>
       {cargando ? (
         <LoadingState />
       ) : filasPF.length === 0 ? (
@@ -1263,7 +1263,7 @@ function PedidosDelDia() {
                             <IconPlayerPlay size={16} />
                           </span>
                         ) : (
-                          <button type="button" onClick={() => handleProducirPF(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={t('pedidos_del_dia:producir_title', { nombre: f.nombre })}>
+                          <button type="button" onClick={() => handleProducirPF(f)} className="text-primary-600 hover:text-primary-700" title={t('pedidos_del_dia:producir_title', { nombre: f.nombre })}>
                             <IconPlayerPlay size={16} />
                           </button>
                         )}
@@ -1304,7 +1304,7 @@ function PedidosDelDia() {
         </Card>
       )}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('pedidos_del_dia:semielaborados_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('pedidos_del_dia:semielaborados_titulo')}</h2>
       {cargando ? (
         <LoadingState />
       ) : filasSemi.length === 0 ? (
@@ -1339,7 +1339,7 @@ function PedidosDelDia() {
                             <IconPlayerPlay size={16} />
                           </span>
                         ) : (
-                          <button type="button" onClick={() => handleProducir(f)} className="text-[#0854A0] hover:text-[#0A3D62]" title={t('pedidos_del_dia:producir_title', { nombre: f.nombre })}>
+                          <button type="button" onClick={() => handleProducir(f)} className="text-primary-600 hover:text-primary-700" title={t('pedidos_del_dia:producir_title', { nombre: f.nombre })}>
                             <IconPlayerPlay size={16} />
                           </button>
                         )}

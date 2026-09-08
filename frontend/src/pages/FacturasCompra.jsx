@@ -204,7 +204,7 @@ function FacturasCompra() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -216,7 +216,7 @@ function FacturasCompra() {
             <Card key={f.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{f.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
+                  <p className="font-semibold text-ink">{f.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
                   <p className="text-sm text-gray-500">
                     {t('facturas_compra:factura_linea', { numero: f.numero_factura || t('common:sin_numero'), fecha: formatFecha(f.fecha) })}
                     {f.total != null && ` · ${formatMoneda(f.total, negocio?.moneda)}`}

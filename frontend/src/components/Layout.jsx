@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  IconToolsKitchen2, IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
+  IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
   IconCarrot, IconStack2, IconBuildingWarehouse, IconCash,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
+import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
 
 // CONTRATO_I18N.md, Fase 0: las claves (compras/proveedores/...) son estables e independientes
 // del idioma -- las etiquetas visibles se resuelven en el render vía t('nav.items.<clave>'), ver
@@ -87,19 +88,17 @@ function Layout({ children, session, onLogout }) {
   const breadcrumb = claveRuta ? t(`titles.${claveRuta}.breadcrumb`) : ''
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F5F6F8] text-[#1C2938]">
-      <aside className="w-60 bg-[#0854A0] text-white flex flex-col shrink-0">
-        <div className="h-14 flex items-center gap-2 px-4 border-b border-white/10 shrink-0">
-          <div className="w-7 h-7 rounded bg-white/15 flex items-center justify-center shrink-0">
-            <IconToolsKitchen2 size={18} stroke={1.75} />
-          </div>
-          <span className="font-semibold text-sm tracking-wide">FLOWBASE</span>
+    <div className="flex h-screen overflow-hidden bg-canvas text-ink">
+      <aside className="w-sidebar bg-surface-sunken border-r border-border flex flex-col shrink-0">
+        <div className="h-topbar flex items-center gap-2.5 px-4 border-b border-border shrink-0">
+          <img src={logoIconOnbrand} alt="" width={24} height={24} className="rounded-control shrink-0" />
+          <span className="font-semibold text-title text-ink tracking-tight">FlowBase</span>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 text-sm">
+        <nav className="flex-1 overflow-y-auto py-2.5 px-2.5 flex flex-col gap-3.5">
           {NAV_SECTIONS.map((seccion) => (
-            <div key={seccion.clave}>
-              <p className="px-4 pt-4 pb-1 text-[11px] uppercase tracking-wider text-blue-200/70 first:pt-2">
+            <div key={seccion.clave} className="flex flex-col gap-px">
+              <p className="px-2 pt-1.5 pb-1 text-overline text-ink-faint">
                 {t(`nav.sections.${seccion.clave}`)}
               </p>
               {seccion.items.map(({ to, clave, icon: Icon }) => {
@@ -108,10 +107,10 @@ function Layout({ children, session, onLogout }) {
                   <Link
                     key={to}
                     to={to}
-                    className={`flex items-center gap-3 px-4 py-2 border-l-[3px] ${
+                    className={`flex items-center gap-2.5 px-2.5 py-[7px] rounded-control text-meta leading-tight ${
                       activo
-                        ? 'bg-[#0A3D62] border-[#4FA3E3] font-medium text-white'
-                        : 'border-transparent text-blue-50 hover:bg-white/10'
+                        ? 'bg-primary-100 text-primary-700 font-semibold'
+                        : 'text-ink-body/85 hover:bg-surface-hover'
                     }`}
                   >
                     <Icon size={17} stroke={1.75} className="shrink-0" />
@@ -127,14 +126,14 @@ function Layout({ children, session, onLogout }) {
             i18next re-renderiza todo lo que usa useTranslation) y lo persiste en localStorage --
             la persistencia por usuario en usuarios_negocios.idioma se conecta aquí en cuanto la
             migración de BD esté aplicada. */}
-        <div className="flex items-center justify-center gap-1 px-4 py-2 border-t border-white/10">
+        <div className="flex items-center justify-center gap-1 px-3 py-2 border-t border-border">
           {IDIOMAS_VALIDOS.map((idioma) => (
             <button
               key={idioma}
               type="button"
               onClick={() => cambiarIdioma(idioma)}
-              className={`px-2 py-1 rounded text-xs font-medium ${
-                i18n.language === idioma ? 'bg-white/20 text-white' : 'text-blue-200/70 hover:bg-white/10'
+              className={`px-2 py-1 rounded-control text-xs font-medium ${
+                i18n.language === idioma ? 'bg-primary-100 text-primary-700' : 'text-ink-subtle hover:bg-surface-hover'
               }`}
             >
               {NOMBRE_IDIOMA[idioma]}
@@ -144,43 +143,43 @@ function Layout({ children, session, onLogout }) {
 
         <Link
           to="/configuracion"
-          className={`p-3 border-t border-white/10 flex items-center gap-2 hover:bg-white/10 ${
-            location.pathname === '/configuracion' ? 'bg-white/10' : ''
+          className={`border-t border-border p-2.5 flex items-center gap-2.5 hover:bg-surface-hover ${
+            location.pathname === '/configuracion' ? 'bg-surface-hover' : ''
           }`}
         >
-          <div className="w-8 h-8 rounded-full bg-blue-200 text-blue-900 flex items-center justify-center text-xs font-semibold shrink-0">
+          <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-[10px] font-semibold shrink-0">
             {iniciales(session?.user?.email)}
           </div>
-          <div className="text-xs min-w-0">
-            <p className="font-medium leading-tight truncate">{session?.user?.email ?? t('actions.default_user')}</p>
-            <p className="text-blue-200/70 leading-tight flex items-center gap-1">
-              <IconSettings size={12} stroke={1.75} /> {t('actions.settings')}
+          <div className="text-micro min-w-0">
+            <p className="font-medium leading-tight truncate text-ink-body">{session?.user?.email ?? t('actions.default_user')}</p>
+            <p className="text-ink-subtle leading-tight flex items-center gap-1">
+              <IconSettings size={11} stroke={1.75} /> {t('actions.settings')}
             </p>
           </div>
         </Link>
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
+        <header className="h-topbar bg-surface border-b border-border flex items-center justify-between px-5 shrink-0">
           <div>
-            <h1 className="text-[15px] font-semibold text-[#1C2938]">{titulo}</h1>
-            <p className="text-xs text-gray-400">{breadcrumb}</p>
+            <h1 className="text-title text-ink">{titulo}</h1>
+            <p className="text-micro text-ink-subtle">{breadcrumb}</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative hidden sm:block">
-              <IconSearch size={15} className="absolute left-2.5 top-2.5 text-gray-400" />
+              <IconSearch size={15} className="absolute left-2.5 top-2.5 text-ink-faint" />
               <input
                 placeholder={t('actions.search_placeholder')}
                 disabled
-                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md w-56 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50"
+                className="pl-8 pr-3 h-control-sm text-body border border-border rounded-control w-56 bg-canvas focus:outline-none focus:border-primary-600 focus:shadow-focus disabled:bg-canvas"
               />
             </div>
-            <IconBell size={18} className="text-gray-400" />
+            <IconBell size={18} className="text-ink-faint" />
             <button
               type="button"
               onClick={onLogout}
               title={t('actions.logout')}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-ink-faint hover:text-ink-body"
             >
               <IconLogout size={18} />
             </button>

@@ -137,7 +137,7 @@ function Pagos() {
       <PageHeader title={t('pagos:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
+        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
           <IconPlus size={15} /> {t('ventas_comun:registrar_pago')}
         </Button>
@@ -185,7 +185,7 @@ function Pagos() {
                           </button>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
-                        <td className="px-3 py-3 font-medium text-[#1C2938]">
+                        <td className="px-3 py-3 font-medium text-ink">
                           <div className="flex items-center gap-2 flex-wrap">
                             {p.clientes?.nombre ?? t('common:sin_cliente')}
                             {p.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
@@ -272,7 +272,7 @@ function Pagos() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 {n}
               </button>

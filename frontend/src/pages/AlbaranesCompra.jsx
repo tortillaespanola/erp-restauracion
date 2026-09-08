@@ -493,7 +493,7 @@ function AlbaranesCompra() {
                 })}
               </div>
               <button type="button" onClick={addLinea}
-                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+                className="mt-2 text-sm text-primary-600 font-medium flex items-center gap-1 hover:underline">
                 <IconPlus size={15} /> {t('compras_comun:anadir_linea')}
               </button>
             </div>
@@ -508,7 +508,7 @@ function AlbaranesCompra() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -520,7 +520,7 @@ function AlbaranesCompra() {
             <Card key={alb.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
+                  <p className="font-semibold text-ink">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
                   <p className="text-sm text-gray-500">
                     {t('albaranes_compra:albaran_linea', { numero: alb.numero_albaran || t('common:sin_numero') })} · {formatFecha(alb.fecha)}
                     {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{alb.codigo_interno}</span>}

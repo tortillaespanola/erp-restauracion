@@ -1,1 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* FlowBase restyling "Quiet" (Claude Design) — Instrument Sans reemplaza la fuente
+   por defecto del navegador en toda la UI. Montserrat/Space Mono (assets/fonts) siguen
+   siendo exclusivas del PDF de albarán, fuera de alcance de este restyling. */
+body {
+  font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

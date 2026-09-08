@@ -300,7 +300,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {pedidoIdParam && (
-        <p className="text-sm text-[#0854A0]">Este albarán se enlazará a las líneas pendientes del pedido seleccionado.</p>
+        <p className="text-sm text-primary-600">Este albarán se enlazará a las líneas pendientes del pedido seleccionado.</p>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Field label="Cliente">

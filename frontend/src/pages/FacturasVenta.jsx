@@ -267,7 +267,7 @@ function FacturasVenta() {
       <PageHeader title={t('facturas_venta:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
+        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
           <IconPlus size={15} /> {t('facturas_venta:nueva_factura')}
         </Button>
@@ -347,7 +347,7 @@ function FacturasVenta() {
                           </button>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(f.fecha)}</td>
-                        <td className={`px-3 py-3 whitespace-nowrap text-[#1C2938] ${f.anulada ? 'line-through' : ''}`}>
+                        <td className={`px-3 py-3 whitespace-nowrap text-ink ${f.anulada ? 'line-through' : ''}`}>
                           {f.numero_factura || t('common:sin_numero')}
                         </td>
                         <td className="px-3 py-3">{f.clientes?.nombre ?? t('common:sin_cliente')}</td>
@@ -365,7 +365,7 @@ function FacturasVenta() {
                             <button type="button" title={t('common:actions.print')} onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-[#0854A0]">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-primary-600">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
@@ -430,7 +430,7 @@ function FacturasVenta() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 {n}
               </button>

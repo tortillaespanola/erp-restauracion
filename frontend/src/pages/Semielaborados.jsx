@@ -309,7 +309,7 @@ function Semielaborados() {
                 ))}
               </div>
               <button type="button" onClick={addLinea}
-                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+                className="mt-2 text-sm text-primary-600 font-medium flex items-center gap-1 hover:underline">
                 <IconPlus size={15} /> {t('recetas_comun:anadir_ingrediente')}
               </button>
             </div>
@@ -324,7 +324,7 @@ function Semielaborados() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -336,7 +336,7 @@ function Semielaborados() {
             <Card key={s.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">
+                  <p className="font-semibold text-ink">
                     {s.nombre} {s.codigo && <span className="text-gray-400 font-mono text-xs">({s.codigo})</span>}
                   </p>
                   <p className="text-sm text-gray-500">{t('semielaborados:unidad_label', { unidad: s.unidad })}</p>

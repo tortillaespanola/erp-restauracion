@@ -1,5 +1,5 @@
-// Sistema de componentes compartido — lenguaje visual SAP Fiori
-// Referencia: mockups/mockup-articulos.html
+// Sistema de componentes compartido — restyling "Quiet" (Claude Design, dirección 1a).
+// Tokens en frontend/tailwind.config.js y TOKENS.md. Base histórica: mockups/mockup-articulos.html.
 
 import { useState, useRef, useEffect } from 'react'
 import DatePicker, { registerLocale } from 'react-datepicker'
@@ -11,21 +11,21 @@ registerLocale('es', es)
 
 export function PageHeader({ title, subtitle }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-lg font-semibold text-[#1C2938]">{title}</h1>
-      {subtitle && <p className="text-sm text-gray-400 mt-1">{subtitle}</p>}
+    <div className="mb-6 flex flex-col gap-1">
+      <h1 className="text-display text-ink">{title}</h1>
+      {subtitle && <p className="text-meta text-ink-muted">{subtitle}</p>}
     </div>
   )
 }
 
 export function Card({ children, className = '' }) {
-  return <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>{children}</div>
+  return <div className={`bg-surface rounded-card border border-border shadow-card ${className}`}>{children}</div>
 }
 
 export function CardHeader({ title, action }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-      <h2 className="text-sm font-semibold text-[#1C2938]">{title}</h2>
+    <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
+      <h2 className="text-title text-ink">{title}</h2>
       {action}
     </div>
   )
@@ -36,24 +36,24 @@ export function CardBody({ children, className = '' }) {
 }
 
 export function CardFooter({ children }) {
-  return <div className="px-4 py-2.5 text-xs text-gray-400 border-t border-gray-100">{children}</div>
+  return <div className="px-4 py-2.5 text-micro text-ink-subtle border-t border-border-subtle">{children}</div>
 }
 
 const buttonSizes = {
-  md: 'text-sm px-4 py-2',
-  sm: 'text-xs px-3 py-1.5',
+  md: 'h-control text-meta px-4',
+  sm: 'h-control-sm text-xs px-3',
 }
 
 const buttonVariants = {
-  primary: 'bg-[#0854A0] text-white hover:bg-[#0A3D62]',
-  secondary: 'border border-gray-200 text-gray-600 hover:bg-gray-50 bg-white',
-  success: 'bg-[#3B6D11] text-white hover:bg-[#2f5a0d]',
+  primary: 'bg-primary-600 text-white shadow-btn hover:bg-primary-500 active:bg-primary-700',
+  secondary: 'border border-border text-ink-body bg-surface hover:bg-surface-hover hover:border-border-strong',
+  success: 'bg-success-50 text-success-600 border border-success-600/20 hover:bg-success-50/70',
 }
 
 export function Button({ children, variant = 'primary', size = 'md', className = '', ...props }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${buttonSizes[size]} ${buttonVariants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-control font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${buttonSizes[size]} ${buttonVariants[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -62,16 +62,16 @@ export function Button({ children, variant = 'primary', size = 'md', className =
 }
 
 const linkTones = {
-  blue: 'text-[#0854A0]',
-  red: 'text-red-600',
-  gray: 'text-gray-500',
-  amber: 'text-amber-600',
-  green: 'text-green-700',
+  blue: 'text-primary-600 hover:text-primary-700',
+  red: 'text-danger-600 hover:text-danger-700',
+  gray: 'text-ink-muted hover:text-ink-body',
+  amber: 'text-warning-600 hover:text-warning-700',
+  green: 'text-success-600 hover:text-success-700',
 }
 
 export function LinkAction({ children, tone = 'blue', className = '', ...props }) {
   return (
-    <button type="button" className={`text-sm font-medium hover:underline ${linkTones[tone]} ${className}`} {...props}>
+    <button type="button" className={`text-meta font-medium hover:underline ${linkTones[tone]} ${className}`} {...props}>
       {children}
     </button>
   )
@@ -80,13 +80,13 @@ export function LinkAction({ children, tone = 'blue', className = '', ...props }
 export function Field({ label, children, className = '' }) {
   return (
     <div className={className}>
-      {label && <label className="text-[11px] font-medium text-gray-500 block mb-1">{label}</label>}
+      {label && <label className="text-label text-ink-muted block mb-1">{label}</label>}
       {children}
     </div>
   )
 }
 
-const controlClass = 'w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white text-[#1C2938] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 disabled:bg-gray-100 disabled:text-gray-400'
+const controlClass = 'w-full h-control border border-border rounded-control px-3 text-body bg-surface text-ink-body placeholder:text-ink-subtle transition-colors hover:border-border-strong focus:outline-none focus:border-primary-600 focus:shadow-focus disabled:bg-surface-sunken disabled:text-ink-faint disabled:hover:border-border'
 
 export function Input({ className = '', ...props }) {
   return <input className={`${controlClass} ${className}`} {...props} />
@@ -134,24 +134,24 @@ export function MultiSelect({ options, selected, onChange, placeholder = 'Todos'
         onClick={() => setAbierto((a) => !a)}
         className={`${controlClass} flex items-center justify-between text-left`}
       >
-        <span className={`truncate ${selected.length === 0 ? 'text-gray-400' : ''}`}>{etiqueta}</span>
-        <IconChevronDown size={16} className="text-gray-400 shrink-0 ml-2" />
+        <span className={`truncate ${selected.length === 0 ? 'text-ink-subtle' : ''}`}>{etiqueta}</span>
+        <IconChevronDown size={16} className="text-ink-faint shrink-0 ml-2" />
       </button>
 
       {abierto && (
-        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg py-1">
+        <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-surface border border-border rounded-control shadow-raised py-1">
           {options.length === 0 ? (
-            <p className="text-sm text-gray-400 px-3 py-2">Sin opciones</p>
+            <p className="text-body text-ink-subtle px-3 py-2">Sin opciones</p>
           ) : (
             <>
               {selected.length > 0 && (
                 <button type="button" onClick={() => onChange([])}
-                  className="w-full text-left px-3 py-1.5 text-xs text-[#0854A0] hover:bg-blue-50 border-b border-gray-100">
+                  className="w-full text-left px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 border-b border-border-subtle">
                   Limpiar selección
                 </button>
               )}
               {options.map((o) => (
-                <label key={o.value} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-50 cursor-pointer">
+                <label key={o.value} className="flex items-center gap-2 px-3 py-1.5 text-body hover:bg-surface-hover cursor-pointer">
                   <input type="checkbox" checked={selected.includes(o.value)} onChange={() => toggle(o.value)} />
                   {o.label}
                 </label>
@@ -195,25 +195,25 @@ export function DateInput({ value, onChange, className = '', ...props }) {
 }
 
 const badgeColors = {
-  gray: 'bg-gray-100 text-gray-600',
-  blue: 'bg-blue-50 text-blue-700',
-  green: 'bg-green-50 text-green-700',
-  amber: 'bg-amber-50 text-amber-700',
-  red: 'bg-red-50 text-red-700',
+  gray: 'bg-neutral-50 text-neutral-600',
+  blue: 'bg-primary-100 text-primary-700',
+  green: 'bg-success-50 text-success-600',
+  amber: 'bg-warning-50 text-warning-600',
+  red: 'bg-danger-50 text-danger-600',
 }
 
 export function Badge({ children, color = 'gray' }) {
-  return <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${badgeColors[color]}`}>{children}</span>
+  return <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-pill whitespace-nowrap ${badgeColors[color]}`}>{children}</span>
 }
 
 export function Table({ children, className = '' }) {
-  return <table className={`w-full text-sm ${className}`}>{children}</table>
+  return <table className={`w-full text-body ${className}`}>{children}</table>
 }
 
 export function Thead({ children }) {
   return (
     <thead>
-      <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 bg-gray-50/60">
+      <tr className="text-left text-overline text-ink-subtle border-b border-border bg-surface-sunken">
         {children}
       </tr>
     </thead>
@@ -221,7 +221,7 @@ export function Thead({ children }) {
 }
 
 export function Th({ children, className = '' }) {
-  return <th className={`px-4 py-2 font-medium ${className}`}>{children}</th>
+  return <th className={`px-4 h-thead font-medium ${className}`}>{children}</th>
 }
 
 export function Td({ children, className = '', ...props }) {
@@ -229,15 +229,15 @@ export function Td({ children, className = '', ...props }) {
 }
 
 export function EmptyState({ children }) {
-  return <p className="text-sm text-gray-400 py-6 text-center">{children}</p>
+  return <p className="text-body text-ink-subtle py-6 text-center">{children}</p>
 }
 
 export function LoadingState({ children = 'Cargando…' }) {
-  return <p className="text-sm text-gray-400 py-6 text-center">{children}</p>
+  return <p className="text-body text-ink-subtle py-6 text-center">{children}</p>
 }
 
 export function SectionLabel({ children }) {
-  return <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{children}</p>
+  return <p className="text-overline text-ink-subtle mb-2">{children}</p>
 }
 
 // Panel lateral genérico (backdrop + slide-in desde la derecha) -- primer overlay del proyecto,
@@ -248,11 +248,11 @@ export function Drawer({ open, onClose, title, children, anchoClase = 'max-w-md'
   if (!open) return null
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className={`relative w-full ${anchoClase} h-full bg-white shadow-xl flex flex-col`}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-[#1C2938]">{title}</h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+      <div className="absolute inset-0 bg-ink/34 backdrop-blur-[1.5px]" onClick={onClose} />
+      <div className={`relative w-full ${anchoClase} h-full bg-surface shadow-drawer flex flex-col`}>
+        <div className="flex items-center justify-between px-5 h-topbar shrink-0 border-b border-border-subtle">
+          <h2 className="text-title text-ink">{title}</h2>
+          <button type="button" onClick={onClose} className="text-ink-subtle hover:text-ink-body">
             <IconX size={18} />
           </button>
         </div>

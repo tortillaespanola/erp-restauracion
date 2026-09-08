@@ -311,7 +311,7 @@ function ProductosFinales() {
                 ))}
               </div>
               <button type="button" onClick={addLinea}
-                className="mt-2 text-sm text-[#0854A0] font-medium flex items-center gap-1 hover:underline">
+                className="mt-2 text-sm text-primary-600 font-medium flex items-center gap-1 hover:underline">
                 <IconPlus size={15} /> {t('recetas_comun:anadir_ingrediente')}
               </button>
             </div>
@@ -326,7 +326,7 @@ function ProductosFinales() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('common:listado_titulo')}</h2>
+      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
 
       {cargando ? (
         <LoadingState />
@@ -338,7 +338,7 @@ function ProductosFinales() {
             <Card key={p.id} className="p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-[#1C2938]">
+                  <p className="font-semibold text-ink">
                     {p.nombre} {p.codigo && <span className="text-gray-400 font-mono text-xs">({p.codigo})</span>}
                   </p>
                   {p.precio_venta != null && <p className="text-sm text-gray-500">{t('productos_finales:precio_label', { precio: formatMoneda(p.precio_venta, negocio?.moneda) })}</p>}

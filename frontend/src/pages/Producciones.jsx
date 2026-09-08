@@ -551,7 +551,7 @@ function Producciones() {
     if (lista.length === 0 && !mensajeVacio) return null
     return (
       <div className="mb-8">
-        <h2 className="text-sm font-semibold text-[#1C2938] mb-3">{t('produccion_comun:producciones_en_curso')}</h2>
+        <h2 className="text-sm font-semibold text-ink mb-3">{t('produccion_comun:producciones_en_curso')}</h2>
         {lista.length === 0 ? (
           <Card><EmptyState>{mensajeVacio}</EmptyState></Card>
         ) : (
@@ -630,7 +630,7 @@ function Producciones() {
           completo, no solo a una vista filtrada"). */}
       {semielaboradoId && (
         <>
-          <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+          <h2 className="text-sm font-semibold text-ink mb-3">
             {semielaboradoSeleccionado ? t('producciones:stock_disponible_para', { nombre: semielaboradoSeleccionado.nombre }) : t('producciones:stock_disponible_titulo')}
           </h2>
           {cargando || cadenaCargando ? (
@@ -662,7 +662,7 @@ function Producciones() {
 
       {bloqueProduccionesEnCurso(abiertasFiltradas, semielaboradoId ? t('producciones:sin_produccion_en_curso') : null)}
 
-      <h2 className="text-sm font-semibold text-[#1C2938] mb-3">
+      <h2 className="text-sm font-semibold text-ink mb-3">
         {semielaboradoSeleccionado ? t('producciones:historial_titulo_de', { nombre: semielaboradoSeleccionado.nombre }) : t('producciones:historial_titulo')}
       </h2>
       {cargandoHistorial ? (
@@ -724,7 +724,7 @@ function Producciones() {
                 key={n}
                 type="button"
                 onClick={() => setHistorialPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === historialPagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-md ${n === historialPagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 {n}
               </button>
@@ -1020,7 +1020,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     <Card className="p-4 border-l-4 border-l-amber-400!">
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-semibold text-[#1C2938]">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— {t('produccion_comun:en_curso_badge')}</span></p>
+          <p className="font-semibold text-ink">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— {t('produccion_comun:en_curso_badge')}</span></p>
           <p className="text-sm text-gray-500">{t('produccion_comun:iniciada_el', { fecha: formatFecha(produccion.fecha) })}</p>
         </div>
         <LinkAction tone="red" onClick={onCancelar}>{t('produccion_comun:cancelar_produccion')}</LinkAction>
@@ -1185,7 +1185,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
         </span>
         {onPrecargar && (
           <button type="button" onClick={onPrecargar}
-            className="text-[#0854A0] hover:text-[#0A3D62] inline-flex items-center gap-1 text-xs shrink-0"
+            className="text-primary-600 hover:text-primary-700 inline-flex items-center gap-1 text-xs shrink-0"
             title={t('precargar_estimacion_title')}>
             <IconWand size={14} /> {t('usar_estimacion')}
           </button>
@@ -1271,7 +1271,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
           </button>
         </td>
         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(produccion.fecha)}</td>
-        <td className="px-3 py-3 font-medium text-[#1C2938]">
+        <td className="px-3 py-3 font-medium text-ink">
           {produccion.semielaborados?.nombre}
           {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
         </td>
@@ -1497,8 +1497,8 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
   }
 
   return (
-    <Card className="p-4 border-l-4 border-l-[#0854A0]!">
-      <p className="font-semibold text-[#1C2938] mb-3">
+    <Card className="p-4 border-l-4 border-l-primary-600!">
+      <p className="font-semibold text-ink mb-3">
         {t('produccion_comun:editando_produccion_de', { nombre: produccion.semielaborados?.nombre })}
         {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
       </p>

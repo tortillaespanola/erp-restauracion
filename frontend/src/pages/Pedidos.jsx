@@ -330,7 +330,7 @@ function Pedidos() {
       <PageHeader title={t('pedidos:titulo')} subtitle={t('pedidos:subtitulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-[#1C2938]">{t('common:listado_titulo')}</h2>
+        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setModoDrawer('nuevo')}>
           <IconPlus size={15} /> {t('pedidos:nuevo_pedido')}
         </Button>
@@ -413,7 +413,7 @@ function Pedidos() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3">
-                          <div className="font-medium text-[#1C2938]">{p.clientes?.nombre ?? t('common:sin_cliente')}</div>
+                          <div className="font-medium text-ink">{p.clientes?.nombre ?? t('common:sin_cliente')}</div>
                           {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">
@@ -436,7 +436,7 @@ function Pedidos() {
                           {totalLineas > 0 && (
                             <div className="mt-1 h-[3px] w-24 bg-gray-100 rounded-full overflow-hidden">
                               <div
-                                className={`h-full ${progresoCompleto ? 'bg-green-600' : 'bg-[#0854A0]'}`}
+                                className={`h-full ${progresoCompleto ? 'bg-green-600' : 'bg-primary-600'}`}
                                 style={{ width: `${(lineasServidas / totalLineas) * 100}%` }}
                               />
                             </div>
@@ -446,10 +446,10 @@ function Pedidos() {
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
                             {puedeGestionar && (
                               <>
-                                <button type="button" title={t('pedidos:editar_title')} onClick={() => handleEditar(p)} className="text-gray-400 hover:text-[#0854A0]">
+                                <button type="button" title={t('pedidos:editar_title')} onClick={() => handleEditar(p)} className="text-gray-400 hover:text-primary-600">
                                   <IconEdit size={16} />
                                 </button>
-                                <button type="button" title={t('pedidos:crear_albaran_title')} onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-[#0854A0]">
+                                <button type="button" title={t('pedidos:crear_albaran_title')} onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-primary-600">
                                   <IconTruckDelivery size={16} />
                                 </button>
                                 <button type="button" title={t('pedidos:cancelar_pedido_title')} onClick={() => handleCancelar(p.id)} className="text-gray-400 hover:text-red-600">
@@ -567,7 +567,7 @@ function Pedidos() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-[#0854A0] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 {n}
               </button>
