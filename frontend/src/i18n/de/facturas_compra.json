@@ -1,6 +1,9 @@
 {
   "titulo": "Rechnungen Einkauf",
   "card_nuevo_titulo": "Neue Rechnung",
+  "card_editar_titulo": "Rechnung bearbeiten",
+  "editar": "Bearbeiten",
+  "guardar_cambios": "Änderungen speichern",
   "campos": {
     "proveedor": "Lieferant",
     "numero_factura": "Rechnungs-Nr.",
@@ -12,15 +15,41 @@
   "sin_albaranes_pendientes": "Dieser Lieferant hat keine Lieferscheine, die noch fakturiert werden müssen.",
   "albaran_checkbox_label": "Lieferschein {{numero}} · {{fecha}}",
   "guardar_factura": "Rechnung speichern",
+  "filtros": {
+    "proveedor": "Lieferant",
+    "estado": "Status",
+    "desde": "Von",
+    "hasta": "Bis",
+    "orden": "Sortieren nach",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Datum (neueste)",
+    "fecha_asc": "Datum (älteste)"
+  },
+  "tabla": {
+    "fecha": "Datum",
+    "numero": "Rechnungs-Nr.",
+    "proveedor": "Lieferant",
+    "estado": "Status",
+    "total": "Total",
+    "codigo_interno": "Interner Code",
+    "acciones": "Aktionen"
+  },
+  "sin_facturas_filtro": "Keine Rechnung entspricht den angewendeten Filtern.",
+  "factura_pagina_count_one": "{{count}} Rechnung · Seite {{pagina}} von {{total}}",
+  "factura_pagina_count_other": "{{count}} Rechnungen · Seite {{pagina}} von {{total}}",
   "sin_facturas": "Es sind noch keine Rechnungen erfasst.",
-  "borrar": "Löschen",
+  "anular": "Stornieren",
   "factura_linea": "Rechnung {{numero}} · {{fecha}}",
   "albaranes_incluidos": "Enthaltene Lieferscheine: ",
   "alertas": {
     "sin_albaranes_seleccionados": "Wähle mindestens einen Lieferschein aus, um ihn der Rechnung zuzuordnen",
     "error_crear_factura": "Fehler beim Erstellen der Rechnung: {{mensaje}}",
     "error_asociar_albaranes": "Fehler beim Zuordnen der Lieferscheine: {{mensaje}}",
-    "confirmar_borrar": "Möchtest du diese Rechnung wirklich löschen?",
-    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+    "error_actualizar_factura": "Fehler beim Aktualisieren der Rechnung: {{mensaje}}",
+    "error_actualizar_albaranes": "Fehler beim Aktualisieren der zugeordneten Lieferscheine: {{mensaje}}",
+    "confirmar_anular": "Möchtest du diese Rechnung wirklich stornieren?",
+    "error_anular": "Fehler beim Stornieren: {{mensaje}}"
   }
 }

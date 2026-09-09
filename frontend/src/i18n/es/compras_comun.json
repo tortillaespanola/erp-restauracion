@@ -4,5 +4,7 @@
   "elige_proveedor_primero": "Elige primero un proveedor",
   "selecciona_articulo": "Selecciona artículo",
   "articulo_no_asignado_aviso": "Este proveedor no tiene ningún artículo asignado todavía — ve a Artículos para vincularlo.",
-  "anadir_linea": "Añadir línea"
+  "anadir_linea": "Añadir línea",
+  "tooltip_registrar_pago": "Registrar pago",
+  "registrar_pago_proveedor": "Registrar pago a proveedor"
 }

@@ -1,40 +1,221 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
-import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, DateInput, SectionLabel, EmptyState, LoadingState } from '../components/ui'
+import {
+  IconPlus, IconChevronRight, IconChevronDown, IconArrowUp, IconArrowDown, IconArrowsSort,
+  IconCircleCheck, IconAlertTriangle, IconCircleHalf2,
+} from '@tabler/icons-react'
+import { PageHeader, Card, Button, LinkAction, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
+import { saldosDeAlbaranesSueltos, estadoPago, EPSILON } from '../lib/saldosCompra'
+import AlbaranCompraForm from '../components/AlbaranCompraForm'
+import RegistrarPagoProveedorForm from '../components/RegistrarPagoProveedorForm'
 
-const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
+// CONTRATO_TABLA_COMPRAS.md, sección 4 decisión 5: mismo componente/colores que
+// ESTADO_FACTURACION_ICONO/ESTADO_COBRO_ICONO/EstadoIcono de AlbaranesVenta.jsx, pero Facturación
+// sin distinción particular/empresa (proveedores no tiene un campo de tipo equivalente, y el
+// contrato descarta explícitamente añadirlo) -- todo lo no facturado colapsa a un único
+// 'pendiente' ámbar, con IconAlertTriangle (mismo icono que usaba el caso ámbar de Venta).
+const ESTADO_FACTURACION_ICONO = {
+  facturado: { icon: IconCircleCheck, color: 'text-green-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-amber-600' },
+}
+const ESTADO_COBRO_ICONO = {
+  pagada: { icon: IconCircleCheck, color: 'text-green-600' },
+  parcial: { icon: IconCircleHalf2, color: 'text-amber-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-red-600' },
+}
+
+function EstadoIcono({ cfg, label }) {
+  const Icon = cfg.icon
+  return (
+    <span title={label} className={`inline-flex ${cfg.color}`}>
+      <Icon size={18} />
+    </span>
+  )
+}
+
+// CONTRATO_PAGOS_COMPRA.md, paso 4. Bug real corregido en el mismo cambio (confirmado con una
+// relación de prueba real insertada y borrada para verificarlo): factura_compra_albaran se embebe
+// como OBJETO (o null), NUNCA como array -- mismo motivo que factura_venta_albaran en Venta (UNIQUE
+// sobre albaran_compra_id, un albarán solo puede estar en una factura). El precómputo de
+// filtroFacturacion de más abajo asumía array (`.length > 0`), así que el filtro "Facturado" nunca
+// encontraba nada -- corregido usando esta misma función como única fuente de verdad de "está
+// facturado" en toda la pantalla (filtro + saldo/pago), igual que facturaVivaDe() en
+// AlbaranesVenta.jsx. Una factura anulada no cuenta como facturación viva -- el albarán vuelve a
+// estar disponible para pago directo.
+function facturaVivaDe(alb) {
+  const rel = alb.factura_compra_albaran
+  const facturaAsociada = Array.isArray(rel) ? rel[0] : rel
+  return facturaAsociada != null && facturaAsociada.facturas_compra_con_saldo?.anulada === false
+}
+
+// CONTRATO_PAGOS_COMPRA.md sección 4.3/paso 4: total de un albarán a partir de sus líneas ya
+// embebidas en la query principal (entrada_material) -- misma fórmula que totalesPorAlbaran() en
+// saldosCompra.js, sin otra consulta. Idéntico patrón a totalAlbaran() en AlbaranesVenta.jsx.
+function totalAlbaran(alb) {
+  return (alb.entrada_material || []).reduce(
+    (sum, l) => sum + (l.precio ? l.cantidad * l.precio : 0), 0
+  )
+}
+
+// CONTRATO_TABLA_COMPRAS.md, sección 4 decisión 2: resuelve entrada_material.linea_pedido_compra_id
+// -> pedidos_compra.codigo_pedido para la columna "Pedido origen" -- mismo patrón exacto que
+// codigosPedidoOrigen() en AlbaranesVenta.jsx (ahí sobre lineas_albaran_venta/lineas_pedido_venta).
+// Requiere el embed anidado añadido en cargarDatos() (lineas_pedido_compra(pedido_compra_id,
+// pedidos_compra(codigo_pedido)) dentro de entrada_material).
+function codigosPedidoOrigen(alb) {
+  const codigos = new Set()
+  for (const l of alb.entrada_material) {
+    const codigo = l.lineas_pedido_compra?.pedidos_compra?.codigo_pedido
+    if (codigo) codigos.add(codigo)
+  }
+  return [...codigos]
+}
+
+// CONTRATO_DRAWERS_COMPRAS.md, último punto: mismo tamaño de página que Venta.
+const PAGINA_TAMANO = 20
 
 function AlbaranesCompra() {
-  const { t } = useTranslation(['common', 'compras_comun', 'albaranes_compra'])
+  const { t } = useTranslation(['common', 'enums', 'compras_comun', 'albaranes_compra'])
   const [searchParams] = useSearchParams()
+  const pedidoCompraIdParam = searchParams.get('pedido_compra_id')
+
+  const FACTURACION_OPCIONES = [
+    { value: 'pendiente', label: t('enums:estado_facturacion.pendiente_facturar') },
+    { value: 'facturado', label: t('enums:estado_facturacion.facturado') },
+  ]
+
   const [albaranes, setAlbaranes] = useState([])
   const [proveedores, setProveedores] = useState([])
-  const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
   const [pedidosCompraPendientes, setPedidosCompraPendientes] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  const [tipoOrigen, setTipoOrigen] = useState(searchParams.get('pedido_compra_id') ? 'pedido' : 'compra_directa')
-  const [pedidoCompraId, setPedidoCompraId] = useState(searchParams.get('pedido_compra_id') ?? '')
-  const [proveedorId, setProveedorId] = useState('')
-  const [numeroAlbaran, setNumeroAlbaran] = useState('')
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
-  const [lineas, setLineas] = useState([{ ...lineaVacia }])
+  // CONTRATO_DRAWERS_COMPRAS.md, paso 2: mismo patrón de 3 estados que PedidosCompra.jsx --
+  // null = cerrado, 'nuevo' = alta, objeto albarán = edición precargada. El objeto de edición
+  // lleva además `idsLineaBloqueada` (ver handleEditar), ya resuelto antes de abrir el drawer.
+  const [modoDrawer, setModoDrawer] = useState(null)
+  // CONTRATO_PAGOS_COMPRA.md sección 4.3/paso 4: null = cerrado; { proveedorId, documento } =
+  // abierto y preseleccionado -- mismo patrón que pagoDrawer en FacturasCompra.jsx/AlbaranesVenta.jsx.
+  const [pagoDrawer, setPagoDrawer] = useState(null)
+  // Saldo pendiente por albarán SUELTO (los ya facturados no entran aquí, su saldo vive en la
+  // factura) -- mismo patrón que saldosPorAlbaran en AlbaranesVenta.jsx.
+  const [saldosPorAlbaran, setSaldosPorAlbaran] = useState(new Map())
+  const filaRefs = useRef(new Map())
 
-  const [editandoId, setEditandoId] = useState(null)
-  const [lineasABorrar, setLineasABorrar] = useState([])
+  // CONTRATO_TABLA_COMPRAS.md, sección 3: un único id expandido a nivel de pantalla (acordeón),
+  // mismo patrón que las pantallas de Venta y que Facturas/Pedidos de compra (pasos 1-2).
+  const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+  function toggleExpandido(id) {
+    setFilaExpandidaId((prev) => (prev === id ? null : id))
+  }
+
+  const [filtroProveedorId, setFiltroProveedorId] = useState('')
+  const [filtroFacturacion, setFiltroFacturacion] = useState([])
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('')
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('')
+  const hayFiltrosActivos = !!filtroProveedorId || filtroFacturacion.length > 0 || !!filtroFechaDesde || !!filtroFechaHasta
+
+  function cambiarFiltroProveedor(id) { setFiltroProveedorId(id); setPagina(1) }
+  function cambiarFiltroFacturacion(valores) { setFiltroFacturacion(valores); setPagina(1) }
+  function cambiarFiltroFechaDesde(v) { setFiltroFechaDesde(v); setPagina(1) }
+  function cambiarFiltroFechaHasta(v) { setFiltroFechaHasta(v); setPagina(1) }
+  function limpiarFiltros() {
+    setFiltroProveedorId('')
+    setFiltroFacturacion([])
+    setFiltroFechaDesde('')
+    setFiltroFechaHasta('')
+    setPagina(1)
+  }
+
+  // CONTRATO_TABLA_COMPRAS.md, sección 3/7: el <Select> "Ordenar por" desaparece -- su lógica pasa
+  // a la cabecera clicable. Única columna ordenable hoy (Fecha), mismo ciclo de 3 estados que
+  // AlbaranesVenta.jsx/FacturasCompra.jsx (desc -> asc -> sin orden).
+  const [orden, setOrden] = useState({ columna: null, direccion: 'desc' })
+  function cambiarOrden(columna) {
+    setOrden((prev) => {
+      if (prev.columna !== columna) return { columna, direccion: 'desc' }
+      if (prev.direccion === 'desc') return { columna, direccion: 'asc' }
+      return { columna: null, direccion: 'desc' }
+    })
+    setPagina(1) // cambiar de orden con otra página abierta dejaría una página vacía o repetida
+  }
+  function iconoOrden(columna) {
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
+  }
+
+  const [pagina, setPagina] = useState(1)
+  const [totalAlbaranes, setTotalAlbaranes] = useState(0)
+  const totalPaginas = Math.max(1, Math.ceil(totalAlbaranes / PAGINA_TAMANO))
 
   async function cargarDatos() {
     setCargando(true)
 
-    const [resAlbaranes, resProveedores, resPedidosCompra] = await Promise.all([
-      supabase
+    // BLOQUE filtros (mismo patrón que AlbaranesVenta.jsx Bloque 2 de CONTRATO_FILTROS_VENTA.md,
+    // reducido a una sola dimensión): Facturación no es una columna real de albaranes_compra --
+    // depende de si hay relación en factura_compra_albaran. Se resuelve con un precómputo ligero
+    // trayendo solo id+relación de TODOS los albaranes, para obtener una lista de ids que se
+    // aplica con .in() a la query principal ANTES de order/range -- solo si el filtro está activo.
+    let idsPermitidosPorEstado = null // null = sin restricción por estado
+    if (filtroFacturacion.length === 1) {
+      const { data: todosAlbaranes, error: errorTodos } = await supabase
         .from('albaranes_compra')
-        .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, temperatura_recepcion, temperatura_fuera_rango, articulo_id, linea_pedido_compra_id, articulos_compra(nombre, unidad))')
-        .order('fecha', { ascending: false }),
+        .select('id, factura_compra_albaran(facturas_compra_con_saldo(anulada))')
+
+      if (errorTodos) {
+        console.error('Error precalculando el filtro de facturación de albaranes:', errorTodos)
+        idsPermitidosPorEstado = []
+      } else {
+        const idsFacturados = []
+        const idsSueltos = []
+        for (const alb of todosAlbaranes) {
+          const facturado = facturaVivaDe(alb)
+          if (facturado) idsFacturados.push(alb.id)
+          else idsSueltos.push(alb.id)
+        }
+        idsPermitidosPorEstado = filtroFacturacion[0] === 'facturado' ? idsFacturados : idsSueltos
+      }
+    }
+
+    // CONTRATO_PAGOS_COMPRA.md paso 4: factura_compra_albaran(facturas_compra_con_saldo(anulada))
+    // añadido para saber si el albarán está facturado (con factura viva) sin una query aparte --
+    // mismo embed que el precómputo del filtro de arriba, única fuente de verdad para toda la
+    // pantalla (facturaVivaDe).
+    //
+    // CONTRATO_TABLA_COMPRAS.md, sección 4 decisión 2: lineas_pedido_compra(pedido_compra_id,
+    // pedidos_compra(codigo_pedido)) añadido dentro de entrada_material -- mismo embed de dos
+    // niveles que ya usa AlbaranesVenta.jsx (lineas_pedido_venta(pedido_id,
+    // pedidos_venta(codigo_pedido))) -- para resolver "Pedido origen" sin una query aparte por fila.
+    let albaranesQuery = supabase
+      .from('albaranes_compra')
+      .select('*, proveedores(nombre_comercial), entrada_material(id, cantidad, precio, fecha_caducidad, notas, codigo_lote, temperatura_recepcion, temperatura_fuera_rango, articulo_id, linea_pedido_compra_id, articulos_compra(nombre, unidad), lineas_pedido_compra(pedido_compra_id, pedidos_compra(codigo_pedido))), factura_compra_albaran(facturas_compra_con_saldo(anulada))', { count: 'exact' })
+
+    if (filtroProveedorId) albaranesQuery = albaranesQuery.eq('proveedor_id', filtroProveedorId)
+    if (filtroFechaDesde) albaranesQuery = albaranesQuery.gte('fecha', filtroFechaDesde)
+    if (filtroFechaHasta) albaranesQuery = albaranesQuery.lte('fecha', filtroFechaHasta)
+    // -1 como centinela cuando la intersección de estado queda vacía -- fuerza 0 filas en vez de
+    // mandar un .in() con array vacío (semántica ambigua en PostgREST).
+    if (idsPermitidosPorEstado !== null) {
+      albaranesQuery = albaranesQuery.in('id', idsPermitidosPorEstado.length > 0 ? idsPermitidosPorEstado : [-1])
+    }
+
+    // CONTRATO_TABLA_COMPRAS.md, sección 3/6: el mecanismo de datos no cambia -- sigue siendo un
+    // único .order() server-side, ahora disparado por cambiarOrden() en la cabecera en vez del
+    // <Select>.
+    albaranesQuery = orden.columna
+      ? albaranesQuery.order(orden.columna, { ascending: orden.direccion === 'asc' })
+      : albaranesQuery.order('fecha', { ascending: false })
+    // Tiebreaker final por id, mismo motivo que en Pedidos: sin él, dos albaranes con la misma
+    // fecha no tienen un orden garantizado entre sí al paginar con .range().
+    albaranesQuery = albaranesQuery.order('id', { ascending: true })
+
+    const desde = (pagina - 1) * PAGINA_TAMANO
+    albaranesQuery = albaranesQuery.range(desde, desde + PAGINA_TAMANO - 1)
+
+    const [resAlbaranes, resProveedores, resPedidosCompra] = await Promise.all([
+      albaranesQuery,
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase
         .from('pedidos_compra')
@@ -44,112 +225,48 @@ function AlbaranesCompra() {
     ])
 
     if (resAlbaranes.error) console.error(resAlbaranes.error)
-    else setAlbaranes(resAlbaranes.data)
+    else {
+      const albaranesCargados = resAlbaranes.data || []
+      setAlbaranes(albaranesCargados)
+      setTotalAlbaranes(resAlbaranes.count ?? 0)
+
+      // CONTRATO_PAGOS_COMPRA.md paso 4: saldo pendiente solo para sueltos -- un albarán ya
+      // facturado (con factura viva) refleja su pago en la factura, no aquí. Mismo patrón que
+      // AlbaranesVenta.jsx (Bloque 6 de CONTRATO_PAGOS_VENTA.md).
+      const idsSueltos = albaranesCargados.filter((alb) => !facturaVivaDe(alb)).map((alb) => alb.id)
+      try {
+        const saldos = await saldosDeAlbaranesSueltos(idsSueltos)
+        setSaldosPorAlbaran(saldos)
+      } catch (error) {
+        console.error('Error calculando saldos de albaranes de compra:', error)
+        setSaldosPorAlbaran(new Map())
+      }
+    }
 
     if (resProveedores.error) console.error(resProveedores.error)
-    else setProveedores(resProveedores.data)
+    else setProveedores(resProveedores.data || [])
 
     if (resPedidosCompra.error) console.error(resPedidosCompra.error)
-    else setPedidosCompraPendientes(resPedidosCompra.data)
+    else setPedidosCompraPendientes(resPedidosCompra.data || [])
 
     setCargando(false)
   }
 
   useEffect(() => {
     cargarDatos()
-  }, [])
+  }, [orden, pagina, filtroProveedorId, filtroFacturacion, filtroFechaDesde, filtroFechaHasta])
 
+  // Deep-link desde PedidosCompra.jsx ("Recibir como albarán") -- mismo patrón que
+  // AlbaranesVenta.jsx: si llega el query param, abre el drawer de alta solo con montar.
   useEffect(() => {
-    if (tipoOrigen !== 'pedido' || !pedidoCompraId || pedidosCompraPendientes.length === 0) return
+    if (pedidoCompraIdParam) setModoDrawer('nuevo')
+  }, [pedidoCompraIdParam])
 
-    const pedido = pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))
-    if (!pedido) return
-
-    setProveedorId(String(pedido.proveedor_id))
-    setLineas(
-      pedido.lineas_pedido_compra.map((l) => ({
-        ...lineaVacia,
-        articulo_id: String(l.articulo_id),
-        cantidad: String(l.cantidad),
-        precio: l.precio_unitario != null ? String(l.precio_unitario) : '',
-        linea_pedido_compra_id: l.id,
-      }))
-    )
-  }, [tipoOrigen, pedidoCompraId, pedidosCompraPendientes])
-
-  useEffect(() => {
-    async function cargarArticulosDelProveedor() {
-      if (!proveedorId) {
-        setArticulosDelProveedor([])
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('articulo_proveedor')
-        .select('precio, referencia_proveedor, articulos_compra(id, nombre, unidad, requiere_control_temperatura, temperatura_min, temperatura_max)')
-        .eq('proveedor_id', proveedorId)
-
-      if (error) {
-        console.error(error)
-        setArticulosDelProveedor([])
-      } else {
-        setArticulosDelProveedor(
-          (data || []).map((ap) => ({
-            id: ap.articulos_compra.id,
-            nombre: ap.articulos_compra.nombre,
-            unidad: ap.articulos_compra.unidad,
-            precioPactado: ap.precio,
-            referenciaProveedor: ap.referencia_proveedor,
-            requiereTemperatura: ap.articulos_compra.requiere_control_temperatura,
-            temperaturaMin: ap.articulos_compra.temperatura_min,
-            temperaturaMax: ap.articulos_compra.temperatura_max,
-          }))
-        )
-      }
-    }
-
-    cargarArticulosDelProveedor()
-  }, [proveedorId])
-
-  function handleLineaChange(index, campo, valor) {
-    setLineas((prev) => {
-      const copia = [...prev]
-      copia[index] = { ...copia[index], [campo]: valor }
-
-      if (campo === 'articulo_id') {
-        const art = articulosDelProveedor.find((a) => a.id === parseInt(valor))
-        if (art?.precioPactado != null && !copia[index].precio) {
-          copia[index].precio = String(art.precioPactado)
-        }
-      }
-
-      return copia
-    })
-  }
-
-  function addLinea() {
-    setLineas((prev) => [...prev, { ...lineaVacia }])
-  }
-
-  function removeLinea(index) {
-    const linea = lineas[index]
-    if (linea.id) {
-      setLineasABorrar((prev) => [...prev, linea.id])
-    }
-    setLineas((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  function resetForm() {
-    setTipoOrigen('compra_directa')
-    setPedidoCompraId('')
-    setProveedorId('')
-    setNumeroAlbaran('')
-    setFecha(new Date().toISOString().slice(0, 10))
-    setLineas([{ ...lineaVacia }])
-    setEditandoId(null)
-    setLineasABorrar([])
-  }
-
+  // Las 3 consultas de bloqueo de línea se resuelven aquí, en el padre, ANTES de abrir el drawer
+  // -- igual que handleEditar en Pedidos.jsx (venta) -- para no abrir un formulario a medio
+  // cargar. El resultado (ids de entrada_material con algún consumo/ajuste asociado) viaja
+  // colgado del propio objeto de albarán como `idsLineaBloqueada`, que AlbaranCompraForm.jsx lee
+  // para marcar cada línea como `locked` sin repetir las queries.
   async function handleEditar(alb) {
     const entradaIds = alb.entrada_material.map((l) => l.id)
     let idsBloqueados = new Set()
@@ -165,150 +282,40 @@ function AlbaranesCompra() {
       })
     }
 
-    setProveedorId(String(alb.proveedor_id))
-    setNumeroAlbaran(alb.numero_albaran ?? '')
-    setFecha(alb.fecha)
-    setLineas(
-      alb.entrada_material.map((l) => ({
-        id: l.id,
-        articulo_id: String(l.articulo_id),
-        cantidad: String(l.cantidad),
-        precio: l.precio != null ? String(l.precio) : '',
-        fecha_caducidad: l.fecha_caducidad ?? '',
-        notas: l.notas ?? '',
-        temperatura: l.temperatura_recepcion != null ? String(l.temperatura_recepcion) : '',
-        locked: idsBloqueados.has(l.id),
-        linea_pedido_compra_id: l.linea_pedido_compra_id ?? null,
-      }))
-    )
-    setLineasABorrar([])
-    setEditandoId(alb.id)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setModoDrawer({ ...alb, idsLineaBloqueada: [...idsBloqueados] })
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function alGuardarAlbaran(idAlbaran) {
+    setModoDrawer(null)
+    await cargarDatos()
+    requestAnimationFrame(() => {
+      filaRefs.current.get(idAlbaran)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }
 
-    const lineasValidas = lineas.filter((l) => l.articulo_id && l.cantidad)
-    if (lineasValidas.length === 0) {
-      alert(t('albaranes_compra:alertas.sin_lineas_validas'))
-      return
-    }
-
-    function calcularCamposLinea(l) {
-      const art = articulosDelProveedor.find((a) => a.id === parseInt(l.articulo_id))
-      const temp = l.temperatura ? parseFloat(l.temperatura) : null
-      const fueraDeRango = temp != null && art &&
-        ((art.temperaturaMin != null && temp < art.temperaturaMin) ||
-         (art.temperaturaMax != null && temp > art.temperaturaMax))
-      return {
-        articulo_id: parseInt(l.articulo_id),
-        cantidad: parseFloat(l.cantidad),
-        precio: l.precio ? parseFloat(l.precio) : null,
-        fecha_caducidad: l.fecha_caducidad || null,
-        notas: l.notas || null,
-        temperatura_recepcion: temp,
-        temperatura_fuera_rango: fueraDeRango || false,
-        linea_pedido_compra_id: l.linea_pedido_compra_id || null,
-      }
-    }
-
-    if (editandoId) {
-      const { error: errorUpdate } = await supabase
-        .from('albaranes_compra')
-        .update({ numero_albaran: numeroAlbaran || null, fecha })
-        .eq('id', editandoId)
-
-      if (errorUpdate) {
-        alert(t('albaranes_compra:alertas.error_actualizar_albaran', { mensaje: errorUpdate.message }))
-        return
-      }
-
-      if (lineasABorrar.length > 0) {
-        const { error: errorBorrar } = await supabase
-          .from('entrada_material')
-          .delete()
-          .in('id', lineasABorrar)
-        if (errorBorrar) {
-          alert(t('albaranes_compra:alertas.error_borrar_lineas', { mensaje: errorBorrar.message }))
-          return
-        }
-      }
-
-      for (const l of lineasValidas.filter((l) => l.id && !l.locked)) {
-        const { error } = await supabase
-          .from('entrada_material')
-          .update(calcularCamposLinea(l))
-          .eq('id', l.id)
-        if (error) {
-          alert(t('albaranes_compra:alertas.error_actualizar_linea', { mensaje: error.message }))
-          return
-        }
-      }
-
-      for (const l of lineasValidas.filter((l) => l.id && l.locked)) {
-        const { error } = await supabase
-          .from('entrada_material')
-          .update({ fecha_caducidad: l.fecha_caducidad || null, notas: l.notas || null })
-          .eq('id', l.id)
-        if (error) {
-          alert(t('albaranes_compra:alertas.error_actualizar_linea_bloqueada', { mensaje: error.message }))
-          return
-        }
-      }
-
-      const nuevas = lineasValidas.filter((l) => !l.id)
-      if (nuevas.length > 0) {
-        const { error } = await supabase
-          .from('entrada_material')
-          .insert(nuevas.map((l) => ({ albaran_compra_id: editandoId, ...calcularCamposLinea(l) })))
-        if (error) {
-          alert(t('albaranes_compra:alertas.error_anadir_lineas', { mensaje: error.message }))
-          return
-        }
-      }
-
-      resetForm()
-      cargarDatos()
-      return
-    }
-
-    const { data: albaranCreado, error: errorAlbaran } = await supabase
-      .from('albaranes_compra')
-      .insert({
-        proveedor_id: parseInt(proveedorId),
-        numero_albaran: numeroAlbaran || null,
-        fecha,
-        tipo_origen: tipoOrigen,
-        pedido_compra_id: tipoOrigen === 'pedido' ? parseInt(pedidoCompraId) : null,
-      })
-      .select()
-      .single()
-
-    if (errorAlbaran) {
-      alert(t('albaranes_compra:alertas.error_crear_albaran', { mensaje: errorAlbaran.message }))
-      return
-    }
-
-    const lineasParaInsertar = lineasValidas.map((l) => ({
-      albaran_compra_id: albaranCreado.id,
-      ...calcularCamposLinea(l),
-    }))
-
-    const { error: errorLineas } = await supabase
-      .from('entrada_material')
-      .insert(lineasParaInsertar)
-
-    if (errorLineas) {
-      alert(t('albaranes_compra:alertas.error_guardar_lineas', { mensaje: errorLineas.message }))
-      return
-    }
-
-    resetForm()
+  function alGuardarPago() {
+    setPagoDrawer(null)
     cargarDatos()
   }
 
   async function handleBorrar(alb) {
+    // CONTRATO_PAGOS_COMPRA.md sección 8: pago_aplicacion.albaran_compra_id no tiene ON DELETE
+    // CASCADE (confirmado con un error real de FK en el paso 2) -- a diferencia del aviso de
+    // consumo/ajustes de más abajo (que si permite continuar tras confirmar), un albarán con pagos
+    // aplicados NUNCA se puede borrar sin dejar el historial de pagos huérfano: se bloquea del
+    // todo, sin llegar a intentar el DELETE. CONTRATO_DRAWERS_COMPRAS.md sección 2.1: albaranes_compra
+    // no pasa a soft-delete (a diferencia de facturas_compra), sigue siendo DELETE físico cuando no
+    // hay pagos de por medio.
+    const { count: countPagos } = await supabase
+      .from('pago_aplicacion')
+      .select('*', { count: 'exact', head: true })
+      .eq('albaran_compra_id', alb.id)
+
+    if (countPagos > 0) {
+      alert(t('albaranes_compra:alertas.tiene_pagos_aplicados'))
+      return
+    }
+
     const entradaIds = alb.entrada_material.map((l) => l.id)
 
     let avisos = []
@@ -334,7 +341,10 @@ function AlbaranesCompra() {
       alert(t('albaranes_compra:alertas.error_borrar', { mensaje: error.message }))
       return
     }
-    if (editandoId === alb.id) resetForm()
+    // Si el albarán borrado es justo el que estaba abierto en el drawer de edición, se cierra --
+    // mismo criterio que el `if (editandoId === alb.id) resetForm()` del formulario inline
+    // original, traducido al nuevo estado modoDrawer.
+    if (modoDrawer !== null && typeof modoDrawer === 'object' && modoDrawer.id === alb.id) setModoDrawer(null)
     cargarDatos()
   }
 
@@ -342,229 +352,235 @@ function AlbaranesCompra() {
     <div>
       <PageHeader title={t('albaranes_compra:titulo')} />
 
-      <Card className="mb-6">
-        <CardHeader title={editandoId ? t('albaranes_compra:card_editar_titulo') : t('albaranes_compra:card_nuevo_titulo')} />
-        <CardBody>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {!editandoId && (
-              <div className="flex gap-4 text-sm">
-                <label className="flex items-center gap-1.5">
-                  <input type="radio" checked={tipoOrigen === 'compra_directa'}
-                    onChange={() => { setTipoOrigen('compra_directa'); setPedidoCompraId(''); setProveedorId(''); setLineas([{ ...lineaVacia }]) }} />
-                  {t('albaranes_compra:tipo_origen.compra_directa')}
-                </label>
-                <label className="flex items-center gap-1.5">
-                  <input type="radio" checked={tipoOrigen === 'pedido'}
-                    onChange={() => setTipoOrigen('pedido')} />
-                  {t('albaranes_compra:tipo_origen.pedido_existente')}
-                </label>
-              </div>
-            )}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
+        <Button onClick={() => setModoDrawer('nuevo')}>
+          <IconPlus size={15} /> {t('albaranes_compra:card_nuevo_titulo')}
+        </Button>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {tipoOrigen === 'pedido' && !editandoId ? (
-                <Field label={t('albaranes_compra:campos.pedido_compra')}>
-                  <Select value={pedidoCompraId} onChange={(e) => setPedidoCompraId(e.target.value)} required>
-                    <option value="">{t('albaranes_compra:selecciona_pedido')}</option>
-                    {pedidosCompraPendientes.map((p) => (
-                      <option key={p.id} value={p.id}>{p.codigo_pedido} · {p.proveedores?.nombre_comercial}</option>
-                    ))}
-                  </Select>
-                  {proveedorId && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {t('albaranes_compra:proveedor_label')}{proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
-                      {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor && (
-                        <>{t('albaranes_compra:ref_proveedor_label')}{pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor}</>
-                      )}
-                    </p>
-                  )}
-                </Field>
-              ) : (
-                <Field label={t('albaranes_compra:campos.proveedor')}>
-                  <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
-                    required disabled={!!editandoId}>
-                    <option value="">{t('compras_comun:selecciona_proveedor')}</option>
-                    {proveedores.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
-                    ))}
-                  </Select>
-                </Field>
-              )}
-              <Field label={t('albaranes_compra:campos.numero_albaran_proveedor')}>
-                <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
-              </Field>
-              <Field label={t('albaranes_compra:campos.fecha')}>
-                <DateInput value={fecha} onChange={setFecha} required />
-              </Field>
-            </div>
-
-            {proveedorId && articulosDelProveedor.length === 0 && (
-              <p className="text-sm text-amber-600 flex items-center gap-1.5">
-                <IconAlertTriangle size={15} />
-                {t('compras_comun:articulo_no_asignado_aviso')}
-              </p>
-            )}
-
-            <div>
-              <SectionLabel>{t('albaranes_compra:lineas_titulo')}</SectionLabel>
-              <div className="flex flex-col gap-3">
-                {lineas.map((linea, index) => {
-                  if (linea.locked) {
-                    const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
-                    return (
-                      <div key={index} className="border border-gray-200 rounded-md p-3 bg-gray-50 text-sm text-gray-500 flex flex-col gap-2">
-                        <div className="flex items-start gap-2">
-                          <IconLock size={15} className="mt-0.5 shrink-0" />
-                          <div>
-                            {art?.nombre ?? t('albaranes_compra:linea_bloqueada.articulo_generico')} · {linea.cantidad} · {linea.precio || '-'}
-                            <span className="block text-xs mt-1">{t('albaranes_compra:linea_bloqueada.aviso')}</span>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
-                          <DateInput placeholderText={t('albaranes_compra:placeholders.caducidad')} value={linea.fecha_caducidad}
-                            onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
-                            title={t('albaranes_compra:fecha_caducidad_opcional_title')} />
-                          <Input type="text" placeholder={t('albaranes_compra:placeholders.notas')} value={linea.notas}
-                            onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
-                      <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
-                        <Select value={linea.articulo_id}
-                          onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                          required disabled={!proveedorId}>
-                          <option value="">
-                            {!proveedorId ? t('compras_comun:elige_proveedor_primero') : t('compras_comun:selecciona_articulo')}
-                          </option>
-                          {articulosDelProveedor.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.nombre} ({a.unidad}){a.referenciaProveedor ? ` — ref. ${a.referenciaProveedor}` : ''}
-                            </option>
-                          ))}
-                        </Select>
-                        <Input type="number" step="0.001" placeholder={t('albaranes_compra:placeholders.cantidad')} value={linea.cantidad}
-                          onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
-                          required title={t('common:redondea_3_decimales')} />
-                        <Input type="number" step="0.01" placeholder={t('albaranes_compra:placeholders.precio')} value={linea.precio}
-                          onChange={(e) => handleLineaChange(index, 'precio', e.target.value)} />
-                        <DateInput placeholderText={t('albaranes_compra:placeholders.caducidad')} value={linea.fecha_caducidad}
-                          onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
-                          title={t('albaranes_compra:fecha_caducidad_opcional_title')} />
-                        <button type="button" onClick={() => removeLinea(index)}
-                          className="text-gray-400 hover:text-red-600 justify-self-center">
-                          <IconTrash size={16} />
-                        </button>
-                      </div>
-
-                      {(() => {
-                        const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
-                        if (!art?.requiereTemperatura) return null
-
-                        const temp = parseFloat(linea.temperatura)
-                        const fueraDeRango = linea.temperatura !== '' &&
-                          ((art.temperaturaMin != null && temp < art.temperaturaMin) ||
-                           (art.temperaturaMax != null && temp > art.temperaturaMax))
-
-                        return (
-                          <div>
-                            <input type="number" step="0.1"
-                              placeholder={`${t('albaranes_compra:temperatura.placeholder_base')}${art.temperaturaMin != null && art.temperaturaMax != null ? t('albaranes_compra:temperatura.rango_sufijo', { min: art.temperaturaMin, max: art.temperaturaMax }) : ''}`}
-                              value={linea.temperatura}
-                              onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
-                              className={`border rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-red-300 bg-red-50 focus:ring-red-100' : 'border-blue-200 focus:ring-blue-100'}`} />
-                            {fueraDeRango && (
-                              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                                <IconAlertTriangle size={13} /> {t('albaranes_compra:temperatura.fuera_rango_aviso', { min: art.temperaturaMin, max: art.temperaturaMax })}
-                              </p>
-                            )}
-                          </div>
-                        )
-                      })()}
-
-                      <Input type="text" placeholder={t('albaranes_compra:placeholders.notas_detalle')}
-                        value={linea.notas}
-                        onChange={(e) => handleLineaChange(index, 'notas', e.target.value)} />
-                    </div>
-                  )
-                })}
-              </div>
-              <button type="button" onClick={addLinea}
-                className="mt-2 text-sm text-primary-600 font-medium flex items-center gap-1 hover:underline">
-                <IconPlus size={15} /> {t('compras_comun:anadir_linea')}
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <Button type="submit">{editandoId ? t('albaranes_compra:guardar_cambios') : t('albaranes_compra:guardar_albaran')}</Button>
-              {editandoId && (
-                <Button type="button" variant="secondary" onClick={resetForm}>{t('albaranes_compra:cancelar_edicion')}</Button>
-              )}
-            </div>
-          </form>
-        </CardBody>
-      </Card>
-
-      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+        <Field label={t('albaranes_compra:filtros.proveedor')} className="w-48">
+          <Select value={filtroProveedorId} onChange={(e) => cambiarFiltroProveedor(e.target.value)}>
+            <option value="">{t('common:actions.all')}</option>
+            {proveedores.map((p) => (
+              <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t('albaranes_compra:filtros.facturacion')} className="w-48">
+          <MultiSelect options={FACTURACION_OPCIONES} selected={filtroFacturacion} onChange={cambiarFiltroFacturacion} placeholder={t('common:actions.all')} />
+        </Field>
+        <Field label={t('albaranes_compra:filtros.desde')} className="w-40">
+          <DateInput value={filtroFechaDesde} onChange={cambiarFiltroFechaDesde} />
+        </Field>
+        <Field label={t('albaranes_compra:filtros.hasta')} className="w-40">
+          <DateInput value={filtroFechaHasta} onChange={cambiarFiltroFechaHasta} />
+        </Field>
+        {hayFiltrosActivos && (
+          <Button type="button" variant="secondary" size="sm" onClick={limpiarFiltros}>{t('albaranes_compra:filtros.limpiar_filtros')}</Button>
+        )}
+      </div>
 
       {cargando ? (
         <LoadingState />
       ) : albaranes.length === 0 ? (
-        <Card><EmptyState>{t('albaranes_compra:sin_albaranes')}</EmptyState></Card>
+        <Card>
+          <EmptyState>
+            {hayFiltrosActivos ? t('albaranes_compra:sin_albaranes_filtro') : t('albaranes_compra:sin_albaranes')}
+          </EmptyState>
+        </Card>
       ) : (
-        <div className="flex flex-col gap-4">
-          {albaranes.map((alb) => (
-            <Card key={alb.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-ink">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</p>
-                  <p className="text-sm text-gray-500">
-                    {t('albaranes_compra:albaran_linea', { numero: alb.numero_albaran || t('common:sin_numero') })} · {formatFecha(alb.fecha)}
-                    {alb.codigo_interno && <span className="ml-2 text-xs font-mono text-gray-400">{alb.codigo_interno}</span>}
-                  </p>
-                </div>
-                <div className="flex gap-3 shrink-0">
-                  <LinkAction tone="blue" onClick={() => handleEditar(alb)}>{t('albaranes_compra:editar')}</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(alb)}>{t('albaranes_compra:borrar')}</LinkAction>
-                </div>
-              </div>
+        <Card className="overflow-hidden">
+          <div className="overflow-y-auto max-h-[70vh]">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-10 bg-gray-50">
+                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                  <th className="w-8 px-3 py-2.5"></th>
+                  <th className="px-3 py-2.5 font-medium">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                      {t('albaranes_compra:tabla.fecha')} {iconoOrden('fecha')}
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_compra:tabla.numero')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_compra:tabla.proveedor')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_compra:tabla.codigo_interno')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('albaranes_compra:tabla.pedido_origen')}</th>
+                  <th className="px-3 py-2.5 font-medium text-center">{t('albaranes_compra:tabla.facturacion')}</th>
+                  <th className="px-3 py-2.5 font-medium text-center">{t('albaranes_compra:tabla.cobro')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('albaranes_compra:tabla.acciones')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {albaranes.map((alb) => {
+                  // CONTRATO_PAGOS_COMPRA.md paso 4: saldo/estado de pago propio SOLO para sueltos
+                  // -- un albarán ya facturado (con factura viva) refleja su pago en la factura de
+                  // compra, no aquí. Mismo criterio que AlbaranesVenta.jsx.
+                  const facturado = facturaVivaDe(alb)
+                  const saldo = facturado ? null : saldosPorAlbaran.get(alb.id)
+                  const estado = saldo != null ? estadoPago(saldo, totalAlbaran(alb)) : null
+                  const tieneSaldoPendiente = saldo != null && saldo > EPSILON
+                  const codigosPedido = codigosPedidoOrigen(alb)
+                  const expandido = filaExpandidaId === alb.id
+                  return (
+                    <Fragment key={alb.id}>
+                      <tr
+                        ref={(el) => { if (el) filaRefs.current.set(alb.id, el); else filaRefs.current.delete(alb.id) }}
+                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        onClick={() => toggleExpandido(alb.id)}
+                      >
+                        <td className="px-3 py-3">
+                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                            {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(alb.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('common:sin_numero')}</td>
+                        <td className="px-3 py-3 font-medium text-ink">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs font-mono text-gray-400">{alb.codigo_interno || '—'}</td>
+                        <td className="px-3 py-3">
+                          {codigosPedido.length === 0 ? (
+                            <span className="text-gray-400">—</span>
+                          ) : codigosPedido.length === 1 ? (
+                            <Badge color="blue">{codigosPedido[0]}</Badge>
+                          ) : (
+                            <span title={codigosPedido.join(', ')}>
+                              <Badge color="blue">{t('albaranes_compra:varios')}</Badge>
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          <EstadoIcono
+                            cfg={ESTADO_FACTURACION_ICONO[facturado ? 'facturado' : 'pendiente']}
+                            label={t(`enums:estado_facturacion.${facturado ? 'facturado' : 'pendiente_facturar'}`)}
+                          />
+                        </td>
+                        <td className="px-3 py-3 text-center">
+                          {estado && <EstadoIcono cfg={ESTADO_COBRO_ICONO[estado]} label={t(`enums:estado_pago.${estado}`)} />}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                            {tieneSaldoPendiente && (
+                              <LinkAction tone="green" onClick={() => setPagoDrawer({ proveedorId: alb.proveedor_id, documento: { tipo: 'albaran', id: alb.id, saldo } })}>
+                                {t('compras_comun:tooltip_registrar_pago')}
+                              </LinkAction>
+                            )}
+                            <LinkAction tone="blue" onClick={() => handleEditar(alb)}>{t('albaranes_compra:editar')}</LinkAction>
+                            <LinkAction tone="red" onClick={() => handleBorrar(alb)}>{t('albaranes_compra:borrar')}</LinkAction>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colSpan={9} className="p-0">
+                          <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                            <div className="overflow-hidden">
+                              <div className="bg-gray-50/60 px-3 py-3">
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.articulo')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.cantidad')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.precio')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.caducidad')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.notas')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.temperatura')}</th>
+                                      <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.lote')}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {alb.entrada_material.map((linea) => (
+                                      <tr key={linea.id}>
+                                        <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
+                                        <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
+                                        <td className="py-1.5">{linea.precio ?? '-'}</td>
+                                        <td className="py-1.5">{linea.fecha_caducidad ? formatFecha(linea.fecha_caducidad) : '-'}</td>
+                                        <td className="py-1.5 text-gray-500">{linea.notas ?? '-'}</td>
+                                        <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
+                                          {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}
+                                          {linea.temperatura_fuera_rango && ' ⚠️'}
+                                        </td>
+                                        <td className="py-1.5 text-gray-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
-              <table className="w-full mt-3 text-sm">
-                <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.articulo')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.cantidad')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.precio')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.caducidad')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.notas')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.temperatura')}</th>
-                    <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.lote')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {alb.entrada_material.map((linea) => (
-                    <tr key={linea.id}>
-                      <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
-                      <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
-                      <td className="py-1.5">{linea.precio ?? '-'}</td>
-                      <td className="py-1.5">{linea.fecha_caducidad ? formatFecha(linea.fecha_caducidad) : '-'}</td>
-                      <td className="py-1.5 text-gray-500">{linea.notas ?? '-'}</td>
-                      <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
-                        {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}
-                        {linea.temperatura_fuera_rango && ' ⚠️'}
-                      </td>
-                      <td className="py-1.5 text-gray-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          ))}
+      {!cargando && totalAlbaranes > 0 && (
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-xs text-gray-400">
+            {t('albaranes_compra:albaran_pagina_count', { count: totalAlbaranes, pagina, total: totalPaginas })}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={pagina === 1}
+              onClick={() => setPagina((p) => p - 1)}
+            >
+              {t('common:actions.previous')}
+            </Button>
+            {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setPagina(n)}
+                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+              >
+                {n}
+              </button>
+            ))}
+            <Button
+              type="button" variant="secondary" size="sm"
+              disabled={pagina === totalPaginas}
+              onClick={() => setPagina((p) => p + 1)}
+            >
+              {t('common:actions.next')}
+            </Button>
+          </div>
         </div>
       )}
+
+      <Drawer
+        open={modoDrawer !== null}
+        onClose={() => setModoDrawer(null)}
+        title={modoDrawer !== null && typeof modoDrawer === 'object' ? t('albaranes_compra:card_editar_titulo') : t('albaranes_compra:card_nuevo_titulo')}
+        anchoClase="max-w-2xl"
+      >
+        {modoDrawer !== null && (
+          <AlbaranCompraForm
+            albaran={typeof modoDrawer === 'object' ? modoDrawer : null}
+            proveedores={proveedores}
+            pedidosCompraPendientes={pedidosCompraPendientes}
+            pedidoCompraIdParam={pedidoCompraIdParam}
+            onGuardado={alGuardarAlbaran}
+            onCancelar={() => setModoDrawer(null)}
+          />
+        )}
+      </Drawer>
+
+      <Drawer open={pagoDrawer !== null} onClose={() => setPagoDrawer(null)} title={t('compras_comun:registrar_pago_proveedor')}>
+        {pagoDrawer !== null && (
+          <RegistrarPagoProveedorForm
+            proveedores={proveedores}
+            proveedorIdInicial={pagoDrawer.proveedorId}
+            documentoPreseleccionado={pagoDrawer.documento}
+            onGuardado={alGuardarPago}
+            onCancelar={() => setPagoDrawer(null)}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }

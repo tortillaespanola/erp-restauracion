@@ -37,10 +37,34 @@
   "guardar_cambios": "Änderungen speichern",
   "guardar_albaran": "Lieferschein speichern",
   "cancelar_edicion": "Bearbeitung abbrechen",
+  "filtros": {
+    "proveedor": "Lieferant",
+    "facturacion": "Fakturierung",
+    "desde": "Von",
+    "hasta": "Bis",
+    "orden": "Sortieren nach",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Datum (neueste)",
+    "fecha_asc": "Datum (älteste)"
+  },
+  "sin_albaranes_filtro": "Kein Lieferschein entspricht den angewendeten Filtern.",
+  "albaran_pagina_count_one": "{{count}} Lieferschein · Seite {{pagina}} von {{total}}",
+  "albaran_pagina_count_other": "{{count}} Lieferscheine · Seite {{pagina}} von {{total}}",
   "sin_albaranes": "Es sind noch keine Lieferscheine erfasst.",
   "editar": "Bearbeiten",
   "borrar": "Löschen",
+  "varios": "Mehrere",
   "tabla": {
+    "fecha": "Datum",
+    "numero": "Lieferschein-Nr.",
+    "proveedor": "Lieferant",
+    "codigo_interno": "Interner Code",
+    "pedido_origen": "Ursprungsbestellung",
+    "facturacion": "Fakturierung",
+    "cobro": "Zahlung",
+    "acciones": "Aktionen",
     "articulo": "Artikel",
     "cantidad": "Menge",
     "precio": "Preis",
@@ -68,6 +92,7 @@
     "error_guardar_lineas": "Fehler beim Speichern der Zeilen: {{mensaje}}",
     "confirmar_borrar_con_avisos": "⚠️ Dieser Lieferschein hat verknüpfte Daten, die ebenfalls GELÖSCHT werden:\n\n{{lista}}\n\nBist du sicher, dass du fortfahren willst?",
     "confirmar_borrar_sin_avisos": "Möchtest du diesen Lieferschein wirklich löschen?",
-    "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+    "error_borrar": "Fehler beim Löschen: {{mensaje}}",
+    "tiene_pagos_aplicados": "Dieser Lieferschein hat zugeordnete Zahlungen und kann nicht gelöscht werden."
   }
 }

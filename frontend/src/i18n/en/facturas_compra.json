@@ -1,6 +1,9 @@
 {
   "titulo": "Purchase invoices",
   "card_nuevo_titulo": "New invoice",
+  "card_editar_titulo": "Edit invoice",
+  "editar": "Edit",
+  "guardar_cambios": "Save changes",
   "campos": {
     "proveedor": "Supplier",
     "numero_factura": "Invoice No.",
@@ -12,15 +15,41 @@
   "sin_albaranes_pendientes": "This supplier has no delivery notes pending invoicing.",
   "albaran_checkbox_label": "Delivery note {{numero}} · {{fecha}}",
   "guardar_factura": "Save invoice",
+  "filtros": {
+    "proveedor": "Supplier",
+    "estado": "Status",
+    "desde": "From",
+    "hasta": "To",
+    "orden": "Sort by",
+    "limpiar_filtros": "Clear filters"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Date (most recent)",
+    "fecha_asc": "Date (oldest)"
+  },
+  "tabla": {
+    "fecha": "Date",
+    "numero": "Invoice No.",
+    "proveedor": "Supplier",
+    "estado": "Status",
+    "total": "Total",
+    "codigo_interno": "Internal code",
+    "acciones": "Actions"
+  },
+  "sin_facturas_filtro": "No invoice matches the applied filters.",
+  "factura_pagina_count_one": "{{count}} invoice · page {{pagina}} of {{total}}",
+  "factura_pagina_count_other": "{{count}} invoices · page {{pagina}} of {{total}}",
   "sin_facturas": "There are no invoices registered yet.",
-  "borrar": "Delete",
+  "anular": "Cancel",
   "factura_linea": "Invoice {{numero}} · {{fecha}}",
   "albaranes_incluidos": "Delivery notes included: ",
   "alertas": {
     "sin_albaranes_seleccionados": "Select at least one delivery note to associate with the invoice",
     "error_crear_factura": "Error creating the invoice: {{mensaje}}",
     "error_asociar_albaranes": "Error associating the delivery notes: {{mensaje}}",
-    "confirmar_borrar": "Are you sure you want to delete this invoice?",
-    "error_borrar": "Error deleting: {{mensaje}}"
+    "error_actualizar_factura": "Error updating the invoice: {{mensaje}}",
+    "error_actualizar_albaranes": "Error updating the associated delivery notes: {{mensaje}}",
+    "confirmar_anular": "Are you sure you want to cancel this invoice?",
+    "error_anular": "Error cancelling: {{mensaje}}"
   }
 }

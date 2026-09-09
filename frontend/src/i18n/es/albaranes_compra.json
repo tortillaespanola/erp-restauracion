@@ -37,10 +37,34 @@
   "guardar_cambios": "Guardar cambios",
   "guardar_albaran": "Guardar albarán",
   "cancelar_edicion": "Cancelar edición",
+  "filtros": {
+    "proveedor": "Proveedor",
+    "facturacion": "Facturación",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "orden": "Ordenar por",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Fecha (más reciente)",
+    "fecha_asc": "Fecha (más antigua)"
+  },
+  "sin_albaranes_filtro": "Ningún albarán coincide con los filtros aplicados.",
+  "albaran_pagina_count_one": "{{count}} albarán · página {{pagina}} de {{total}}",
+  "albaran_pagina_count_other": "{{count}} albaranes · página {{pagina}} de {{total}}",
   "sin_albaranes": "Todavía no hay albaranes registrados.",
   "editar": "Editar",
   "borrar": "Borrar",
+  "varios": "Varios",
   "tabla": {
+    "fecha": "Fecha",
+    "numero": "Nº Albarán",
+    "proveedor": "Proveedor",
+    "codigo_interno": "Código interno",
+    "pedido_origen": "Pedido origen",
+    "facturacion": "Facturación",
+    "cobro": "Cobro",
+    "acciones": "Acciones",
     "articulo": "Artículo",
     "cantidad": "Cantidad",
     "precio": "Precio",
@@ -68,6 +92,7 @@
     "error_guardar_lineas": "Error al guardar las líneas: {{mensaje}}",
     "confirmar_borrar_con_avisos": "⚠️ Este albarán tiene datos relacionados que se BORRARÁN también:\n\n{{lista}}\n\n¿Seguro que quieres continuar?",
     "confirmar_borrar_sin_avisos": "¿Seguro que quieres borrar este albarán?",
-    "error_borrar": "Error al borrar: {{mensaje}}"
+    "error_borrar": "Error al borrar: {{mensaje}}",
+    "tiene_pagos_aplicados": "Este albarán tiene pagos aplicados, no se puede borrar."
   }
 }

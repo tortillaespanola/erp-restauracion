@@ -4,5 +4,7 @@
   "elige_proveedor_primero": "First choose a supplier",
   "selecciona_articulo": "Select article",
   "articulo_no_asignado_aviso": "This supplier has no article assigned yet — go to Articles to link one.",
-  "anadir_linea": "Add line"
+  "anadir_linea": "Add line",
+  "tooltip_registrar_pago": "Record payment",
+  "registrar_pago_proveedor": "Record payment to supplier"
 }

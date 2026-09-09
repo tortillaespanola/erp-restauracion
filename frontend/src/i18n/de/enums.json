@@ -14,7 +14,8 @@
     "pagada": "Bezahlt",
     "parcial": "Teilweise",
     "pendiente": "Ausstehend",
-    "anulada": "Storniert"
+    "anulada": "Storniert",
+    "sin_total": "Ohne Betrag"
   },
   "estado_facturacion": {
     "facturado": "Fakturiert",

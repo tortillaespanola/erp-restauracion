@@ -37,10 +37,34 @@
   "guardar_cambios": "Save changes",
   "guardar_albaran": "Save delivery note",
   "cancelar_edicion": "Cancel editing",
+  "filtros": {
+    "proveedor": "Supplier",
+    "facturacion": "Invoicing",
+    "desde": "From",
+    "hasta": "To",
+    "orden": "Sort by",
+    "limpiar_filtros": "Clear filters"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Date (most recent)",
+    "fecha_asc": "Date (oldest)"
+  },
+  "sin_albaranes_filtro": "No delivery note matches the applied filters.",
+  "albaran_pagina_count_one": "{{count}} delivery note · page {{pagina}} of {{total}}",
+  "albaran_pagina_count_other": "{{count}} delivery notes · page {{pagina}} of {{total}}",
   "sin_albaranes": "There are no delivery notes registered yet.",
   "editar": "Edit",
   "borrar": "Delete",
+  "varios": "Multiple",
   "tabla": {
+    "fecha": "Date",
+    "numero": "Delivery note No.",
+    "proveedor": "Supplier",
+    "codigo_interno": "Internal code",
+    "pedido_origen": "Source order",
+    "facturacion": "Invoicing",
+    "cobro": "Payment",
+    "acciones": "Actions",
     "articulo": "Article",
     "cantidad": "Quantity",
     "precio": "Price",
@@ -68,6 +92,7 @@
     "error_guardar_lineas": "Error saving the lines: {{mensaje}}",
     "confirmar_borrar_con_avisos": "⚠️ This delivery note has related data that will ALSO be deleted:\n\n{{lista}}\n\nAre you sure you want to continue?",
     "confirmar_borrar_sin_avisos": "Are you sure you want to delete this delivery note?",
-    "error_borrar": "Error deleting: {{mensaje}}"
+    "error_borrar": "Error deleting: {{mensaje}}",
+    "tiene_pagos_aplicados": "This delivery note has payments applied, it cannot be deleted."
   }
 }

@@ -1,6 +1,9 @@
 {
   "titulo": "Facturas de compra",
   "card_nuevo_titulo": "Nueva factura",
+  "card_editar_titulo": "Editar factura",
+  "editar": "Editar",
+  "guardar_cambios": "Guardar cambios",
   "campos": {
     "proveedor": "Proveedor",
     "numero_factura": "Nº de factura",
@@ -12,15 +15,41 @@
   "sin_albaranes_pendientes": "Este proveedor no tiene albaranes pendientes de facturar.",
   "albaran_checkbox_label": "Albarán {{numero}} · {{fecha}}",
   "guardar_factura": "Guardar factura",
+  "filtros": {
+    "proveedor": "Proveedor",
+    "estado": "Estado",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "orden": "Ordenar por",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Fecha (más reciente)",
+    "fecha_asc": "Fecha (más antigua)"
+  },
+  "tabla": {
+    "fecha": "Fecha",
+    "numero": "Nº Factura",
+    "proveedor": "Proveedor",
+    "estado": "Estado",
+    "total": "Total",
+    "codigo_interno": "Código interno",
+    "acciones": "Acciones"
+  },
+  "sin_facturas_filtro": "Ninguna factura coincide con los filtros aplicados.",
+  "factura_pagina_count_one": "{{count}} factura · página {{pagina}} de {{total}}",
+  "factura_pagina_count_other": "{{count}} facturas · página {{pagina}} de {{total}}",
   "sin_facturas": "Todavía no hay facturas registradas.",
-  "borrar": "Borrar",
+  "anular": "Anular",
   "factura_linea": "Factura {{numero}} · {{fecha}}",
   "albaranes_incluidos": "Albaranes incluidos: ",
   "alertas": {
     "sin_albaranes_seleccionados": "Selecciona al menos un albarán para asociar a la factura",
     "error_crear_factura": "Error al crear la factura: {{mensaje}}",
     "error_asociar_albaranes": "Error al asociar los albaranes: {{mensaje}}",
-    "confirmar_borrar": "¿Seguro que quieres borrar esta factura?",
-    "error_borrar": "Error al borrar: {{mensaje}}"
+    "error_actualizar_factura": "Error al actualizar la factura: {{mensaje}}",
+    "error_actualizar_albaranes": "Error al actualizar los albaranes asociados: {{mensaje}}",
+    "confirmar_anular": "¿Seguro que quieres anular esta factura?",
+    "error_anular": "Error al anular: {{mensaje}}"
   }
 }

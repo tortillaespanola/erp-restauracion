@@ -21,6 +21,7 @@ const NAV_SECTIONS = [
       { to: '/articulos', clave: 'articulos', icon: IconPackage },
       { to: '/albaranes-compra', clave: 'albaranes_compra', icon: IconFileInvoice },
       { to: '/facturas-compra', clave: 'facturas_compra', icon: IconReceipt },
+      { to: '/pagos-compra', clave: 'pagos_compra', icon: IconCash },
     ],
   },
   {
@@ -56,6 +57,7 @@ const RUTA_A_CLAVE = {
   '/articulos': 'articulos',
   '/albaranes-compra': 'albaranes_compra',
   '/facturas-compra': 'facturas_compra',
+  '/pagos-compra': 'pagos_compra',
   '/pedidos-del-dia': 'pedidos_del_dia',
   '/inventario': 'inventario',
   '/cierre-tanda': 'cierre_tanda',

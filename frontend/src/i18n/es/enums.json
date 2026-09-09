@@ -14,7 +14,8 @@
     "pagada": "Pagada",
     "parcial": "Parcial",
     "pendiente": "Pendiente",
-    "anulada": "Anulada"
+    "anulada": "Anulada",
+    "sin_total": "Sin total"
   },
   "estado_facturacion": {
     "facturado": "Facturado",

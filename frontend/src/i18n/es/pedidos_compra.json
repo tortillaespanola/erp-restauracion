@@ -2,6 +2,9 @@
   "titulo": "Pedidos de compra",
   "subtitulo": "Registra lo que se pide a un proveedor, y recíbelo como albarán de compra cuando llegue.",
   "card_nuevo_titulo": "Nuevo pedido de compra",
+  "card_editar_titulo": "Editar pedido de compra",
+  "editar": "Editar",
+  "guardar_cambios": "Guardar cambios",
   "campos": {
     "proveedor": "Proveedor",
     "fecha": "Fecha",
@@ -17,9 +20,34 @@
   "fecha_entrega_anterior": "No puede ser anterior a la fecha del pedido",
   "lineas_titulo": "Líneas del pedido",
   "guardar_pedido": "Guardar pedido",
+  "filtros": {
+    "proveedor": "Proveedor",
+    "estado": "Estado",
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "orden": "Ordenar por",
+    "limpiar_filtros": "Limpiar filtros"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Fecha (más reciente)",
+    "fecha_asc": "Fecha (más antigua)",
+    "entrega_prevista_asc": "Entrega prevista (más próxima)",
+    "entrega_prevista_desc": "Entrega prevista (más lejana)"
+  },
+  "sin_pedidos_filtro": "Ningún pedido coincide con los filtros aplicados.",
+  "pedido_pagina_count_one": "{{count}} pedido · página {{pagina}} de {{total}}",
+  "pedido_pagina_count_other": "{{count}} pedidos · página {{pagina}} de {{total}}",
   "sin_pedidos": "Todavía no hay pedidos de compra registrados.",
   "recibir_como_albaran": "Recibir como albarán",
+  "lineas_recibidas": "{{recibidas}}/{{total}} líneas recibidas",
   "tabla": {
+    "fecha": "Fecha",
+    "proveedor": "Proveedor",
+    "entrega_prevista": "Entrega prevista",
+    "referencia_proveedor": "Ref. proveedor",
+    "progreso": "Progreso",
+    "estado": "Estado",
+    "acciones": "Acciones",
     "articulo": "Artículo",
     "pedido": "Pedido",
     "recibido": "Recibido"
@@ -30,6 +58,11 @@
     "sin_lineas_validas": "Añade al menos una línea con artículo y cantidad",
     "error_crear_pedido": "Error al crear el pedido: {{mensaje}}",
     "error_guardar_lineas": "Error al guardar las líneas: {{mensaje}}",
+    "error_actualizar_pedido": "Error al actualizar el pedido: {{mensaje}}",
+    "error_borrar_lineas": "Error al borrar líneas: {{mensaje}}",
+    "error_actualizar_linea": "Error al actualizar una línea: {{mensaje}}",
+    "error_anadir_lineas": "Error al añadir nuevas líneas: {{mensaje}}",
+    "no_editable": "Este pedido ya tiene mercancía recibida; no se puede editar — cancélalo y crea uno nuevo, o contacta con soporte.",
     "confirmar_cancelar": "¿Cancelar este pedido de compra?",
     "error_cancelar": "Error al cancelar: {{mensaje}}"
   }

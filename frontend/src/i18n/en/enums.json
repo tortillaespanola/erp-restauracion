@@ -14,7 +14,8 @@
     "pagada": "Paid",
     "parcial": "Partial",
     "pendiente": "Pending",
-    "anulada": "Cancelled"
+    "anulada": "Cancelled",
+    "sin_total": "No total"
   },
   "estado_facturacion": {
     "facturado": "Invoiced",

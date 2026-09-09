@@ -2,6 +2,9 @@
   "titulo": "Purchase orders",
   "subtitulo": "Register what is ordered from a supplier, and receive it as a purchase delivery note when it arrives.",
   "card_nuevo_titulo": "New purchase order",
+  "card_editar_titulo": "Edit purchase order",
+  "editar": "Edit",
+  "guardar_cambios": "Save changes",
   "campos": {
     "proveedor": "Supplier",
     "fecha": "Date",
@@ -17,9 +20,34 @@
   "fecha_entrega_anterior": "Cannot be earlier than the order date",
   "lineas_titulo": "Order lines",
   "guardar_pedido": "Save order",
+  "filtros": {
+    "proveedor": "Supplier",
+    "estado": "Status",
+    "desde": "From",
+    "hasta": "To",
+    "orden": "Sort by",
+    "limpiar_filtros": "Clear filters"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Date (most recent)",
+    "fecha_asc": "Date (oldest)",
+    "entrega_prevista_asc": "Expected delivery (soonest)",
+    "entrega_prevista_desc": "Expected delivery (latest)"
+  },
+  "sin_pedidos_filtro": "No purchase order matches the applied filters.",
+  "pedido_pagina_count_one": "{{count}} order · page {{pagina}} of {{total}}",
+  "pedido_pagina_count_other": "{{count}} orders · page {{pagina}} of {{total}}",
   "sin_pedidos": "There are no purchase orders registered yet.",
   "recibir_como_albaran": "Receive as delivery note",
+  "lineas_recibidas": "{{recibidas}}/{{total}} lines received",
   "tabla": {
+    "fecha": "Date",
+    "proveedor": "Supplier",
+    "entrega_prevista": "Expected delivery",
+    "referencia_proveedor": "Supplier ref.",
+    "progreso": "Progress",
+    "estado": "Status",
+    "acciones": "Actions",
     "articulo": "Article",
     "pedido": "Ordered",
     "recibido": "Received"
@@ -30,6 +58,11 @@
     "sin_lineas_validas": "Add at least one line with article and quantity",
     "error_crear_pedido": "Error creating the order: {{mensaje}}",
     "error_guardar_lineas": "Error saving the lines: {{mensaje}}",
+    "error_actualizar_pedido": "Error updating the order: {{mensaje}}",
+    "error_borrar_lineas": "Error deleting lines: {{mensaje}}",
+    "error_actualizar_linea": "Error updating a line: {{mensaje}}",
+    "error_anadir_lineas": "Error adding new lines: {{mensaje}}",
+    "no_editable": "This order already has received goods; it cannot be edited — cancel it and create a new one, or contact support.",
     "confirmar_cancelar": "Cancel this purchase order?",
     "error_cancelar": "Error cancelling: {{mensaje}}"
   }

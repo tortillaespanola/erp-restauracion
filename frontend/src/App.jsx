@@ -15,6 +15,7 @@ import Proveedores from './pages/Proveedores'
 import PedidosCompra from './pages/PedidosCompra'
 import AlbaranesCompra from './pages/AlbaranesCompra'
 import FacturasCompra from './pages/FacturasCompra'
+import PagosCompra from './pages/PagosCompra'
 import Pedidos from './pages/Pedidos'
 import Clientes from './pages/Clientes'
 import AlbaranesVenta from './pages/AlbaranesVenta'
@@ -44,6 +45,7 @@ function App({ session, onLogout }) {
           <Route path="/pedidos-compra" element={<PedidosCompra />} />
           <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
           <Route path="/facturas-compra" element={<FacturasCompra />} />
+          <Route path="/pagos-compra" element={<PagosCompra />} />
           <Route path="/pedidos" element={<Pedidos />} />
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/albaranes-venta" element={<AlbaranesVenta />} />

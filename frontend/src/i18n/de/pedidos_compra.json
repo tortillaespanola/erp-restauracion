@@ -2,6 +2,9 @@
   "titulo": "Bestellungen Einkauf",
   "subtitulo": "Erfasse, was bei einem Lieferanten bestellt wird, und empfange es bei Ankunft als Lieferschein Einkauf.",
   "card_nuevo_titulo": "Neue Bestellung",
+  "card_editar_titulo": "Bestellung bearbeiten",
+  "editar": "Bearbeiten",
+  "guardar_cambios": "Änderungen speichern",
   "campos": {
     "proveedor": "Lieferant",
     "fecha": "Datum",
@@ -17,9 +20,34 @@
   "fecha_entrega_anterior": "Darf nicht vor dem Bestelldatum liegen",
   "lineas_titulo": "Bestellzeilen",
   "guardar_pedido": "Bestellung speichern",
+  "filtros": {
+    "proveedor": "Lieferant",
+    "estado": "Status",
+    "desde": "Von",
+    "hasta": "Bis",
+    "orden": "Sortieren nach",
+    "limpiar_filtros": "Filter zurücksetzen"
+  },
+  "orden_opciones": {
+    "fecha_desc": "Datum (neueste)",
+    "fecha_asc": "Datum (älteste)",
+    "entrega_prevista_asc": "Voraussichtliche Lieferung (nächste)",
+    "entrega_prevista_desc": "Voraussichtliche Lieferung (späteste)"
+  },
+  "sin_pedidos_filtro": "Keine Bestellung entspricht den angewendeten Filtern.",
+  "pedido_pagina_count_one": "{{count}} Bestellung · Seite {{pagina}} von {{total}}",
+  "pedido_pagina_count_other": "{{count}} Bestellungen · Seite {{pagina}} von {{total}}",
   "sin_pedidos": "Es sind noch keine Bestellungen erfasst.",
   "recibir_como_albaran": "Als Lieferschein empfangen",
+  "lineas_recibidas": "{{recibidas}}/{{total}} Zeilen erhalten",
   "tabla": {
+    "fecha": "Datum",
+    "proveedor": "Lieferant",
+    "entrega_prevista": "Voraussichtliche Lieferung",
+    "referencia_proveedor": "Lieferantenreferenz",
+    "progreso": "Fortschritt",
+    "estado": "Status",
+    "acciones": "Aktionen",
     "articulo": "Artikel",
     "pedido": "Bestellt",
     "recibido": "Erhalten"
@@ -30,6 +58,11 @@
     "sin_lineas_validas": "Füge mindestens eine Zeile mit Artikel und Menge hinzu",
     "error_crear_pedido": "Fehler beim Erstellen der Bestellung: {{mensaje}}",
     "error_guardar_lineas": "Fehler beim Speichern der Zeilen: {{mensaje}}",
+    "error_actualizar_pedido": "Fehler beim Aktualisieren der Bestellung: {{mensaje}}",
+    "error_borrar_lineas": "Fehler beim Löschen der Zeilen: {{mensaje}}",
+    "error_actualizar_linea": "Fehler beim Aktualisieren einer Zeile: {{mensaje}}",
+    "error_anadir_lineas": "Fehler beim Hinzufügen neuer Zeilen: {{mensaje}}",
+    "no_editable": "Diese Bestellung hat bereits erhaltene Ware; sie kann nicht bearbeitet werden — storniere sie und erstelle eine neue, oder wende dich an den Support.",
     "confirmar_cancelar": "Diese Bestellung stornieren?",
     "error_cancelar": "Fehler beim Stornieren: {{mensaje}}"
   }

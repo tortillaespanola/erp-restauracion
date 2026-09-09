@@ -4,5 +4,7 @@
   "elige_proveedor_primero": "Wähle zuerst einen Lieferanten",
   "selecciona_articulo": "Artikel auswählen",
   "articulo_no_asignado_aviso": "Dieser Lieferant hat noch keinen Artikel zugewiesen — gehe zu Artikel, um einen zu verknüpfen.",
-  "anadir_linea": "Zeile hinzufügen"
+  "anadir_linea": "Zeile hinzufügen",
+  "tooltip_registrar_pago": "Zahlung erfassen",
+  "registrar_pago_proveedor": "Zahlung an Lieferant erfassen"
 }

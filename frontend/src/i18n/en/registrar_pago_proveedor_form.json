@@ -1,0 +1,26 @@
+{
+  "campos": {
+    "proveedor": "Supplier",
+    "fecha": "Date",
+    "monto_pagado": "Amount paid ({{moneda}})",
+    "metodo": "Method"
+  },
+  "selecciona_metodo": "Select method",
+  "aplicado_pagado": "Applied: {{aplicado}} / Paid: {{recibido}}",
+  "excede_lo_pagado_aviso": " — exceeds the amount paid, fix it before saving",
+  "notas_opcional": "Notes (optional)",
+  "documentos_saldo_pendiente_titulo": "Documents with outstanding balance",
+  "elige_proveedor_primero": "First choose a supplier to see their pending documents.",
+  "cargando_documentos": "Loading documents…",
+  "sin_documentos_pendientes": "This supplier has no documents with an outstanding balance.",
+  "grupo_facturas": "Invoices",
+  "grupo_albaranes": "Delivery notes",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · balance {{saldo}}",
+  "guardar_pago": "Save payment",
+  "alertas": {
+    "error_cargar_documentos": "Error loading the supplier's pending documents: {{mensaje}}",
+    "excede_lo_pagado": "You cannot apply more than the amount paid.",
+    "error_registrar_pago": "Error registering the payment: {{mensaje}}",
+    "error_aplicar_pago": "Error applying the payment to the documents: {{mensaje}}"
+  }
+}

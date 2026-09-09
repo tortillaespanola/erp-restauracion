@@ -5,16 +5,15 @@ import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
 import { IconChevronRight, IconChevronDown, IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, Badge, EmptyState, LoadingState, Button, Drawer, LinkAction } from '../components/ui'
-import RegistrarPagoForm from '../components/RegistrarPagoForm'
+import RegistrarPagoProveedorForm from '../components/RegistrarPagoProveedorForm'
 import { useNegocio } from '../context/useNegocio'
 
-// BLOQUE 4 (CONTRATO_PAGOS_VENTA.md): mismo tamaño de página que Pedidos/Albaranes -- volumen
-// bajo hoy (módulo nuevo), pero consistente con el resto del proyecto.
+// CONTRATO_PAGOS_COMPRA.md sección 8 (hueco de alcance): espejo de Pagos.jsx (venta) -- mismo
+// tamaño de página, mismo patrón de tabla con cabeceras clicables (Pagos.jsx de venta usa tabla,
+// no tarjetas, así que se copia tal cual).
 const PAGINA_TAMANO = 20
 
-// CONTRATO_I18N.md, Fase 0: etiqueta resuelta con t('enums:metodo_pago.<clave>') -- ver
-// enums.json. Antes METODO_LABEL tenía el texto español fijo, duplicado además en
-// RegistrarPagoForm.jsx (mismo enum, mismo arreglo, consolidado ahí también).
+// Mismo enum que Pagos.jsx (metodo_pago es compartido entre cobro y pago).
 const METODO_BADGE = {
   efectivo: 'green',
   twint: 'blue',
@@ -22,31 +21,28 @@ const METODO_BADGE = {
   transferencia: 'amber',
 }
 
-// Detalle de una aplicación (fila expandida): resuelve a qué documento apunta -- factura o
-// albarán, nunca ambos (CHECK de BD, Bloque 2) -- sin query aparte, ya viene embebido.
+// Espejo de documentoDeAplicacion() en Pagos.jsx: resuelve a qué documento apunta una aplicación
+// -- factura o albarán de compra, nunca ambos (mismo CHECK de BD) -- sin query aparte, ya viene
+// embebido.
 function documentoDeAplicacion(pa, t) {
-  if (pa.factura_venta_id != null) {
-    return { tipo: t('pagos:tipo_factura'), codigo: pa.facturas_venta?.numero_factura || `#${pa.factura_venta_id}` }
+  if (pa.factura_compra_id != null) {
+    return { tipo: t('pagos_compra:tipo_factura'), codigo: pa.facturas_compra?.numero_factura || `#${pa.factura_compra_id}` }
   }
-  return { tipo: t('pagos:tipo_albaran'), codigo: pa.albaranes_venta?.numero_albaran || `#${pa.albaran_venta_id}` }
+  return { tipo: t('pagos_compra:tipo_albaran'), codigo: pa.albaranes_compra?.numero_albaran || `#${pa.albaran_compra_id}` }
 }
 
-function Pagos() {
-  const { t } = useTranslation(['common', 'enums', 'ventas_comun', 'pagos'])
+function PagosCompra() {
+  const { t } = useTranslation(['common', 'enums', 'compras_comun', 'pagos_compra'])
   const { negocio } = useNegocio()
   const [pagos, setPagos] = useState([])
-  const [clientes, setClientes] = useState([])
+  const [proveedores, setProveedores] = useState([])
   const [cargando, setCargando] = useState(true)
 
-  // BLOQUE 5: mismo booleano simple que AlbaranesVenta.jsx -- solo alta, no hay modo edición.
   const [drawerAbierto, setDrawerAbierto] = useState(false)
 
-  // BLOQUE 4: un único id expandido a nivel de pantalla, mismo patrón acordeón que
-  // Pedidos/Albaranes -- expandir un pago colapsa cualquier otro.
+  // Un único id expandido a nivel de pantalla, mismo patrón acordeón que Pagos.jsx.
   const [filaExpandidaId, setFilaExpandidaId] = useState(null)
 
-  // Única columna ordenable (Fecha) -- null = orden por defecto (descendente), sin agrupamiento
-  // por estado (un pago no tiene ciclo de vida propio, igual que un albarán).
   const [orden, setOrden] = useState({ columna: null, direccion: 'desc' })
   const [pagina, setPagina] = useState(1)
   const [totalPagos, setTotalPagos] = useState(0)
@@ -70,17 +66,16 @@ function Pagos() {
     setFilaExpandidaId((prev) => (prev === id ? null : id))
   }
 
-  // BLOQUE 7 (CONTRATO_PAGOS_VENTA.md): mismo patrón que facturas -- nunca DELETE, nunca edición.
-  // Las filas de pago_aplicacion se mantienen intactas (rastro de auditoría, sección 7 del
-  // contrato); dejan de contar en cualquier cálculo de saldo porque aplicadoPorDocumento() en
-  // saldosVenta.js ya excluye pago_aplicacion cuyo pago.anulada sea true -- ningún cambio de
-  // lógica de saldo hace falta aquí, ya estaba cubierto desde el Bloque 3.
+  // Mismo patrón que Pagos.jsx: nunca DELETE, nunca edición. Las filas de pago_aplicacion se
+  // mantienen intactas (rastro de auditoría); dejan de contar en cualquier cálculo de saldo
+  // porque aplicadoPorDocumento()/saldosDeFacturas() en saldosCompra.js ya excluyen
+  // pago_aplicacion cuyo pago.anulada sea true.
   async function handleAnular(id) {
-    if (!confirm(t('pagos:alertas.confirmar_anular'))) return
+    if (!confirm(t('pagos_compra:alertas.confirmar_anular'))) return
 
     const { error } = await supabase.from('pagos').update({ anulada: true }).eq('id', id)
     if (error) {
-      alert(t('pagos:alertas.error_anular', { mensaje: error.message }))
+      alert(t('pagos_compra:alertas.error_anular', { mensaje: error.message }))
       return
     }
     cargarDatos()
@@ -92,13 +87,12 @@ function Pagos() {
     let pagosQuery = supabase
       .from('pagos')
       .select(
-        '*, clientes(nombre), pago_aplicacion(id, monto_aplicado, factura_venta_id, albaran_venta_id, facturas_venta(numero_factura), albaranes_venta(numero_albaran))',
+        '*, proveedores(nombre_comercial), pago_aplicacion(id, monto_aplicado, factura_compra_id, albaran_compra_id, facturas_compra(numero_factura), albaranes_compra(numero_albaran))',
         { count: 'exact' }
       )
-      // CONTRATO_PAGOS_COMPRA.md sección 8: pagos ahora también puede tener filas de pago a
-      // proveedor (cliente_id NULL, proveedor_id poblado) -- esta pantalla es solo de cobros de
-      // venta, así que las excluye explícitamente.
-      .not('cliente_id', 'is', null)
+      // Inversa exacta del .not('cliente_id', 'is', null) de Pagos.jsx -- esta pantalla es solo de
+      // pagos a proveedor.
+      .not('proveedor_id', 'is', null)
 
     pagosQuery = orden.columna
       ? pagosQuery.order(orden.columna, { ascending: orden.direccion === 'asc' })
@@ -108,11 +102,12 @@ function Pagos() {
     const desde = (pagina - 1) * PAGINA_TAMANO
     pagosQuery = pagosQuery.range(desde, desde + PAGINA_TAMANO - 1)
 
-    const [resPagos, resClientes] = await Promise.all([
+    const [resPagos, resProveedores] = await Promise.all([
       pagosQuery,
-      // Bloque 5: mismo filtro activo=true que Pedidos.jsx, pedido explícitamente por el
-      // contrato para el selector de cliente del drawer.
-      supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
+      // Mismo criterio que FacturasCompra.jsx/AlbaranesCompra.jsx: sin filtro de activo (a
+      // diferencia del `.eq('activo', true)` de clientes en Pagos.jsx), ya establecido para el
+      // resto de pantallas de Compras.
+      supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
     ])
 
     if (resPagos.error) console.error(resPagos.error)
@@ -121,8 +116,8 @@ function Pagos() {
       setTotalPagos(resPagos.count ?? 0)
     }
 
-    if (resClientes.error) console.error(resClientes.error)
-    else setClientes(resClientes.data || [])
+    if (resProveedores.error) console.error(resProveedores.error)
+    else setProveedores(resProveedores.data || [])
 
     setCargando(false)
   }
@@ -138,19 +133,19 @@ function Pagos() {
 
   return (
     <div>
-      <PageHeader title={t('pagos:titulo')} />
+      <PageHeader title={t('pagos_compra:titulo')} />
 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setDrawerAbierto(true)}>
-          <IconPlus size={15} /> {t('ventas_comun:registrar_pago')}
+          <IconPlus size={15} /> {t('compras_comun:registrar_pago_proveedor')}
         </Button>
       </div>
 
       {cargando ? (
         <LoadingState />
       ) : pagos.length === 0 ? (
-        <Card><EmptyState>{t('pagos:sin_pagos')}</EmptyState></Card>
+        <Card><EmptyState>{t('pagos_compra:sin_pagos')}</EmptyState></Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
@@ -160,15 +155,15 @@ function Pagos() {
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
                     <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
-                      {t('pagos:tabla.fecha')} {iconoOrden('fecha')}
+                      {t('pagos_compra:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
-                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.cliente')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.monto_recibido')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.metodo')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.aplicado')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('pagos:tabla.sin_aplicar')}</th>
-                  <th className="px-3 py-2.5 font-medium text-right">{t('pagos:tabla.acciones')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos_compra:tabla.proveedor')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos_compra:tabla.monto_pagado')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos_compra:tabla.metodo')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos_compra:tabla.aplicado')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('pagos_compra:tabla.sin_aplicar')}</th>
+                  <th className="px-3 py-2.5 font-medium text-right">{t('pagos_compra:tabla.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,7 +186,7 @@ function Pagos() {
                         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3 font-medium text-ink">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {p.clientes?.nombre ?? t('common:sin_cliente')}
+                            {p.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}
                             {p.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
                           </div>
                         </td>
@@ -209,7 +204,7 @@ function Pagos() {
                         </td>
                         <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {!p.anulada && (
-                            <LinkAction tone="red" onClick={() => handleAnular(p.id)}>{t('pagos:anular')}</LinkAction>
+                            <LinkAction tone="red" onClick={() => handleAnular(p.id)}>{t('pagos_compra:anular')}</LinkAction>
                           )}
                         </td>
                       </tr>
@@ -220,14 +215,14 @@ function Pagos() {
                               <div className="bg-gray-50/60 px-3 py-3">
                                 {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
                                 {aplicaciones.length === 0 ? (
-                                  <p className="text-sm text-gray-400">{t('pagos:sin_aplicaciones')}</p>
+                                  <p className="text-sm text-gray-400">{t('pagos_compra:sin_aplicaciones')}</p>
                                 ) : (
                                   <table className="w-full text-sm">
                                     <thead>
                                       <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
-                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.tipo')}</th>
-                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.documento')}</th>
-                                        <th className="py-1.5 font-medium">{t('pagos:tabla_aplicaciones.monto_aplicado')}</th>
+                                        <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.tipo')}</th>
+                                        <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.documento')}</th>
+                                        <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.monto_aplicado')}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -261,7 +256,7 @@ function Pagos() {
       {!cargando && totalPagos > 0 && (
         <div className="flex items-center justify-between mt-3">
           <p className="text-xs text-gray-400">
-            {t('pagos:pago_pagina_count', { count: totalPagos, pagina, total: totalPaginas })}
+            {t('pagos_compra:pago_pagina_count', { count: totalPagos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -292,10 +287,10 @@ function Pagos() {
         </div>
       )}
 
-      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title={t('ventas_comun:registrar_pago')}>
+      <Drawer open={drawerAbierto} onClose={() => setDrawerAbierto(false)} title={t('compras_comun:registrar_pago_proveedor')}>
         {drawerAbierto && (
-          <RegistrarPagoForm
-            clientes={clientes}
+          <RegistrarPagoProveedorForm
+            proveedores={proveedores}
             onGuardado={alGuardarPago}
             onCancelar={() => setDrawerAbierto(false)}
           />
@@ -305,4 +300,4 @@ function Pagos() {
   )
 }
 
-export default Pagos
+export default PagosCompra

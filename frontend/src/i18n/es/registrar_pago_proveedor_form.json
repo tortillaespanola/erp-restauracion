@@ -1,0 +1,26 @@
+{
+  "campos": {
+    "proveedor": "Proveedor",
+    "fecha": "Fecha",
+    "monto_pagado": "Monto pagado ({{moneda}})",
+    "metodo": "Método"
+  },
+  "selecciona_metodo": "Selecciona método",
+  "aplicado_pagado": "Aplicado: {{aplicado}} / Pagado: {{recibido}}",
+  "excede_lo_pagado_aviso": " — supera lo pagado, corrige antes de guardar",
+  "notas_opcional": "Notas (opcional)",
+  "documentos_saldo_pendiente_titulo": "Documentos con saldo pendiente",
+  "elige_proveedor_primero": "Elige primero un proveedor para ver sus documentos pendientes.",
+  "cargando_documentos": "Cargando documentos…",
+  "sin_documentos_pendientes": "Este proveedor no tiene documentos con saldo pendiente.",
+  "grupo_facturas": "Facturas",
+  "grupo_albaranes": "Albaranes",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · saldo {{saldo}}",
+  "guardar_pago": "Guardar pago",
+  "alertas": {
+    "error_cargar_documentos": "Error al cargar los documentos pendientes del proveedor: {{mensaje}}",
+    "excede_lo_pagado": "No se puede aplicar más monto del pagado.",
+    "error_registrar_pago": "Error al registrar el pago: {{mensaje}}",
+    "error_aplicar_pago": "Error al aplicar el pago a los documentos: {{mensaje}}"
+  }
+}

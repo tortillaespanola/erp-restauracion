@@ -1,0 +1,28 @@
+{
+  "titulo": "Pagos de compra",
+  "tabla": {
+    "fecha": "Fecha",
+    "proveedor": "Proveedor",
+    "monto_pagado": "Monto pagado",
+    "metodo": "Método",
+    "aplicado": "Aplicado",
+    "sin_aplicar": "Sin aplicar",
+    "acciones": "Acciones"
+  },
+  "sin_pagos": "Todavía no hay pagos registrados.",
+  "anular": "Anular",
+  "sin_aplicaciones": "Este pago no tiene ninguna aplicación registrada.",
+  "tabla_aplicaciones": {
+    "tipo": "Tipo",
+    "documento": "Documento",
+    "monto_aplicado": "Monto aplicado"
+  },
+  "tipo_factura": "Factura",
+  "tipo_albaran": "Albarán",
+  "pago_pagina_count_one": "{{count}} pago · página {{pagina}} de {{total}}",
+  "pago_pagina_count_other": "{{count}} pagos · página {{pagina}} de {{total}}",
+  "alertas": {
+    "confirmar_anular": "Esta acción anula el pago de forma permanente, no se puede deshacer. ¿Continuar?",
+    "error_anular": "Error al anular: {{mensaje}}"
+  }
+}

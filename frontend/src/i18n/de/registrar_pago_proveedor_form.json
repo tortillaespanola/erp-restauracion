@@ -1,0 +1,26 @@
+{
+  "campos": {
+    "proveedor": "Lieferant",
+    "fecha": "Datum",
+    "monto_pagado": "Bezahlter Betrag ({{moneda}})",
+    "metodo": "Methode"
+  },
+  "selecciona_metodo": "Methode auswählen",
+  "aplicado_pagado": "Zugeordnet: {{aplicado}} / Bezahlt: {{recibido}}",
+  "excede_lo_pagado_aviso": " — übersteigt den bezahlten Betrag, bitte vor dem Speichern korrigieren",
+  "notas_opcional": "Notizen (optional)",
+  "documentos_saldo_pendiente_titulo": "Dokumente mit offenem Saldo",
+  "elige_proveedor_primero": "Wähle zuerst einen Lieferanten, um seine offenen Dokumente zu sehen.",
+  "cargando_documentos": "Dokumente werden geladen…",
+  "sin_documentos_pendientes": "Dieser Lieferant hat keine Dokumente mit offenem Saldo.",
+  "grupo_facturas": "Rechnungen",
+  "grupo_albaranes": "Lieferscheine",
+  "doc_saldo_linea": "{{codigo}} · {{fecha}} · Saldo {{saldo}}",
+  "guardar_pago": "Zahlung speichern",
+  "alertas": {
+    "error_cargar_documentos": "Fehler beim Laden der offenen Dokumente des Lieferanten: {{mensaje}}",
+    "excede_lo_pagado": "Es kann nicht mehr als der bezahlte Betrag zugeordnet werden.",
+    "error_registrar_pago": "Fehler beim Erfassen der Zahlung: {{mensaje}}",
+    "error_aplicar_pago": "Fehler beim Zuordnen der Zahlung zu den Dokumenten: {{mensaje}}"
+  }
+}
