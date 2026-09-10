@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import {
   IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
-  IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconBell, IconLogout,
+  IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
   IconCarrot, IconStack2, IconBuildingWarehouse, IconCash,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
@@ -176,7 +176,6 @@ function Layout({ children, session, onLogout }) {
                 className="pl-8 pr-3 h-control-sm text-body border border-border rounded-control w-56 bg-canvas focus:outline-none focus:border-primary-600 focus:shadow-focus disabled:bg-canvas"
               />
             </div>
-            <IconBell size={18} className="text-ink-faint" />
             <button
               type="button"
               onClick={onLogout}
