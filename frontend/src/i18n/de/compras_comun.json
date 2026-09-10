@@ -3,6 +3,7 @@
   "selecciona_proveedor": "Lieferant auswählen",
   "elige_proveedor_primero": "Wähle zuerst einen Lieferanten",
   "selecciona_articulo": "Artikel auswählen",
+  "cargando_articulos": "Artikel werden geladen...",
   "articulo_no_asignado_aviso": "Dieser Lieferant hat noch keinen Artikel zugewiesen — gehe zu Artikel, um einen zu verknüpfen.",
   "anadir_linea": "Zeile hinzufügen",
   "tooltip_registrar_pago": "Zahlung erfassen",

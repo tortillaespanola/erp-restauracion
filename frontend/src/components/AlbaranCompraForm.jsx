@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
+import { useOpcionesDependientes } from '../hooks/useOpcionesDependientes'
 
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
 
@@ -19,7 +20,12 @@ const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_
 //
 // A diferencia de PedidoCompraForm.jsx, aquí NO hay confirmación al cambiar de proveedor -- ese
 // aviso es específico de Pedidos de compra (el proveedor de un albarán en edición está además
-// siempre deshabilitado, igual que en el formulario original).
+// siempre deshabilitado, igual que en el formulario original). Sí se resetean las líneas al
+// cambiar de proveedor en modo compra directa, sin preguntar (CONTRATO_HARDENING_A1_A4.md, A4):
+// auditoría previa encontró que aquí no había ningún reset, así que un articulo_id ya elegido para
+// el proveedor anterior podía quedar guardado en el estado y enviarse tal cual al guardar aunque ya
+// no perteneciera al catálogo del proveedor nuevo (el <Select> de esa línea se ve en blanco porque
+// ese id ya no tiene <option>, pero el valor seguía ahí sin que nada lo hubiera limpiado).
 function estadoInicial(albaran, pedidoCompraIdParam) {
   if (!albaran) {
     return {
@@ -66,8 +72,6 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
   const [editandoId] = useState(inicial.editandoId)
   const [lineasABorrar, setLineasABorrar] = useState([])
 
-  const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
-
   useEffect(() => {
     if (tipoOrigen !== 'pedido' || !pedidoCompraId || pedidosCompraPendientes.length === 0) return
 
@@ -86,39 +90,33 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
     )
   }, [tipoOrigen, pedidoCompraId, pedidosCompraPendientes])
 
-  useEffect(() => {
-    async function cargarArticulosDelProveedor() {
-      if (!proveedorId) {
-        setArticulosDelProveedor([])
-        return
-      }
-
+  const { opciones: articulosDelProveedor, cargando: cargandoArticulos } = useOpcionesDependientes(
+    proveedorId,
+    async (id) => {
       const { data, error } = await supabase
         .from('articulo_proveedor')
         .select('precio, referencia_proveedor, articulos_compra(id, nombre, unidad, requiere_control_temperatura, temperatura_min, temperatura_max)')
-        .eq('proveedor_id', proveedorId)
-
-      if (error) {
-        console.error(error)
-        setArticulosDelProveedor([])
-      } else {
-        setArticulosDelProveedor(
-          (data || []).map((ap) => ({
-            id: ap.articulos_compra.id,
-            nombre: ap.articulos_compra.nombre,
-            unidad: ap.articulos_compra.unidad,
-            precioPactado: ap.precio,
-            referenciaProveedor: ap.referencia_proveedor,
-            requiereTemperatura: ap.articulos_compra.requiere_control_temperatura,
-            temperaturaMin: ap.articulos_compra.temperatura_min,
-            temperaturaMax: ap.articulos_compra.temperatura_max,
-          }))
-        )
-      }
+        .eq('proveedor_id', id)
+      if (error) throw error
+      return (data || []).map((ap) => ({
+        id: ap.articulos_compra.id,
+        nombre: ap.articulos_compra.nombre,
+        unidad: ap.articulos_compra.unidad,
+        precioPactado: ap.precio,
+        referenciaProveedor: ap.referencia_proveedor,
+        requiereTemperatura: ap.articulos_compra.requiere_control_temperatura,
+        temperaturaMin: ap.articulos_compra.temperatura_min,
+        temperaturaMax: ap.articulos_compra.temperatura_max,
+      }))
     }
+  )
 
-    cargarArticulosDelProveedor()
-  }, [proveedorId])
+  function handleProveedorChange(nuevoProveedorId) {
+    if (proveedorId && nuevoProveedorId !== proveedorId) {
+      setLineas([{ ...lineaVacia }])
+    }
+    setProveedorId(nuevoProveedorId)
+  }
 
   function handleLineaChange(index, campo, valor) {
     setLineas((prev) => {
@@ -305,7 +303,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
           </Field>
         ) : (
           <Field label={t('albaranes_compra:campos.proveedor')}>
-            <Select value={proveedorId} onChange={(e) => setProveedorId(e.target.value)}
+            <Select value={proveedorId} onChange={(e) => handleProveedorChange(e.target.value)}
               required disabled={!!editandoId}>
               <option value="">{t('compras_comun:selecciona_proveedor')}</option>
               {proveedores.map((p) => (
@@ -322,7 +320,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
         </Field>
       </div>
 
-      {proveedorId && articulosDelProveedor.length === 0 && (
+      {proveedorId && !cargandoArticulos && articulosDelProveedor.length === 0 && (
         <p className="text-sm text-amber-600 flex items-center gap-1.5">
           <IconAlertTriangle size={15} />
           {t('compras_comun:articulo_no_asignado_aviso')}
@@ -360,9 +358,13 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
                   <Select value={linea.articulo_id}
                     onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                    required disabled={!proveedorId}>
+                    required disabled={!proveedorId || cargandoArticulos}>
                     <option value="">
-                      {!proveedorId ? t('compras_comun:elige_proveedor_primero') : t('compras_comun:selecciona_articulo')}
+                      {!proveedorId
+                        ? t('compras_comun:elige_proveedor_primero')
+                        : cargandoArticulos
+                          ? t('compras_comun:cargando_articulos')
+                          : t('compras_comun:selecciona_articulo')}
                     </option>
                     {articulosDelProveedor.map((a) => (
                       <option key={a.id} value={a.id}>

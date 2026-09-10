@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus, IconAlertTriangle } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
+import { useOpcionesDependientes } from '../hooks/useOpcionesDependientes'
 
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio_unitario: '' }
 
@@ -56,36 +57,23 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
   const [lineasABorrar, setLineasABorrar] = useState([])
   const [editandoId] = useState(inicial.editandoId)
 
-  const [articulosDelProveedor, setArticulosDelProveedor] = useState([])
-
-  useEffect(() => {
-    async function cargarArticulosDelProveedor() {
-      if (!proveedorId) {
-        setArticulosDelProveedor([])
-        return
-      }
+  const { opciones: articulosDelProveedor, cargando: cargandoArticulos } = useOpcionesDependientes(
+    proveedorId,
+    async (id) => {
       const { data, error } = await supabase
         .from('articulo_proveedor')
         .select('precio, referencia_proveedor, articulos_compra(id, nombre, unidad)')
-        .eq('proveedor_id', proveedorId)
-
-      if (error) {
-        console.error(error)
-        setArticulosDelProveedor([])
-      } else {
-        setArticulosDelProveedor(
-          (data || []).map((ap) => ({
-            id: ap.articulos_compra.id,
-            nombre: ap.articulos_compra.nombre,
-            unidad: ap.articulos_compra.unidad,
-            precioPactado: ap.precio,
-            referenciaProveedor: ap.referencia_proveedor,
-          }))
-        )
-      }
+        .eq('proveedor_id', id)
+      if (error) throw error
+      return (data || []).map((ap) => ({
+        id: ap.articulos_compra.id,
+        nombre: ap.articulos_compra.nombre,
+        unidad: ap.articulos_compra.unidad,
+        precioPactado: ap.precio,
+        referenciaProveedor: ap.referencia_proveedor,
+      }))
     }
-    cargarArticulosDelProveedor()
-  }, [proveedorId])
+  )
 
   function handleProveedorChange(nuevoProveedorId) {
     const hayLineasRellenas = lineas.some((l) => l.articulo_id || l.cantidad || l.precio_unitario)
@@ -264,7 +252,7 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
         </Field>
       </div>
 
-      {proveedorId && articulosDelProveedor.length === 0 && (
+      {proveedorId && !cargandoArticulos && articulosDelProveedor.length === 0 && (
         <p className="text-sm text-amber-600 flex items-center gap-1.5">
           <IconAlertTriangle size={15} />
           {t('compras_comun:articulo_no_asignado_aviso')}
@@ -279,9 +267,13 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
               <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
                 <Select value={linea.articulo_id}
                   onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
-                  required disabled={!proveedorId}>
+                  required disabled={!proveedorId || cargandoArticulos}>
                   <option value="">
-                    {!proveedorId ? t('compras_comun:elige_proveedor_primero') : t('compras_comun:selecciona_articulo')}
+                    {!proveedorId
+                      ? t('compras_comun:elige_proveedor_primero')
+                      : cargandoArticulos
+                        ? t('compras_comun:cargando_articulos')
+                        : t('compras_comun:selecciona_articulo')}
                   </option>
                   {articulosDelProveedor.map((a) => (
                     <option key={a.id} value={a.id}>
