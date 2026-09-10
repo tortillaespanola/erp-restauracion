@@ -219,6 +219,8 @@ export function DateInput({ value, onChange, className = '', ...props }) {
       locale="es"
       className={`${controlClass} ${className}`}
       wrapperClassName="w-full"
+      popperClassName="z-50!"
+      portalId="datepicker-portal"
       {...props}
     />
   )
