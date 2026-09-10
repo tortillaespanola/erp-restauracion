@@ -65,7 +65,7 @@ function Clientes() {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setModoDrawer('nuevo')}>
-          <IconPlus size={15} /> {t('clientes:guardar_cliente')}
+          <IconPlus size={15} /> {t('clientes:card_nuevo_titulo')}
         </Button>
       </div>
 
