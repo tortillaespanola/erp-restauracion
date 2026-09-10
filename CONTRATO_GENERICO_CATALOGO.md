@@ -1,5 +1,7 @@
 # CONTRATO_GENERICO_CATALOGO.md
 
+**Estado: ✅ Cerrado — las 4 fases (0, 1, 2, 3) aplicadas y verificadas el 10-09-2026.**
+
 **Objetivo:** que el catálogo (artículos de compra → artículo base → BOM → semielaborado → BOM → producto final) deje de leerse como "software de restauración" y se lea como un ERP/MRP genérico, sin tocar el esquema de flujo que ya funciona.
 
 **Origen de este contrato:** auditoría externa de UI (`AUDITORIA_FLOWBASE_UI.md`, agente web) + auditoría de código real (`AUDITORIA_ARQUITECTURA_CATALOGO.md`, Claude Code, solo lectura). Las decisiones de este contrato **sustituyen** cualquier recomendación de esos dos documentos que entre en conflicto con lo aquí escrito — en caso de duda, este documento manda.
@@ -121,6 +123,12 @@ Hoy `categorias_articulo` y `unidades_medida` son tablas configurables en base d
 ---
 
 ## 4. Fase 3 — `CHECK` en `pedidos_venta.estado` y `pedidos_compra.estado`
+
+**Estado: ✅ Aplicada y verificada el 10-09-2026 (pendiente de commit/push — ver conversación).**
+
+Resumen de lo aplicado: paso 4.1 ejecutado primero en transacción `READ ONLY` (sin escribir nada) — sin ningún valor fuera del vocabulario documentado en ninguna de las dos tablas, vía libre confirmada por el usuario antes de continuar. Migración probada en `BEGIN...ROLLBACK` (constraint creado correctamente, un `UPDATE` con valor real siguió funcionando, un `UPDATE` con valor inventado falló con `23514 check_violation` en ambas tablas) y aplicada en firme con confirmación explícita.
+
+Verificado en navegador el ciclo completo de un pedido de venta real (producto final, pedido, producción, cierre de producción y albarán de venta creados de punta a punta vía la UI, no solo por REST): `pendiente` → `en_produccion` (trigger `actualizar_estado_pedido_por_produccion()`) → `servido` (trigger `actualizar_estado_pedido_por_servicio()`), ambas transiciones escritas sin violar el nuevo `CHECK`, 0 errores de consola. Un primer intento de cerrar la producción por selector de texto no encontró el botón a tiempo (timeout de Playwright, no un fallo de la app) — antes de reintentar se verificó explícitamente que no había tocado ninguna producción real ajena (solo existía una producción `abierta` en todo el sistema, la de la propia prueba); el reintento con esperas explícitas completó el ciclo con éxito. Todos los datos de prueba (producto final, pedido, línea, producción, albarán, línea de albarán, fórmula) limpiados por REST con la sesión autenticada de la app y verificados como eliminados de forma independiente.
 
 Hoy ambos campos son `text not null default 'pendiente'` con el vocabulario documentado solo en un comentario SQL, sin restricción real. Un `UPDATE` manual o un bug futuro puede escribir cualquier valor.
 
