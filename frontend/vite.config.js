@@ -8,4 +8,10 @@ export default defineConfig({
   server: {
     host: true,
   },
+  // CONTRATO_HARDENING_A1_A4.md, sección 6: primera introducción de Vitest en el proyecto
+  // (confirmado con el usuario antes de instalar) -- jsdom porque los tests de A4 montan
+  // componentes reales con @testing-library/react, no solo funciones puras.
+  test: {
+    environment: 'jsdom',
+  },
 })
