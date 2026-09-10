@@ -70,5 +70,15 @@
   "listado_titulo": "Liste",
   "sin_cliente": "Kein Kunde",
   "sin_numero": "(o. Nr.)",
-  "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet"
+  "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet",
+  "validacion": {
+    "obligatorio": "Dieses Feld ist erforderlich",
+    "minimo": "Der Wert muss größer oder gleich {{min}} sein",
+    "maximo": "Der Wert muss kleiner oder gleich {{max}} sein",
+    "paso_invalido": "Der Wert ist für dieses Feld ungültig",
+    "longitud_minima": "Muss mindestens {{min}} Zeichen lang sein",
+    "longitud_maxima": "Darf höchstens {{max}} Zeichen lang sein",
+    "formato_invalido": "Das Format ist ungültig",
+    "tipo_invalido": "Der eingegebene Wert ist ungültig"
+  }
 }

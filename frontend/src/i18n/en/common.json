@@ -70,5 +70,15 @@
   "listado_titulo": "List",
   "sin_cliente": "No customer",
   "sin_numero": "(no number)",
-  "redondea_3_decimales": "Will be rounded to 3 decimals"
+  "redondea_3_decimales": "Will be rounded to 3 decimals",
+  "validacion": {
+    "obligatorio": "This field is required",
+    "minimo": "The value must be greater than or equal to {{min}}",
+    "maximo": "The value must be less than or equal to {{max}}",
+    "paso_invalido": "The value is not valid for this field",
+    "longitud_minima": "Must be at least {{min}} characters",
+    "longitud_maxima": "Must be at most {{max}} characters",
+    "formato_invalido": "The format is not valid",
+    "tipo_invalido": "The value entered is not valid"
+  }
 }

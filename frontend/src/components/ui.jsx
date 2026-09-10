@@ -2,11 +2,13 @@
 // Tokens en frontend/tailwind.config.js y TOKENS.md. Base histórica: mockups/mockup-articulos.html.
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import DatePicker, { registerLocale } from 'react-datepicker'
 import { es } from 'date-fns/locale'
 import { IconChevronDown, IconX } from '@tabler/icons-react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { seleccionarAlEnfocar, evitarColapsoDeSeleccion } from '../lib/seleccionAlEnfocar'
+import { mensajeValidacionNativa } from '../lib/validacionNativa'
 
 registerLocale('es', es)
 
@@ -89,19 +91,43 @@ export function Field({ label, children, className = '' }) {
 
 const controlClass = 'w-full h-control border border-border rounded-control px-3 text-body bg-surface text-ink-body placeholder:text-ink-subtle transition-colors hover:border-border-strong focus:outline-none focus:border-primary-600 focus:shadow-focus disabled:bg-surface-sunken disabled:text-ink-faint disabled:hover:border-border'
 
-export function Input({ className = '', type, ...props }) {
-  if (type === 'number') {
-    return <input type={type} className={`${controlClass} ${className}`} onFocus={seleccionarAlEnfocar} onMouseUp={evitarColapsoDeSeleccion} {...props} />
+// CONTRATO_HARDENING_A5_A11.md (A6): los popups de validación nativa (required, min/max, tipo
+// numérico inválido) salen en el idioma del navegador, no en el de la interfaz. setCustomValidity
+// fuerza el mensaje traducido, pero se queda "pegado" hasta que se limpia explícitamente -- por
+// eso hay que resetearlo en cada onChange, si no el campo queda inválido para siempre aunque el
+// usuario ya haya corregido el valor.
+function useValidacionNativaLocalizada(onInvalidProp, onChangeProp) {
+  const { t } = useTranslation()
+
+  function onInvalid(e) {
+    e.target.setCustomValidity(mensajeValidacionNativa(e.target, t))
+    onInvalidProp?.(e)
   }
-  return <input type={type} className={`${controlClass} ${className}`} {...props} />
+
+  function onChange(e) {
+    e.target.setCustomValidity('')
+    onChangeProp?.(e)
+  }
+
+  return { onInvalid, onChange }
 }
 
-export function Select({ className = '', ...props }) {
-  return <select className={`${controlClass} ${className}`} {...props} />
+export function Input({ className = '', type, onInvalid, onChange, ...props }) {
+  const validacion = useValidacionNativaLocalizada(onInvalid, onChange)
+  if (type === 'number') {
+    return <input type={type} className={`${controlClass} ${className}`} onFocus={seleccionarAlEnfocar} onMouseUp={evitarColapsoDeSeleccion} {...validacion} {...props} />
+  }
+  return <input type={type} className={`${controlClass} ${className}`} {...validacion} {...props} />
 }
 
-export function Textarea({ className = '', ...props }) {
-  return <textarea className={`${controlClass} ${className}`} {...props} />
+export function Select({ className = '', onInvalid, onChange, ...props }) {
+  const validacion = useValidacionNativaLocalizada(onInvalid, onChange)
+  return <select className={`${controlClass} ${className}`} {...validacion} {...props} />
+}
+
+export function Textarea({ className = '', onInvalid, onChange, ...props }) {
+  const validacion = useValidacionNativaLocalizada(onInvalid, onChange)
+  return <textarea className={`${controlClass} ${className}`} {...validacion} {...props} />
 }
 
 // Checkbox-dropdown genérico de selección múltiple, mismo estilo visual que <Select> --

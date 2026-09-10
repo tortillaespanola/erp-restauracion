@@ -70,5 +70,15 @@
   "listado_titulo": "Listado",
   "sin_cliente": "Sin cliente",
   "sin_numero": "(sin número)",
-  "redondea_3_decimales": "Se redondeará a 3 decimales"
+  "redondea_3_decimales": "Se redondeará a 3 decimales",
+  "validacion": {
+    "obligatorio": "Este campo es obligatorio",
+    "minimo": "El valor debe ser mayor o igual a {{min}}",
+    "maximo": "El valor debe ser menor o igual a {{max}}",
+    "paso_invalido": "El valor no es válido para este campo",
+    "longitud_minima": "Debe tener al menos {{min}} caracteres",
+    "longitud_maxima": "Debe tener como máximo {{max}} caracteres",
+    "formato_invalido": "El formato no es válido",
+    "tipo_invalido": "El valor introducido no es válido"
+  }
 }
