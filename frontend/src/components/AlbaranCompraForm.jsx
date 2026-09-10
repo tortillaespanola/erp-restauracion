@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
+import { seleccionarAlEnfocar, evitarColapsoDeSeleccion } from '../lib/seleccionAlEnfocar'
 import { useOpcionesDependientes } from '../hooks/useOpcionesDependientes'
 
 const lineaVacia = { id: null, articulo_id: '', cantidad: '', precio: '', fecha_caducidad: '', notas: '', temperatura: '', locked: false, linea_pedido_compra_id: null }
@@ -401,6 +402,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
                         placeholder={`${t('albaranes_compra:temperatura.placeholder_base')}${art.temperaturaMin != null && art.temperaturaMax != null ? t('albaranes_compra:temperatura.rango_sufijo', { min: art.temperaturaMin, max: art.temperaturaMax }) : ''}`}
                         value={linea.temperatura}
                         onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
+                        onFocus={seleccionarAlEnfocar} onMouseUp={evitarColapsoDeSeleccion}
                         className={`border rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-red-300 bg-red-50 focus:ring-red-100' : 'border-blue-200 focus:ring-blue-100'}`} />
                       {fueraDeRango && (
                         <p className="text-red-600 text-xs mt-1 flex items-center gap-1">

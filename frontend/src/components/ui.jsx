@@ -6,6 +6,7 @@ import DatePicker, { registerLocale } from 'react-datepicker'
 import { es } from 'date-fns/locale'
 import { IconChevronDown, IconX } from '@tabler/icons-react'
 import 'react-datepicker/dist/react-datepicker.css'
+import { seleccionarAlEnfocar, evitarColapsoDeSeleccion } from '../lib/seleccionAlEnfocar'
 
 registerLocale('es', es)
 
@@ -88,8 +89,11 @@ export function Field({ label, children, className = '' }) {
 
 const controlClass = 'w-full h-control border border-border rounded-control px-3 text-body bg-surface text-ink-body placeholder:text-ink-subtle transition-colors hover:border-border-strong focus:outline-none focus:border-primary-600 focus:shadow-focus disabled:bg-surface-sunken disabled:text-ink-faint disabled:hover:border-border'
 
-export function Input({ className = '', ...props }) {
-  return <input className={`${controlClass} ${className}`} {...props} />
+export function Input({ className = '', type, ...props }) {
+  if (type === 'number') {
+    return <input type={type} className={`${controlClass} ${className}`} onFocus={seleccionarAlEnfocar} onMouseUp={evitarColapsoDeSeleccion} {...props} />
+  }
+  return <input type={type} className={`${controlClass} ${className}`} {...props} />
 }
 
 export function Select({ className = '', ...props }) {
