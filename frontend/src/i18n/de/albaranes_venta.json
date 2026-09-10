@@ -33,6 +33,7 @@
     "confirmar_borrar_con_facturas_one": "⚠️ Dieser Lieferschein ist in {{count}} Rechnung enthalten. Beim Löschen wird er aus dieser Rechnung entfernt, aber die Rechnung selbst wird NICHT gelöscht (ihr Total stimmt danach möglicherweise nicht mehr mit ihren Positionen überein). Bist du sicher, dass du fortfahren willst?",
     "confirmar_borrar_con_facturas_other": "⚠️ Dieser Lieferschein ist in {{count}} Rechnungen enthalten. Beim Löschen wird er aus diesen Rechnungen entfernt, aber die Rechnungen selbst werden NICHT gelöscht (ihr Total stimmt danach möglicherweise nicht mehr mit ihren Positionen überein). Bist du sicher, dass du fortfahren willst?",
     "confirmar_borrar_sin_facturas": "Möchtest du diesen Lieferschein wirklich löschen? Der verkaufte Bestand wird rückgängig gemacht.",
+    "tiene_pagos_aplicados": "Für diesen Lieferschein sind Zahlungen verbucht, er kann nicht gelöscht werden.",
     "error_borrar": "Fehler beim Löschen: {{mensaje}}"
   }
 }

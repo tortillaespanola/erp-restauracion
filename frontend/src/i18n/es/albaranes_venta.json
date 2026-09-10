@@ -33,6 +33,7 @@
     "confirmar_borrar_con_facturas_one": "⚠️ Este albarán está incluido en {{count}} factura. Al borrarlo, se quitará de esa factura, pero la factura en sí NO se borrará (podría quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?",
     "confirmar_borrar_con_facturas_other": "⚠️ Este albarán está incluido en {{count}} facturas. Al borrarlo, se quitará de esas facturas, pero las facturas en sí NO se borrarán (podrían quedar con un total que ya no cuadra con sus líneas). ¿Seguro que quieres continuar?",
     "confirmar_borrar_sin_facturas": "¿Seguro que quieres borrar este albarán? Se revertirá el stock vendido.",
+    "tiene_pagos_aplicados": "Este albarán tiene pagos aplicados, no se puede borrar.",
     "error_borrar": "Error al borrar: {{mensaje}}"
   }
 }

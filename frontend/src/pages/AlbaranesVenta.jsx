@@ -325,6 +325,22 @@ function AlbaranesVenta() {
 
 
   async function handleBorrar(id) {
+    // CONTRATO_HARDENING_A5_A11.md, A9: mismo caso que ya se resolvió en AlbaranesCompra.jsx
+    // (CONTRATO_PAGOS_COMPRA.md sección 8) -- pago_aplicacion.albaran_venta_id tampoco tiene ON
+    // DELETE CASCADE (20260930_pagos_venta.sql, misma decisión deliberada que en compras: un pago
+    // aplicado nunca debe desaparecer en cascada). Sin este precheck, borrar un albarán con un pago
+    // aplicado directamente (no vía factura) fallaba con un error de FK genérico en vez de un
+    // mensaje claro, y de forma inconsistente con compras.
+    const { count: countPagos } = await supabase
+      .from('pago_aplicacion')
+      .select('*', { count: 'exact', head: true })
+      .eq('albaran_venta_id', id)
+
+    if (countPagos > 0) {
+      alert(t('albaranes_venta:alertas.tiene_pagos_aplicados'))
+      return
+    }
+
     const { count } = await supabase
       .from('factura_venta_albaran')
       .select('*', { count: 'exact', head: true })
