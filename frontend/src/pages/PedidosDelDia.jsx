@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { IconChefHat, IconCarrot, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck, IconChevronRight, IconChevronDown, IconPlayerPlay, IconArrowsExchange } from '@tabler/icons-react'
+import { IconStack3, IconComponents, IconCircleCheck, IconAlertTriangle, IconClock, IconProgress, IconProgressCheck, IconChevronRight, IconChevronDown, IconPlayerPlay, IconArrowsExchange } from '@tabler/icons-react'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
@@ -228,8 +228,8 @@ function estadoCadenaPF(faltantesDirectos, direccionesSemiDirectas, filasSemiPor
 const ESTADOS_ICONO = {
   ok: { icon: IconCircleCheck, color: 'text-green-600' },
   pendiente: { icon: IconClock, color: 'text-blue-600' },
-  semi: { icon: IconChefHat, color: 'text-amber-600' },
-  ingrediente: { icon: IconCarrot, color: 'text-orange-600' },
+  semi: { icon: IconStack3, color: 'text-amber-600' },
+  ingrediente: { icon: IconComponents, color: 'text-orange-600' },
   ambos: { icon: IconAlertTriangle, color: 'text-red-600' },
   en_curso_insuficiente: { icon: IconProgress, color: 'text-cyan-600' },
   en_curso_cubre: { icon: IconProgressCheck, color: 'text-teal-600' },

@@ -2,9 +2,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
-  IconChefHat, IconSoup, IconTools, IconBowlSpoon, IconFlame,
+  IconComponents, IconStack3, IconTools, IconSquareCheck, IconRoute,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
-  IconCarrot, IconStack2, IconBuildingWarehouse, IconCash,
+  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
 import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
@@ -29,12 +29,12 @@ const NAV_SECTIONS = [
     items: [
       { to: '/pedidos-del-dia', clave: 'pedidos_del_dia', icon: IconStack2 },
       { to: '/inventario', clave: 'inventario', icon: IconBuildingWarehouse },
-      { to: '/ingredientes', clave: 'ingredientes', icon: IconCarrot },
-      { to: '/semielaborados', clave: 'semielaborados', icon: IconChefHat },
-      { to: '/producciones', clave: 'producciones', icon: IconSoup },
+      { to: '/ingredientes', clave: 'ingredientes', icon: IconComponents },
+      { to: '/semielaborados', clave: 'semielaborados', icon: IconStack3 },
+      { to: '/producciones', clave: 'producciones', icon: IconPlayerPlay },
       { to: '/ajustes-stock', clave: 'ajustes_stock', icon: IconTools },
-      { to: '/productos', clave: 'productos', icon: IconBowlSpoon },
-      { to: '/produccion-productos', clave: 'produccion_productos', icon: IconFlame },
+      { to: '/productos', clave: 'productos', icon: IconSquareCheck },
+      { to: '/produccion-productos', clave: 'produccion_productos', icon: IconRoute },
     ],
   },
   {
