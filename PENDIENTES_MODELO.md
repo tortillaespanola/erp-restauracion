@@ -206,6 +206,46 @@ Lo que sí quedó pendiente: `direccion` (tanto en `empresa_config` como en `cli
 
 **Cuándo retomarlo**: si aparece un caso real que necesite los componentes de la dirección por separado (filtrar clientes por ciudad/país, validar código postal, maquetar una dirección a varias líneas en un documento), migrar `direccion` a columnas estructuradas en ese momento — en `empresa_config` y en `clientes` a la vez, para no quedar con los dos lados del mismo documento en formatos distintos.
 
+## 17. UNIQUE en `categorias_articulo(nombre, acronimo)` — duplicados solo avisados, no bloqueados
+
+*Trasladado desde `CONTRATO_GENERICO_CATALOGO.md` (sección 7, contrato completado el 10-09-2026).*
+
+`categorias_articulo` no tiene ninguna restricción `UNIQUE` sobre `nombre` ni `acronimo` a nivel de base de datos. La pantalla de administración añadida en la Fase 2 de ese contrato (`Configuracion.jsx`) advierte de un posible duplicado (comparación case-insensitive contra las demás filas, con `confirm()` para continuar igualmente), pero no lo bloquea — sigue siendo posible crear dos categorías con el mismo nombre o acrónimo.
+
+**Por qué no se resolvió ahora**: añadir el `UNIQUE` no formaba parte del alcance de la Fase 2 (solo CRUD sobre las tablas ya existentes), y decidir si debe ser `UNIQUE` global o por `negocio_id` merece su propio contrato en vez de colarse como efecto secundario de una pantalla de administración.
+
+**Cuándo retomarlo**: si aparece un caso real de duplicado accidental que cause confusión operativa (dos categorías casi iguales usadas indistintamente), añadir el `UNIQUE` — probablemente `unique (negocio_id, lower(nombre))` y `unique (negocio_id, lower(acronimo))`, mismo patrón que `unidades_medida_negocio_id_codigo_key`.
+
+## 18. `unidades_medida` sin `GRANT delete` para `authenticated` — confirmado, no un descuido
+
+*Trasladado desde `CONTRATO_GENERICO_CATALOGO.md` (sección 7, contrato completado el 10-09-2026).*
+
+A diferencia de las demás tablas de catálogo del proyecto (`categorias_articulo`, `ingredientes`, `articulos_compra`, `productos_finales`, `semielaborados`, todas con los 4 grants), `unidades_medida` solo tiene `select, insert, update` para `authenticated`. Durante la Fase 2 se confirmó empíricamente que esto es real y no una suposición: un intento de `DELETE` por REST devolvió `403`, y la UI de administración de unidades se construyó deliberadamente sin botón de borrar para replicar esa misma restricción en vez de añadir el grant.
+
+**Por qué no se resolvió ahora**: no se sabe si la ausencia del grant fue una decisión deliberada de origen (evitar borrar una unidad ya referenciada por `ingredientes`/`articulos_compra`/`semielaborados`/`productos_finales` vía `unidad_id`) o un descuido de cuando se creó la tabla (`20260923_unidades_medida.sql`) — no hay ningún comentario en esa migración que lo aclare.
+
+**Cuándo retomarlo**: si aparece un caso real de necesitar borrar una unidad de medida (ej. una creada por error, sin ninguna fila que la use todavía), decidir entonces si se añade el `GRANT delete` con una validación previa (bloquear el borrado si `unidad_id` está en uso en cualquiera de las 4 tablas que la referencian) o si se mantiene la restricción actual de forma permanente.
+
+## 19. Backfill de `categoria_id` en `semielaborados`/`productos_finales` — filas existentes sin categoría
+
+*Trasladado desde `CONTRATO_GENERICO_CATALOGO.md` (sección 7, contrato completado el 10-09-2026).*
+
+La Fase 1 de ese contrato añadió `categoria_id` (nullable, FK a `categorias_articulo`) a `semielaborados` y `productos_finales`, a diferencia de `ingredientes`/`articulos_compra` donde es `NOT NULL`. Se dejó nullable deliberadamente porque las filas ya existentes (13 semielaborados y 16 productos finales a 10-09-2026) no tienen ninguna categoría asignable automáticamente. Quedan así hasta que alguien las revise una a una desde el frontend.
+
+**Por qué no se resolvió ahora**: forzar `NOT NULL` en la misma migración habría exigido inventar una categoría "Sin clasificar" o bloquear la migración hasta completar el backfill a mano — ninguna de las dos encajaba con el alcance aditivo de la Fase 1.
+
+**Cuándo retomarlo**: cuando el catálogo real de semielaborados/productos finales tenga todas sus filas categorizadas desde el frontend, evaluar en un contrato aparte si conviene pasar `categoria_id` a `NOT NULL` en ambas tablas (mismo criterio que ya se aplicó a `ingredientes`/`articulos_compra`).
+
+## 20. Iconografía neutra, IVA/VAT y dashboard — explícitamente fuera de alcance de la genericización del catálogo
+
+*Trasladado desde `CONTRATO_GENERICO_CATALOGO.md` (sección 7, contrato completado el 10-09-2026).*
+
+Durante la auditoría que dio origen a ese contrato (`AUDITORIA_FLOWBASE_UI.md` + `AUDITORIA_ARQUITECTURA_CATALOGO.md`) se identificaron otras señales de que la interfaz "suena a software de restauración" además de la terminología de catálogo ya resuelta (Ingrediente→Artículo base, Receta→Fórmula/BOM): iconos temáticos de cocina en la navegación, la etiqueta "IVA" en vez del más neutro "VAT" o un rótulo configurable, y la ausencia de un dashboard/landing genérico. Se decidió explícitamente no abordar ninguno de los tres en ese contrato.
+
+**Por qué no se resolvió ahora**: el contrato se acotó a terminología de catálogo + i18n + categorías/unidades + integridad de `estado` de pedidos — mezclar iconografía/impuestos/dashboard habría ampliado el alcance sin una decisión de diseño previa sobre cada uno (¿qué iconos concretos cambian? ¿"VAT" fijo o configurable por negocio? ¿qué debe mostrar el dashboard?).
+
+**Cuándo retomarlo**: si se decide continuar la genericización de FlowBase más allá del catálogo, abrir un contrato dedicado por pieza (iconografía, impuestos, dashboard) en vez de uno combinado — cada una tiene su propio conjunto de decisiones de diseño previas necesarias.
+
 ---
 
 ## Notas de diseño confirmadas (no pendientes — comportamiento ya verificado)

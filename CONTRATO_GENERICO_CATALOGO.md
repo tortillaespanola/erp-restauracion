@@ -1,6 +1,6 @@
 # CONTRATO_GENERICO_CATALOGO.md
 
-**Estado: ✅ Cerrado — las 4 fases (0, 1, 2, 3) aplicadas y verificadas el 10-09-2026.**
+**Estado: COMPLETADO (10-09-2026)** — ver commits 0b19a44, 40759b2, b27678e, 5892c80.
 
 **Objetivo:** que el catálogo (artículos de compra → artículo base → BOM → semielaborado → BOM → producto final) deje de leerse como "software de restauración" y se lea como un ERP/MRP genérico, sin tocar el esquema de flujo que ya funciona.
 
@@ -180,9 +180,4 @@ Cada fase se commitea y verifica por separado — no se agrupan en un solo commi
 
 ---
 
-## 7. Pendiente para un contrato futuro (fuera de este)
-
-- UNIQUE en `categorias_articulo(nombre, acronimo)` si se decide bloquear duplicados a nivel de BD.
-- Revisar si `unidades_medida` debería tener `GRANT delete` (hoy deliberadamente no lo tiene, o es un descuido no confirmado).
-- Backfill de `categoria_id` en filas existentes de `semielaborados`/`productos_finales` y posible paso a `NOT NULL` una vez completado.
-- Iconografía neutra, IVA/VAT, dashboard — quedaron fuera del alcance de este contrato por decisión explícita en la conversación previa.
+## 7. Pendientes trasladados a PENDIENTES_MODELO.md
