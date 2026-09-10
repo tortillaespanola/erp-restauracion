@@ -50,10 +50,26 @@ describe('mensajeValidacionNativa', () => {
     expect(mensajeValidacionNativa(target, i18n.t)).toBe('This field is required')
   })
 
+  it('en inglés, tipo numérico inválido (badInput)', async () => {
+    await i18n.changeLanguage('en')
+    const target = validezFalsa('badInput')
+    expect(mensajeValidacionNativa(target, i18n.t)).toBe('The value entered is not valid')
+  })
+
   it('en alemán devuelve el mensaje en alemán', async () => {
     await i18n.changeLanguage('de')
     const target = validezFalsa('valueMissing')
     expect(mensajeValidacionNativa(target, i18n.t)).toBe('Dieses Feld ist erforderlich')
+  })
+
+  it('en alemán, tipo numérico inválido (badInput)', async () => {
+    // Verificado también en vivo contra Chromium con la interfaz en alemán: tras un submit real
+    // con "1e" en un <input type="number">, el navegador dispara el evento invalid y
+    // validationMessage queda en "Der eingegebene Wert ist ungültig" (no el nativo
+    // "Please enter a number." del navegador).
+    await i18n.changeLanguage('de')
+    const target = validezFalsa('badInput')
+    expect(mensajeValidacionNativa(target, i18n.t)).toBe('Der eingegebene Wert ist ungültig')
   })
 
   it('cae al validationMessage nativo si no reconoce ninguna bandera de validity', () => {
