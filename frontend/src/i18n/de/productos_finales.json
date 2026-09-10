@@ -3,10 +3,13 @@
   "card_nuevo_titulo": "Neues Fertigprodukt",
   "card_editar_titulo": "Fertigprodukt bearbeiten",
   "campos": {
-    "precio_venta": "Verkaufspreis"
+    "precio_venta": "Verkaufspreis",
+    "categoria": "Kategorie"
   },
   "nombre_placeholder": "Z. B. Paella Valenciana",
   "codigo_placeholder": "Z. B. PAE",
+  "selecciona_categoria": "Kategorie auswählen",
+  "sin_categoria": "Keine Kategorie",
   "guardar_cambios": "Änderungen speichern",
   "guardar_producto": "Fertigprodukt speichern",
   "sin_productos": "Es sind noch keine Fertigprodukte angelegt.",

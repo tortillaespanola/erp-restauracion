@@ -3,10 +3,13 @@
   "card_nuevo_titulo": "Nuevo producto final",
   "card_editar_titulo": "Editar producto final",
   "campos": {
-    "precio_venta": "Precio de venta"
+    "precio_venta": "Precio de venta",
+    "categoria": "Categoría"
   },
   "nombre_placeholder": "Ej. Paella valenciana",
   "codigo_placeholder": "Ej. PAE",
+  "selecciona_categoria": "Selecciona categoría",
+  "sin_categoria": "Sin categoría",
   "guardar_cambios": "Guardar cambios",
   "guardar_producto": "Guardar producto final",
   "sin_productos": "Todavía no hay productos finales dados de alta.",

@@ -3,11 +3,14 @@
   "card_nuevo_titulo": "Nuevo semielaborado",
   "card_editar_titulo": "Editar semielaborado",
   "campos": {
-    "unidad_produccion": "Unidad de producción"
+    "unidad_produccion": "Unidad de producción",
+    "categoria": "Categoría"
   },
   "nombre_placeholder": "Ej. Sofrito base",
   "codigo_placeholder": "Ej. SOF",
   "selecciona_unidad": "Selecciona unidad",
+  "selecciona_categoria": "Selecciona categoría",
+  "sin_categoria": "Sin categoría",
   "tipo_otro_semielaborado": "Otro semielaborado",
   "guardar_cambios": "Guardar cambios",
   "guardar_semielaborado": "Guardar semielaborado",

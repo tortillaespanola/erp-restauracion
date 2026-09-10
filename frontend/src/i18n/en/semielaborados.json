@@ -3,11 +3,14 @@
   "card_nuevo_titulo": "New semi-finished good",
   "card_editar_titulo": "Edit semi-finished good",
   "campos": {
-    "unidad_produccion": "Production unit"
+    "unidad_produccion": "Production unit",
+    "categoria": "Category"
   },
   "nombre_placeholder": "E.g. Base sofrito",
   "codigo_placeholder": "E.g. SOF",
   "selecciona_unidad": "Select unit",
+  "selecciona_categoria": "Select category",
+  "sin_categoria": "No category",
   "tipo_otro_semielaborado": "Another semi-finished good",
   "guardar_cambios": "Save changes",
   "guardar_semielaborado": "Save semi-finished good",

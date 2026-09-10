@@ -65,6 +65,10 @@ Acción: extraer cada string a su namespace i18n correspondiente (crear `cierre_
 
 ## 2. Fase 1 — `categoria_id` en `semielaborados` y `productos_finales` (aditivo)
 
+**Estado: ✅ Aplicada y verificada el 10-09-2026 (pendiente de commit/push — ver conversación).**
+
+Resumen de lo aplicado: migración probada primero en `BEGIN...ROLLBACK` vía conexión directa (`SUPABASE_DB_URL`), luego aplicada en firme con confirmación explícita del usuario (acción de esquema sobre la BD real). Selector de categoría añadido al formulario inline de `Semielaborados.jsx` y `ProductosFinales.jsx` (no `required`, coherente con la nullability de la columna); listado de ambas pantallas muestra la categoría como texto en la línea descriptiva de cada tarjeta, igual patrón que `Articulos.jsx`/`Ingredientes.jsx` (ninguna de las dos tiene un filtro dropdown real — "columna/filtro" del punto 2.2 se resolvió como esa misma línea de texto, no un `<Select>` de filtrado que no existe en ningún sitio de referencia). Verificado en navegador creando un semielaborado y un producto final de prueba con categoría asignada (guardado confirmado por REST), limpiados después con verificación independiente. `npm run build` limpio, 0 errores de consola.
+
 Hoy solo `ingredientes` y `articulos_compra` tienen `categoria_id NOT NULL`. `semielaborados` y `productos_finales` nunca lo tuvieron. Se añade para que las 4 tablas de catálogo sean consistentes.
 
 ### 2.1 Migración SQL (nueva, `20260910_categoria_semielaborados_productos_finales.sql`)

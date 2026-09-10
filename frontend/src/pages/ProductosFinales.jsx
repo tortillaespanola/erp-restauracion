@@ -15,10 +15,12 @@ function ProductosFinales() {
   const [articulos, setArticulos] = useState([])
   const [semielaborados, setSemielaborados] = useState([])
   const [ingredientes, setIngredientes] = useState([])
+  const [categorias, setCategorias] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
   const [codigo, setCodigo] = useState('')
+  const [categoriaId, setCategoriaId] = useState('')
   const [precioVenta, setPrecioVenta] = useState('')
   const [diasCaducidadDefault, setDiasCaducidadDefault] = useState('')
   const [notas, setNotas] = useState('')
@@ -28,11 +30,12 @@ function ProductosFinales() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resProd, resArt, resSemi, resIngredientes] = await Promise.all([
+    const [resProd, resArt, resSemi, resIngredientes, resCategorias] = await Promise.all([
       supabase
         .from('productos_finales')
         .select(`
           *,
+          categorias_articulo(nombre),
           receta_producto_final(
             id, cantidad, articulo_id, ingrediente_semielaborado_id, ingrediente_id,
             articulos_compra(nombre, unidad),
@@ -44,6 +47,7 @@ function ProductosFinales() {
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
       supabase.from('semielaborados').select('id, nombre, unidad').order('nombre'),
       supabase.from('ingredientes').select('id, nombre, unidad').order('nombre'),
+      supabase.from('categorias_articulo').select('id, nombre').order('nombre'),
     ])
 
     if (resProd.error) console.error(resProd.error)
@@ -57,6 +61,9 @@ function ProductosFinales() {
 
     if (resIngredientes.error) console.error(resIngredientes.error)
     else setIngredientes(resIngredientes.data)
+
+    if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
+    else setCategorias(resCategorias.data)
 
     setCargando(false)
   }
@@ -89,6 +96,7 @@ function ProductosFinales() {
   function resetForm() {
     setNombre('')
     setCodigo('')
+    setCategoriaId('')
     setPrecioVenta('')
     setDiasCaducidadDefault('')
     setNotas('')
@@ -99,6 +107,7 @@ function ProductosFinales() {
   function handleEditar(p) {
     setNombre(p.nombre ?? '')
     setCodigo(p.codigo ?? '')
+    setCategoriaId(p.categoria_id ? String(p.categoria_id) : '')
     setPrecioVenta(p.precio_venta ?? '')
     setDiasCaducidadDefault(p.dias_caducidad_default ?? '')
     setNotas(p.notas ?? '')
@@ -135,6 +144,7 @@ function ProductosFinales() {
         .update({
           nombre,
           codigo: codigo || null,
+          categoria_id: categoriaId ? parseInt(categoriaId) : null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
@@ -161,6 +171,7 @@ function ProductosFinales() {
         .insert({
           nombre,
           codigo: codigo || null,
+          categoria_id: categoriaId ? parseInt(categoriaId) : null,
           precio_venta: precioVenta ? parseFloat(precioVenta) : null,
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
@@ -232,6 +243,14 @@ function ProductosFinales() {
               </Field>
               <Field label={t('recetas_comun:campos.codigo_corto')}>
                 <Input type="text" placeholder={t('productos_finales:codigo_placeholder')} value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              </Field>
+              <Field label={t('productos_finales:campos.categoria')}>
+                <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+                  <option value="">{t('productos_finales:selecciona_categoria')}</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </Select>
               </Field>
               <Field label={t('productos_finales:campos.precio_venta')}>
                 <Input type="number" step="0.01" value={precioVenta} onChange={(e) => setPrecioVenta(e.target.value)} />
@@ -341,7 +360,10 @@ function ProductosFinales() {
                   <p className="font-semibold text-ink">
                     {p.nombre} {p.codigo && <span className="text-gray-400 font-mono text-xs">({p.codigo})</span>}
                   </p>
-                  {p.precio_venta != null && <p className="text-sm text-gray-500">{t('productos_finales:precio_label', { precio: formatMoneda(p.precio_venta, negocio?.moneda) })}</p>}
+                  <p className="text-sm text-gray-500">
+                    {p.categorias_articulo?.nombre ?? t('productos_finales:sin_categoria')}
+                    {p.precio_venta != null && ` · ${t('productos_finales:precio_label', { precio: formatMoneda(p.precio_venta, negocio?.moneda) })}`}
+                  </p>
                   {p.notas && <p className="text-sm text-gray-400 italic">{p.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0">

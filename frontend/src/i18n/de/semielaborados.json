@@ -3,11 +3,14 @@
   "card_nuevo_titulo": "Neues Halbfertigprodukt",
   "card_editar_titulo": "Halbfertigprodukt bearbeiten",
   "campos": {
-    "unidad_produccion": "Produktionseinheit"
+    "unidad_produccion": "Produktionseinheit",
+    "categoria": "Kategorie"
   },
   "nombre_placeholder": "Z. B. Sofrito-Basis",
   "codigo_placeholder": "Z. B. SOF",
   "selecciona_unidad": "Einheit auswählen",
+  "selecciona_categoria": "Kategorie auswählen",
+  "sin_categoria": "Keine Kategorie",
   "tipo_otro_semielaborado": "Anderes Halbfertigprodukt",
   "guardar_cambios": "Änderungen speichern",
   "guardar_semielaborado": "Halbfertigprodukt speichern",

@@ -3,10 +3,13 @@
   "card_nuevo_titulo": "New final product",
   "card_editar_titulo": "Edit final product",
   "campos": {
-    "precio_venta": "Sale price"
+    "precio_venta": "Sale price",
+    "categoria": "Category"
   },
   "nombre_placeholder": "E.g. Valencian paella",
   "codigo_placeholder": "E.g. PAE",
+  "selecciona_categoria": "Select category",
+  "sin_categoria": "No category",
   "guardar_cambios": "Save changes",
   "guardar_producto": "Save final product",
   "sin_productos": "There are no final products registered yet.",

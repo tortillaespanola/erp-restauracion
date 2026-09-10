@@ -12,11 +12,13 @@ function Semielaborados() {
   const [articulos, setArticulos] = useState([])
   const [ingredientes, setIngredientes] = useState([])
   const [unidades, setUnidades] = useState([])
+  const [categorias, setCategorias] = useState([])
   const [cargando, setCargando] = useState(true)
 
   const [nombre, setNombre] = useState('')
   const [codigo, setCodigo] = useState('')
   const [unidadId, setUnidadId] = useState('')
+  const [categoriaId, setCategoriaId] = useState('')
   const [diasCaducidadDefault, setDiasCaducidadDefault] = useState('')
   const [notas, setNotas] = useState('')
   const [lineas, setLineas] = useState([{ ...lineaVacia }])
@@ -25,11 +27,12 @@ function Semielaborados() {
   async function cargarDatos() {
     setCargando(true)
 
-    const [resSemi, resArticulos, resIngredientes, resUnidades] = await Promise.all([
+    const [resSemi, resArticulos, resIngredientes, resUnidades, resCategorias] = await Promise.all([
       supabase
         .from('semielaborados')
         .select(`
           *,
+          categorias_articulo(nombre),
           receta_semielaborado!receta_semielaborado_semielaborado_id_fkey(
             id,
             cantidad,
@@ -45,6 +48,7 @@ function Semielaborados() {
       supabase.from('articulos_compra').select('id, nombre, unidad').order('nombre'),
       supabase.from('ingredientes').select('id, nombre, unidad').order('nombre'),
       supabase.from('unidades_medida').select('id, codigo, nombre').order('codigo'),
+      supabase.from('categorias_articulo').select('id, nombre').order('nombre'),
     ])
 
     if (resSemi.error) console.error(resSemi.error)
@@ -58,6 +62,9 @@ function Semielaborados() {
 
     if (resUnidades.error) console.error('Error cargando unidades:', resUnidades.error)
     else setUnidades(resUnidades.data)
+
+    if (resCategorias.error) console.error('Error cargando categorías:', resCategorias.error)
+    else setCategorias(resCategorias.data)
 
     setCargando(false)
   }
@@ -91,6 +98,7 @@ function Semielaborados() {
     setNombre('')
     setCodigo('')
     setUnidadId('')
+    setCategoriaId('')
     setDiasCaducidadDefault('')
     setNotas('')
     setLineas([{ ...lineaVacia }])
@@ -101,6 +109,7 @@ function Semielaborados() {
     setNombre(s.nombre ?? '')
     setCodigo(s.codigo ?? '')
     setUnidadId(s.unidad_id ? String(s.unidad_id) : '')
+    setCategoriaId(s.categoria_id ? String(s.categoria_id) : '')
     setDiasCaducidadDefault(s.dias_caducidad_default ?? '')
     setNotas(s.notas ?? '')
 
@@ -137,6 +146,7 @@ function Semielaborados() {
           nombre,
           codigo: codigo || null,
           unidad_id: parseInt(unidadId),
+          categoria_id: categoriaId ? parseInt(categoriaId) : null,
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
@@ -163,6 +173,7 @@ function Semielaborados() {
           nombre,
           codigo: codigo || null,
           unidad_id: parseInt(unidadId),
+          categoria_id: categoriaId ? parseInt(categoriaId) : null,
           dias_caducidad_default: diasCaducidadDefault ? parseInt(diasCaducidadDefault) : null,
           notas: notas || null,
         })
@@ -229,6 +240,14 @@ function Semielaborados() {
                   <option value="">{t('semielaborados:selecciona_unidad')}</option>
                   {unidades.map((u) => (
                     <option key={u.id} value={u.id}>{u.codigo} — {u.nombre}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('semielaborados:campos.categoria')}>
+                <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
+                  <option value="">{t('semielaborados:selecciona_categoria')}</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </Select>
               </Field>
@@ -339,7 +358,7 @@ function Semielaborados() {
                   <p className="font-semibold text-ink">
                     {s.nombre} {s.codigo && <span className="text-gray-400 font-mono text-xs">({s.codigo})</span>}
                   </p>
-                  <p className="text-sm text-gray-500">{t('semielaborados:unidad_label', { unidad: s.unidad })}</p>
+                  <p className="text-sm text-gray-500">{t('semielaborados:unidad_label', { unidad: s.unidad })} · {s.categorias_articulo?.nombre ?? t('semielaborados:sin_categoria')}</p>
                   {s.notas && <p className="text-sm text-gray-400 italic">{s.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0">
