@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
@@ -432,6 +433,7 @@ function ProduccionProductosFinales() {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     setProductoId('')
     setCantidadPlan('')
     setFechaInicio(new Date().toISOString().slice(0, 10))
@@ -445,6 +447,7 @@ function ProduccionProductosFinales() {
       alert(t('produccion_comun:alertas.error_cancelar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.cancelado'))
     cargarDatos()
   }
 
@@ -455,6 +458,7 @@ function ProduccionProductosFinales() {
       alert(t('produccion_comun:alertas.error_borrar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     cargarHistorial()
   }
 
@@ -839,6 +843,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     setFilasConsumo({})
     await cargarIngredientes()
     onCambio()
@@ -850,6 +855,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       alert(t('produccion_comun:alertas.error_quitar_consumo', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     await cargarIngredientes()
     onCambio()
   }
@@ -879,6 +885,8 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       alert(t('produccion_comun:alertas.error_cerrar_produccion', { mensaje: error.message }))
       return
     }
+
+    toast.success(t('common:feedback.guardado'))
 
     // Addenda "navegación post-cierre — Producto final": mismo criterio que Semielaborados
     // (Producciones.jsx, addenda "Navegación tras cerrar producción") -- cerrar es el final natural

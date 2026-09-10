@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, CardFooter, Button, LinkAction, Field, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
@@ -57,6 +58,7 @@ function Proveedores() {
       }
     }
 
+    toast.success(t('common:feedback.guardado'))
     setForm(vacio)
     setEditandoId(null)
     cargarProveedores()
@@ -91,6 +93,7 @@ function Proveedores() {
       alert(t('proveedores:alertas.error_borrar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     cargarProveedores()
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, SectionLabel, EmptyState, LoadingState } from '../components/ui'
@@ -204,6 +205,7 @@ function Semielaborados() {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     resetForm()
     cargarDatos()
   }
@@ -216,6 +218,7 @@ function Semielaborados() {
       alert(t('recetas_comun:alertas.error_borrar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     if (editandoId === id) resetForm()
     cargarDatos()
   }

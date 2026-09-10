@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { IconPlus } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, EmptyState, LoadingState } from '../components/ui'
@@ -83,6 +84,7 @@ function Ingredientes() {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     setForm(vacio)
     setEditandoId(null)
     cargarDatos()
@@ -194,6 +196,7 @@ function ArticulosDelIngrediente({ ingrediente, onCambio }) {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     setArticuloId('')
     onCambio()
   }
@@ -212,6 +215,7 @@ function ArticulosDelIngrediente({ ingrediente, onCambio }) {
       return
     }
 
+    toast.success(t('common:feedback.eliminado'))
     onCambio()
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad } from '../lib/formatCantidad'
@@ -127,6 +128,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
       alert(t('ajuste_stock_form:alertas.error_guardar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.guardado'))
     onGuardado()
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { Field, Select, DateInput, SectionLabel, Button } from './ui'
@@ -129,6 +130,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
     }
 
     setGuardando(false)
+    toast.success(t('common:feedback.guardado'))
     onGuardado(facturaCreada.id)
   }
 

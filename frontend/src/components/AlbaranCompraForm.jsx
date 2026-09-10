@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconLock, IconAlertTriangle, IconPlus } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
@@ -229,6 +230,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
         }
       }
 
+      toast.success(t('common:feedback.guardado'))
       onGuardado(editandoId)
       return
     }
@@ -264,6 +266,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     onGuardado(albaranCreado.id)
   }
 

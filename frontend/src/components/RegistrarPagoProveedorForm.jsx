@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
@@ -190,6 +191,7 @@ export default function RegistrarPagoProveedorForm({ proveedores, proveedorIdIni
     }
 
     setGuardando(false)
+    toast.success(t('common:feedback.guardado'))
     onGuardado(pagoCreado.id)
   }
 

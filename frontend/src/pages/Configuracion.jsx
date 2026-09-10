@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select } from '../components/ui'
 
@@ -34,7 +35,7 @@ function Configuracion() {
       alert(t('configuracion:alertas.error_guardar', { mensaje: error.message }))
       return
     }
-    alert(t('configuracion:alertas.guardado_correctamente'))
+    toast.success(t('configuracion:alertas.guardado_correctamente'))
   }
 
   async function handleLogoChange(e) {
@@ -171,6 +172,7 @@ function CategoriasArticulo() {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     resetForm()
     cargarCategorias()
   }
@@ -183,6 +185,7 @@ function CategoriasArticulo() {
       alert(t('configuracion:categorias.alertas.error_borrar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     if (editandoId === id) resetForm()
     cargarCategorias()
   }
@@ -284,6 +287,7 @@ function UnidadesMedida() {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     resetForm()
     cargarUnidades()
   }

@@ -25,6 +25,8 @@
   "alertas": {
     "supera_disponible": "\"{{nombre}}\": el reparto asignado ({{asignado}}) supera el disponible ({{disponible}}).",
     "error_crear_albaran": "Error al crear un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n{{mensaje}}",
-    "error_guardar_lineas": "Error al guardar las líneas de un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n{{mensaje}}"
+    "error_guardar_lineas": "Error al guardar las líneas de un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n{{mensaje}}",
+    "error_incidencia_stock": "El albarán se guardó, pero no se pudo registrar la incidencia de stock negativo: {{mensaje}}",
+    "cierre_completado": "Reparto completado y albaranes generados"
   }
 }

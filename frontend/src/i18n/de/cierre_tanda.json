@@ -25,6 +25,8 @@
   "alertas": {
     "supera_disponible": "\"{{nombre}}\": Die zugewiesene Menge ({{asignado}}) übersteigt das Verfügbare ({{disponible}}).",
     "error_crear_albaran": "Fehler beim Erstellen eines Lieferscheins für die Verteilung — der Rest ist möglicherweise nur teilweise verarbeitet, prüfe die Lieferscheinliste:\n\n{{mensaje}}",
-    "error_guardar_lineas": "Fehler beim Speichern der Zeilen eines Lieferscheins für die Verteilung — der Rest ist möglicherweise nur teilweise verarbeitet, prüfe die Lieferscheinliste:\n\n{{mensaje}}"
+    "error_guardar_lineas": "Fehler beim Speichern der Zeilen eines Lieferscheins für die Verteilung — der Rest ist möglicherweise nur teilweise verarbeitet, prüfe die Lieferscheinliste:\n\n{{mensaje}}",
+    "error_incidencia_stock": "Der Lieferschein wurde gespeichert, aber der Vorfall mit negativem Bestand konnte nicht erfasst werden: {{mensaje}}",
+    "cierre_completado": "Verteilung abgeschlossen und Lieferscheine erzeugt"
   }
 }

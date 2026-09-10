@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatMoneda } from '../lib/formatCantidad'
 import { IconThermometer, IconPlus } from '@tabler/icons-react'
@@ -157,6 +158,7 @@ function Articulos() {
       }
     }
 
+    toast.success(t('common:feedback.guardado'))
     setForm(vacio)
     setEditandoId(null)
     cargarDatos()
@@ -189,6 +191,7 @@ function Articulos() {
       alert(t('articulos:alertas.error_borrar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     cargarDatos()
   }
 
@@ -379,6 +382,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     setProveedorId('')
     setPrecio('')
     setReferencia('')
@@ -411,6 +415,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     handleCancelarEdicion()
     onCambio()
   }
@@ -421,6 +426,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       alert(t('articulos:alertas.error_marcar_preferente', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.guardado'))
     onCambio()
   }
 
@@ -431,6 +437,7 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
       alert(t('articulos:alertas.error_quitar_proveedor', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.eliminado'))
     onCambio()
   }
 

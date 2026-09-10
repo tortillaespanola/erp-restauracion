@@ -71,6 +71,12 @@
   "sin_cliente": "Sin cliente",
   "sin_numero": "(sin número)",
   "redondea_3_decimales": "Se redondeará a 3 decimales",
+  "feedback": {
+    "guardado": "Guardado correctamente",
+    "eliminado": "Eliminado correctamente",
+    "cancelado": "Cancelado correctamente",
+    "anulado": "Anulado correctamente"
+  },
   "validacion": {
     "obligatorio": "Este campo es obligatorio",
     "minimo": "El valor debe ser mayor o igual a {{min}}",

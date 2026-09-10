@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
@@ -78,6 +79,7 @@ function PagosCompra() {
       alert(t('pagos_compra:alertas.error_anular', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.anulado'))
     cargarDatos()
   }
 

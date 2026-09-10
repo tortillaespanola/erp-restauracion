@@ -71,6 +71,12 @@
   "sin_cliente": "Kein Kunde",
   "sin_numero": "(o. Nr.)",
   "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet",
+  "feedback": {
+    "guardado": "Erfolgreich gespeichert",
+    "eliminado": "Erfolgreich gelöscht",
+    "cancelado": "Erfolgreich storniert",
+    "anulado": "Erfolgreich ungültig gemacht"
+  },
   "validacion": {
     "obligatorio": "Dieses Feld ist erforderlich",
     "minimo": "Der Wert muss größer oder gleich {{min}} sein",

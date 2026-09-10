@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import {
@@ -344,6 +345,7 @@ function AlbaranesCompra() {
     // Si el albarán borrado es justo el que estaba abierto en el drawer de edición, se cierra --
     // mismo criterio que el `if (editandoId === alb.id) resetForm()` del formulario inline
     // original, traducido al nuevo estado modoDrawer.
+    toast.success(t('common:feedback.eliminado'))
     if (modoDrawer !== null && typeof modoDrawer === 'object' && modoDrawer.id === alb.id) setModoDrawer(null)
     cargarDatos()
   }

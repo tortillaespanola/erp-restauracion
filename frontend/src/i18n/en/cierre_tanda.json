@@ -25,6 +25,8 @@
   "alertas": {
     "supera_disponible": "\"{{nombre}}\": the allocated amount ({{asignado}}) exceeds what's available ({{disponible}}).",
     "error_crear_albaran": "Error creating a delivery note for the allocation — the rest may be left half-done, check the delivery notes list:\n\n{{mensaje}}",
-    "error_guardar_lineas": "Error saving the lines of a delivery note for the allocation — the rest may be left half-done, check the delivery notes list:\n\n{{mensaje}}"
+    "error_guardar_lineas": "Error saving the lines of a delivery note for the allocation — the rest may be left half-done, check the delivery notes list:\n\n{{mensaje}}",
+    "error_incidencia_stock": "The delivery note was saved, but the negative stock incident could not be recorded: {{mensaje}}",
+    "cierre_completado": "Allocation completed and delivery notes generated"
   }
 }

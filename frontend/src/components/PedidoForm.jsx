@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { IconTrash, IconPlus } from '@tabler/icons-react'
 import { Field, Input, Select, DateInput, SectionLabel, Button } from './ui'
@@ -154,6 +155,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
         }
       }
 
+      toast.success(t('common:feedback.guardado'))
       onGuardado(editandoId)
       return
     }
@@ -189,6 +191,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
       return
     }
 
+    toast.success(t('common:feedback.guardado'))
     onGuardado(pedidoCreado.id)
   }
 

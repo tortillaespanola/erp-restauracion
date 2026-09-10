@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { PageHeader, Card, CardHeader, CardBody, Button, Badge, DateInput, Field, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -246,10 +247,14 @@ function CierreTanda() {
           motivo: 'stock_negativo',
           estado: 'pendiente',
         })
-        if (errIncidencia) console.error('Error registrando incidencia de déficit:', errIncidencia)
+        if (errIncidencia) {
+          console.error('Error registrando incidencia de déficit:', errIncidencia)
+          toast.error(t('cierre_tanda:alertas.error_incidencia_stock', { mensaje: errIncidencia.message }))
+        }
       }
     }
 
+    toast.success(t('cierre_tanda:alertas.cierre_completado'))
     setConfirmando(false)
     await cargarDatos()
   }

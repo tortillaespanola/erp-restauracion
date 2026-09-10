@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import {
@@ -192,6 +193,7 @@ function PedidosCompra() {
       alert(t('pedidos_compra:alertas.error_cancelar', { mensaje: error.message }))
       return
     }
+    toast.success(t('common:feedback.cancelado'))
     cargarDatos()
   }
 
