@@ -1,7 +1,7 @@
 {
   "titulo": "Producción de productos finales",
   "subtitulo_tanda": "Iniciando producción para una tanda de \"Pedidos del día\" — el lote de Mezcla recién cerrado se sugiere según los pedidos de esa tanda.",
-  "subtitulo_normal": "Inicia una producción, registra de qué lotes consumes cada ingrediente, y ciérrala con la cantidad neta obtenida.",
+  "subtitulo_normal": "Inicia una producción, registra de qué lotes consumes cada componente, y ciérrala con la cantidad neta obtenida.",
   "produccion_enlazada_pedido": "Esta producción quedará enlazada al pedido seleccionado.",
   "cantidad_a_producir_opcional": "Cantidad a producir (opcional)",
   "unidad_larga": "unidades",

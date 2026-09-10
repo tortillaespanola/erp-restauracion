@@ -1,0 +1,30 @@
+{
+  "titulo": "Abschluss / Auslieferung",
+  "subtitulo": "Verteile das in dieser Charge Produzierte auf die zugehörigen Bestellungen und erzeuge die Verkaufslieferscheine.",
+  "sin_tanda_aviso": "Dieser Bildschirm benötigt eine Charge — rufe ihn über \"Abschließen und verteilen\" in der Tagesproduktion auf.",
+  "nada_que_repartir": "In dieser Charge ist nichts zu verteilen — möglicherweise ist bereits alles ausgeliefert, oder es gibt noch keine abgeschlossene Produktion.",
+  "fecha_albaranes_label": "Datum der Lieferscheine",
+  "deficit_badge": "Defizit: nur {{disponible}} von {{pedido}} verfügbar",
+  "sin_deficit_badge": "Kein Defizit — automatische Verteilung",
+  "tabla": {
+    "cliente": "Kunde",
+    "pedido": "Bestellung",
+    "a_entregar": "Zu liefern"
+  },
+  "sin_cliente": "Kein Kunde",
+  "asignado_resumen": "Zugewiesen {{asignado}} von {{disponible}} verfügbar.",
+  "supera_disponible_aviso": " Übersteigt das Verfügbare — vor Bestätigung anpassen.",
+  "lineas_libres_titulo": "Freitext-Zeilen (Sonstiges / Dienstleistung), die in die Verteilung übernommen werden",
+  "tabla_libres": {
+    "cliente": "Kunde",
+    "descripcion": "Beschreibung",
+    "cantidad": "Menge"
+  },
+  "repartiendo": "Wird verteilt...",
+  "cerrar_y_repartir": "Abschließen und verteilen",
+  "alertas": {
+    "supera_disponible": "\"{{nombre}}\": Die zugewiesene Menge ({{asignado}}) übersteigt das Verfügbare ({{disponible}}).",
+    "error_crear_albaran": "Fehler beim Erstellen eines Lieferscheins für die Verteilung — der Rest ist möglicherweise nur teilweise verarbeitet, prüfe die Lieferscheinliste:\n\n{{mensaje}}",
+    "error_guardar_lineas": "Fehler beim Speichern der Zeilen eines Lieferscheins für die Verteilung — der Rest ist möglicherweise nur teilweise verarbeitet, prüfe die Lieferscheinliste:\n\n{{mensaje}}"
+  }
+}

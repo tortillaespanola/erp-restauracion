@@ -13,7 +13,7 @@
   "precio_label": "Preis: {{precio}}",
   "alertas": {
     "error_crear_producto": "Fehler beim Erstellen des Produkts: {{mensaje}}",
-    "confirmar_borrar": "Möchtest du dieses Fertigprodukt wirklich löschen? Sein Rezept wird ebenfalls gelöscht.",
+    "confirmar_borrar": "Möchtest du dieses Fertigprodukt wirklich löschen? Seine Rezeptur wird ebenfalls gelöscht.",
     "tiene_producciones_one": "Du kannst dieses Produkt nicht löschen: Es hat {{count}} erfasste Produktion. Lösche sie zuerst unter \"Produktion der Fertigprodukte\", wenn du das Produkt wirklich entfernen willst.",
     "tiene_producciones_other": "Du kannst dieses Produkt nicht löschen: Es hat {{count}} erfasste Produktionen. Lösche sie zuerst unter \"Produktion der Fertigprodukte\", wenn du das Produkt wirklich entfernen willst."
   }

@@ -1,11 +1,11 @@
 {
   "tipo_articulo": "Purchase article",
-  "tipo_ingrediente": "Ingredient (several variants)",
+  "tipo_ingrediente": "Base article (several variants)",
   "selecciona_articulo": "Select article",
-  "selecciona_ingrediente": "Select ingredient",
+  "selecciona_ingrediente": "Select base article",
   "selecciona_semielaborado": "Select semi-finished good",
-  "anadir_ingrediente": "Add ingredient",
-  "receta_titulo": "Recipe (ingredients)",
+  "anadir_ingrediente": "Add component",
+  "receta_titulo": "Formula (BOM)",
   "editar": "Edit",
   "borrar": "Delete",
   "campos": {
@@ -15,20 +15,20 @@
     "dias_caducidad_opcional": "Default expiry days (optional)"
   },
   "tabla": {
-    "ingrediente": "Ingredient",
+    "ingrediente": "Component",
     "tipo": "Type",
     "cantidad": "Quantity"
   },
   "tipo_label": {
     "articulo": "Article",
-    "ingrediente": "Ingredient",
+    "ingrediente": "Base article",
     "semielaborado": "Semi-finished good"
   },
   "alertas": {
-    "sin_ingredientes_receta": "Add at least one ingredient to the recipe",
+    "sin_ingredientes_receta": "Add at least one component to the formula",
     "error_actualizar": "Error updating: {{mensaje}}",
-    "error_actualizar_receta": "Error updating the recipe: {{mensaje}}",
-    "error_guardar_receta": "Error saving the recipe: {{mensaje}}",
+    "error_actualizar_receta": "Error updating the formula: {{mensaje}}",
+    "error_guardar_receta": "Error saving the formula: {{mensaje}}",
     "error_borrar": "Error deleting: {{mensaje}}"
   }
 }

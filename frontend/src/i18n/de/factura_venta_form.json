@@ -1,0 +1,20 @@
+{
+  "campos": {
+    "cliente": "Kunde",
+    "fecha": "Datum"
+  },
+  "selecciona_cliente": "Kunde auswählen",
+  "albaranes_incluir_titulo": "Einzuschließende Lieferscheine",
+  "elige_cliente_primero": "Wähle zuerst einen Kunden, um seine Lieferscheine zu sehen.",
+  "sin_albaranes_pendientes": "Dieser Kunde hat keine Lieferscheine, die noch abgerechnet werden müssen.",
+  "albaran_linea": "Lieferschein {{numero}} · {{fecha}}",
+  "sin_numero": "(ohne Nummer)",
+  "guardando": "Wird gespeichert…",
+  "guardar_factura": "Rechnung speichern",
+  "alertas": {
+    "selecciona_albaran": "Wähle mindestens einen Lieferschein aus, um ihn der Rechnung zuzuordnen",
+    "error_calcular_total": "Fehler beim Berechnen der Rechnungssumme: {{mensaje}}",
+    "error_crear_factura": "Fehler beim Erstellen der Rechnung: {{mensaje}}",
+    "error_asociar_albaranes": "Fehler beim Zuordnen der Lieferscheine: {{mensaje}}"
+  }
+}

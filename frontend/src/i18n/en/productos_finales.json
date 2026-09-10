@@ -13,7 +13,7 @@
   "precio_label": "Price: {{precio}}",
   "alertas": {
     "error_crear_producto": "Error creating the product: {{mensaje}}",
-    "confirmar_borrar": "Are you sure you want to delete this final product? Its recipe will also be deleted.",
+    "confirmar_borrar": "Are you sure you want to delete this final product? Its formula will also be deleted.",
     "tiene_producciones_one": "You cannot delete this product: it has {{count}} production registered. Delete it first from \"Final product production\" if you really want to delete the product.",
     "tiene_producciones_other": "You cannot delete this product: it has {{count}} productions registered. Delete them first from \"Final product production\" if you really want to delete the product."
   }

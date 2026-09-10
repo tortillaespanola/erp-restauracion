@@ -1,0 +1,20 @@
+{
+  "campos": {
+    "cliente": "Cliente",
+    "fecha": "Fecha"
+  },
+  "selecciona_cliente": "Selecciona cliente",
+  "albaranes_incluir_titulo": "Albaranes a incluir",
+  "elige_cliente_primero": "Elige primero un cliente para ver sus albaranes.",
+  "sin_albaranes_pendientes": "Este cliente no tiene albaranes pendientes de facturar.",
+  "albaran_linea": "Albarán {{numero}} · {{fecha}}",
+  "sin_numero": "(sin número)",
+  "guardando": "Guardando…",
+  "guardar_factura": "Guardar factura",
+  "alertas": {
+    "selecciona_albaran": "Selecciona al menos un albarán para asociar a la factura",
+    "error_calcular_total": "Error al calcular el total de la factura: {{mensaje}}",
+    "error_crear_factura": "Error al crear la factura: {{mensaje}}",
+    "error_asociar_albaranes": "Error al asociar los albaranes: {{mensaje}}"
+  }
+}

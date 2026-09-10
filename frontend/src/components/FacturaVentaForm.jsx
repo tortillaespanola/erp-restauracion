@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { Field, Select, DateInput, SectionLabel, Button } from './ui'
@@ -8,6 +9,7 @@ import { Field, Select, DateInput, SectionLabel, Button } from './ui'
 // PedidoForm.jsx/AlbaranVentaForm.jsx). Misma lógica de validación/guardado de siempre, solo
 // cambia el contenedor -- sin modo edición, nunca existió (sección 4 del contrato).
 export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
+  const { t } = useTranslation(['common', 'factura_venta_form'])
   const [clienteId, setClienteId] = useState('')
   const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [albaranesDisponibles, setAlbaranesDisponibles] = useState([])
@@ -79,7 +81,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
     e.preventDefault()
 
     if (albaranesSeleccionados.length === 0) {
-      alert('Selecciona al menos un albarán para asociar a la factura')
+      alert(t('factura_venta_form:alertas.selecciona_albaran'))
       return
     }
 
@@ -87,7 +89,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
 
     const { total: totalCalculado, error: errorTotal } = await calcularTotalDeAlbaranes(albaranesSeleccionados)
     if (errorTotal) {
-      alert('Error al calcular el total de la factura: ' + errorTotal.message)
+      alert(t('factura_venta_form:alertas.error_calcular_total', { mensaje: errorTotal.message }))
       setGuardando(false)
       return
     }
@@ -105,7 +107,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
       .single()
 
     if (errorFactura) {
-      alert('Error al crear la factura: ' + errorFactura.message)
+      alert(t('factura_venta_form:alertas.error_crear_factura', { mensaje: errorFactura.message }))
       setGuardando(false)
       return
     }
@@ -121,7 +123,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
 
     if (errorRelaciones) {
       await supabase.from('facturas_venta').delete().eq('id', facturaCreada.id)
-      alert('Error al asociar los albaranes: ' + errorRelaciones.message)
+      alert(t('factura_venta_form:alertas.error_asociar_albaranes', { mensaje: errorRelaciones.message }))
       setGuardando(false)
       return
     }
@@ -136,26 +138,26 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
           genera el trigger BEFORE INSERT) ni de Total manual (se calcula siempre de las líneas
           reales de los albaranes incluidos). */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label="Cliente">
+        <Field label={t('factura_venta_form:campos.cliente')}>
           <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
-            <option value="">Selecciona cliente</option>
+            <option value="">{t('factura_venta_form:selecciona_cliente')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Fecha">
+        <Field label={t('factura_venta_form:campos.fecha')}>
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
       </div>
 
       <div>
-        <SectionLabel>Albaranes a incluir</SectionLabel>
+        <SectionLabel>{t('factura_venta_form:albaranes_incluir_titulo')}</SectionLabel>
 
         {!clienteId ? (
-          <p className="text-sm text-gray-400">Elige primero un cliente para ver sus albaranes.</p>
+          <p className="text-sm text-gray-400">{t('factura_venta_form:elige_cliente_primero')}</p>
         ) : albaranesDisponibles.length === 0 ? (
-          <p className="text-sm text-gray-400">Este cliente no tiene albaranes pendientes de facturar.</p>
+          <p className="text-sm text-gray-400">{t('factura_venta_form:sin_albaranes_pendientes')}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {albaranesDisponibles.map((alb) => (
@@ -165,7 +167,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
                   checked={albaranesSeleccionados.includes(alb.id)}
                   onChange={() => toggleAlbaran(alb.id)}
                 />
-                Albarán {alb.numero_albaran || '(sin número)'} · {formatFecha(alb.fecha)}
+                {t('factura_venta_form:albaran_linea', { numero: alb.numero_albaran || t('factura_venta_form:sin_numero'), fecha: formatFecha(alb.fecha) })}
               </label>
             ))}
           </div>
@@ -173,8 +175,8 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
       </div>
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar factura'}</Button>
-        <Button type="button" variant="secondary" onClick={onCancelar}>Cancelar</Button>
+        <Button type="submit" disabled={guardando}>{guardando ? t('factura_venta_form:guardando') : t('factura_venta_form:guardar_factura')}</Button>
+        <Button type="button" variant="secondary" onClick={onCancelar}>{t('common:actions.cancel')}</Button>
       </div>
     </form>
   )

@@ -24,10 +24,10 @@
   "necesidad_cubierta_semi_title": "Bedarf bereits gedeckt -- um mehr zu produzieren, nutze Produktionen",
   "cambiar_tanda_title": "Zugewiesene Charge ändern",
   "cargando_desglose": "Aufschlüsselung wird geladen…",
-  "sin_semielaborados_ni_ingredientes": "Dieser Posten hat keine Halbfertigprodukte oder Zutaten in seinem Rezept.",
+  "sin_semielaborados_ni_ingredientes": "Dieser Posten hat keine Halbfertigprodukte oder Basisartikel in seiner Rezeptur.",
   "tabla_desglose": {
     "semielaborado": "Halbfertigprodukt",
-    "ingrediente": "Zutat"
+    "ingrediente": "Basisartikel"
   },
   "disponible_prefijo": "verfügbar: {{valor}} {{unidad}}",
   "cargando_distribucion": "Verteilung wird geladen…",

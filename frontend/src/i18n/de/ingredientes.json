@@ -1,8 +1,8 @@
 {
-  "titulo": "Zutaten",
-  "subtitulo": "Gruppiert austauschbare Einkaufsartikel (z. B. verschiedene Varianten desselben Produkts), damit Rezepte die Zutat statt eines bestimmten Artikels referenzieren können.",
-  "card_nuevo_titulo": "Neue Zutat",
-  "card_editar_titulo": "Zutat bearbeiten",
+  "titulo": "Basisartikel",
+  "subtitulo": "Gruppiert austauschbare Einkaufsartikel (z. B. verschiedene Varianten desselben Produkts), damit Rezepturen den Basisartikel statt eines bestimmten Artikels referenzieren können.",
+  "card_nuevo_titulo": "Neuer Basisartikel",
+  "card_editar_titulo": "Basisartikel bearbeiten",
   "campos": {
     "nombre": "Name",
     "categoria": "Kategorie",
@@ -12,8 +12,8 @@
   "selecciona_categoria": "Kategorie auswählen",
   "selecciona_unidad": "Einheit auswählen",
   "guardar_cambios": "Änderungen speichern",
-  "guardar_ingrediente": "Zutat speichern",
-  "sin_ingredientes": "Es sind noch keine Zutaten angelegt.",
+  "guardar_ingrediente": "Basisartikel speichern",
+  "sin_ingredientes": "Es sind noch keine Basisartikel angelegt.",
   "editar": "Bearbeiten",
   "sin_categoria": "Keine Kategorie",
   "articulos_vinculados_titulo": "Verknüpfte Artikel",
@@ -25,7 +25,7 @@
     "error_guardar": "Fehler beim Speichern: {{mensaje}}",
     "selecciona_articulo": "Wähle einen Artikel",
     "error_vincular": "Fehler beim Verknüpfen: {{mensaje}}",
-    "confirmar_desvincular": "Diesen Artikel von der Zutat lösen? Er erscheint dann nicht mehr als verfügbare Variante in Rezepten, die diese Zutat verwenden.",
+    "confirmar_desvincular": "Diesen Artikel vom Basisartikel lösen? Er erscheint dann nicht mehr als verfügbare Variante in Rezepturen, die diesen Basisartikel verwenden.",
     "error_desvincular": "Fehler beim Lösen der Verknüpfung: {{mensaje}}"
   }
 }

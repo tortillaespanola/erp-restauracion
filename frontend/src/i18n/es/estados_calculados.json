@@ -3,7 +3,7 @@
     "ok": "OK",
     "pendiente": "Pendiente de producir",
     "semi": "Falta stock de semielaborados",
-    "ingrediente": "Falta stock de ingredientes",
+    "ingrediente": "Falta stock de componentes",
     "ambos": "Falta stock de ambos",
     "en_curso_insuficiente": "En curso",
     "en_curso_cubre": "En curso — cubre necesidad",

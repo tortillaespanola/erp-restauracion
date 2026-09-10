@@ -24,10 +24,10 @@
   "necesidad_cubierta_semi_title": "Necesidad ya cubierta -- para producir de más, usa Producciones",
   "cambiar_tanda_title": "Cambiar tanda asignada",
   "cargando_desglose": "Cargando desglose…",
-  "sin_semielaborados_ni_ingredientes": "Este ítem no tiene semielaborados ni ingredientes en su receta.",
+  "sin_semielaborados_ni_ingredientes": "Este ítem no tiene semielaborados ni artículos base en su fórmula.",
   "tabla_desglose": {
     "semielaborado": "Semielaborado",
-    "ingrediente": "Ingrediente"
+    "ingrediente": "Artículo base"
   },
   "disponible_prefijo": "disponible: {{valor}} {{unidad}}",
   "cargando_distribucion": "Cargando distribución…",

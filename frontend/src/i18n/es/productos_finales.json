@@ -13,7 +13,7 @@
   "precio_label": "Precio: {{precio}}",
   "alertas": {
     "error_crear_producto": "Error al crear el producto: {{mensaje}}",
-    "confirmar_borrar": "¿Seguro que quieres borrar este producto final? Se borrará también su receta.",
+    "confirmar_borrar": "¿Seguro que quieres borrar este producto final? Se borrará también su fórmula.",
     "tiene_producciones_one": "No puedes borrar este producto: tiene {{count}} producción registrada. Bórrala primero desde \"Producción de productos finales\" si de verdad quieres eliminar el producto.",
     "tiene_producciones_other": "No puedes borrar este producto: tiene {{count}} producciones registradas. Bórralas primero desde \"Producción de productos finales\" si de verdad quieres eliminar el producto."
   }

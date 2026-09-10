@@ -5,17 +5,17 @@
   "cantidad_a_producir_opcional": "Cantidad a producir (opcional, valida stock)",
   "sin_validar_placeholder": "Sin validar",
   "comprobando_stock": "Comprobando stock disponible…",
-  "aviso_stock_insuficiente_titulo": "Aviso: stock insuficiente en receta — puedes iniciar igualmente:",
+  "aviso_stock_insuficiente_titulo": "Aviso: stock insuficiente en la fórmula — puedes iniciar igualmente:",
   "falta_de": "Falta {{falta}} {{unidad}} de {{nombre}} (disponible: {{disponible}} {{unidad}})",
   "stock_disponible_titulo": "Stock disponible",
   "stock_disponible_para": "Stock disponible para {{nombre}}",
-  "sin_receta": "Este semielaborado no tiene semielaborados ni ingredientes en su receta.",
+  "sin_receta": "Este semielaborado no tiene semielaborados ni componentes en su fórmula.",
   "tabla": {
     "nombre": "Nombre",
     "tipo": "Tipo",
     "stock_disponible": "Stock disponible",
     "semielaborado": "Semielaborado",
-    "ingrediente": "Ingrediente"
+    "ingrediente": "Componente"
   },
   "sin_produccion_en_curso": "No hay ninguna producción en curso de este semielaborado.",
   "historial_titulo": "Historial de producciones cerradas",

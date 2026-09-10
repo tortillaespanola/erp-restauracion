@@ -3,7 +3,7 @@
     "ok": "OK",
     "pendiente": "Pending production",
     "semi": "Missing semi-finished stock",
-    "ingrediente": "Missing ingredient stock",
+    "ingrediente": "Missing component stock",
     "ambos": "Missing both",
     "en_curso_insuficiente": "In progress",
     "en_curso_cubre": "In progress — covers need",

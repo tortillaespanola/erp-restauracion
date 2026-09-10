@@ -1,0 +1,30 @@
+{
+  "titulo": "Cierre / entrega",
+  "subtitulo": "Reparte lo producido en esta tanda entre los pedidos que la componen, y genera los albaranes de venta.",
+  "sin_tanda_aviso": "Esta pantalla necesita una tanda — accede desde \"Cerrar y repartir\" en Pedidos del día.",
+  "nada_que_repartir": "No hay nada pendiente de repartir en esta tanda — puede que ya esté todo entregado, o que todavía no haya ninguna producción cerrada.",
+  "fecha_albaranes_label": "Fecha de los albaranes",
+  "deficit_badge": "Déficit: solo hay {{disponible}} de {{pedido}}",
+  "sin_deficit_badge": "Sin déficit — reparto automático",
+  "tabla": {
+    "cliente": "Cliente",
+    "pedido": "Pedido",
+    "a_entregar": "A entregar"
+  },
+  "sin_cliente": "Sin cliente",
+  "asignado_resumen": "Asignado {{asignado}} de {{disponible}} disponibles.",
+  "supera_disponible_aviso": " Supera lo disponible — ajusta antes de confirmar.",
+  "lineas_libres_titulo": "Líneas de texto libre (otro / servicio) que se heredan al reparto",
+  "tabla_libres": {
+    "cliente": "Cliente",
+    "descripcion": "Descripción",
+    "cantidad": "Cantidad"
+  },
+  "repartiendo": "Repartiendo...",
+  "cerrar_y_repartir": "Cerrar y repartir",
+  "alertas": {
+    "supera_disponible": "\"{{nombre}}\": el reparto asignado ({{asignado}}) supera el disponible ({{disponible}}).",
+    "error_crear_albaran": "Error al crear un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n{{mensaje}}",
+    "error_guardar_lineas": "Error al guardar las líneas de un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n{{mensaje}}"
+  }
+}

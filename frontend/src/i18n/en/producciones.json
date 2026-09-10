@@ -5,17 +5,17 @@
   "cantidad_a_producir_opcional": "Quantity to produce (optional, validates stock)",
   "sin_validar_placeholder": "Not validated",
   "comprobando_stock": "Checking available stock…",
-  "aviso_stock_insuficiente_titulo": "Notice: insufficient recipe stock — you can still start:",
+  "aviso_stock_insuficiente_titulo": "Notice: insufficient formula stock — you can still start:",
   "falta_de": "Missing {{falta}} {{unidad}} of {{nombre}} (available: {{disponible}} {{unidad}})",
   "stock_disponible_titulo": "Available stock",
   "stock_disponible_para": "Available stock for {{nombre}}",
-  "sin_receta": "This semi-finished good has no semi-finished goods or ingredients in its recipe.",
+  "sin_receta": "This semi-finished good has no semi-finished goods or components in its formula.",
   "tabla": {
     "nombre": "Name",
     "tipo": "Type",
     "stock_disponible": "Available stock",
     "semielaborado": "Semi-finished good",
-    "ingrediente": "Ingredient"
+    "ingrediente": "Component"
   },
   "sin_produccion_en_curso": "There is no production in progress for this semi-finished good.",
   "historial_titulo": "History of closed productions",

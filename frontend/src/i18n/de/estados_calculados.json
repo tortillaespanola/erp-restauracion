@@ -3,7 +3,7 @@
     "ok": "OK",
     "pendiente": "Ausstehende Produktion",
     "semi": "Halbfertigprodukt-Bestand fehlt",
-    "ingrediente": "Zutaten-Bestand fehlt",
+    "ingrediente": "Komponenten-Bestand fehlt",
     "ambos": "Beides fehlt",
     "en_curso_insuficiente": "In Bearbeitung",
     "en_curso_cubre": "In Bearbeitung — deckt Bedarf",

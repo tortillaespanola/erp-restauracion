@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
@@ -24,6 +25,7 @@ function formatCantidad(n) {
 // resetForm: el componente se desmonta al cerrar el drawer, la próxima apertura es un montaje
 // nuevo con estado fresco.
 export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, articulosMercaderia, onGuardado, onCancelar }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const { negocio } = useNegocio()
   const navigate = useNavigate()
 
@@ -117,7 +119,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     const idProduccion = parseInt(produccionId)
 
     if (!produccionId || !cant || cant <= 0) {
-      alert('Selecciona un lote e introduce una cantidad válida')
+      alert(t('albaran_venta_form:alertas.selecciona_lote_cantidad_valida'))
       return
     }
 
@@ -125,7 +127,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     const restante = stockLoteOriginal - yaUsado
 
     if (cant > restante) {
-      alert(`Solo quedan ${formatCantidad(restante)} unidades disponibles en ese lote de producción`)
+      alert(t('albaran_venta_form:alertas.solo_quedan_lote_produccion', { restante: formatCantidad(restante) }))
       return
     }
 
@@ -148,7 +150,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     const idEntrada = parseInt(entradaMaterialId)
 
     if (!entradaMaterialId || !cant || cant <= 0) {
-      alert('Selecciona un lote e introduce una cantidad válida')
+      alert(t('albaran_venta_form:alertas.selecciona_lote_cantidad_valida'))
       return
     }
 
@@ -156,7 +158,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     const restante = stockLoteOriginal - yaUsado
 
     if (cant > restante) {
-      alert(`Solo quedan ${formatCantidad(restante)} unidades disponibles en ese lote`)
+      alert(t('albaran_venta_form:alertas.solo_quedan_lote', { restante: formatCantidad(restante) }))
       return
     }
 
@@ -178,7 +180,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     const cant = parseFloat(cantidad)
 
     if (!descripcion.trim() || !cant || cant <= 0) {
-      alert('Escribe una descripción e introduce una cantidad válida')
+      alert(t('albaran_venta_form:alertas.descripcion_cantidad_valida'))
       return
     }
 
@@ -203,7 +205,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     e.preventDefault()
 
     if (lineas.length === 0) {
-      alert('Añade al menos una línea de producto')
+      alert(t('albaran_venta_form:alertas.sin_lineas'))
       return
     }
 
@@ -226,7 +228,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 
     if (errorAlbaran) {
       pdfWindow?.close()
-      alert('Error al crear el albarán: ' + errorAlbaran.message)
+      alert(t('albaran_venta_form:alertas.error_crear_albaran', { mensaje: errorAlbaran.message }))
       return
     }
 
@@ -249,7 +251,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
     if (errorLineas) {
       await supabase.from('albaranes_venta').delete().eq('id', albaranCreado.id)
       pdfWindow?.close()
-      alert('Error al guardar las líneas: ' + errorLineas.message)
+      alert(t('albaran_venta_form:alertas.error_guardar_lineas', { mensaje: errorLineas.message }))
       return
     }
 
@@ -263,7 +265,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 
     if (errorRecarga) {
       pdfWindow?.close()
-      toast.error('Albarán creado, pero no se pudo generar el PDF: ' + errorRecarga.message)
+      toast.error(t('albaran_venta_form:alertas.error_generar_pdf', { mensaje: errorRecarga.message }))
       return
     }
 
@@ -273,11 +275,11 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
       if (pdfWindow) pdfWindow.location.href = doc.output('bloburl')
     } catch (err) {
       pdfWindow?.close()
-      toast.error('Albarán creado, pero no se pudo generar el PDF: ' + err.message)
+      toast.error(t('albaran_venta_form:alertas.error_generar_pdf', { mensaje: err.message }))
       return
     }
 
-    toast.success('Albarán generado correctamente')
+    toast.success(t('albaran_venta_form:alertas.generado_correctamente'))
 
     if (pedidoIdParam) navigate('/pedidos')
   }
@@ -300,30 +302,30 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {pedidoIdParam && (
-        <p className="text-sm text-primary-600">Este albarán se enlazará a las líneas pendientes del pedido seleccionado.</p>
+        <p className="text-sm text-primary-600">{t('albaran_venta_form:enlazado_pedido_aviso')}</p>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Field label="Cliente">
+        <Field label={t('albaran_venta_form:campos.cliente')}>
           <Select value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
-            <option value="">Selecciona cliente</option>
+            <option value="">{t('albaran_venta_form:selecciona_cliente')}</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </Select>
         </Field>
-        <Field label="Nº albarán">
+        <Field label={t('albaran_venta_form:campos.numero_albaran')}>
           <Input type="text" value={numeroAlbaran} onChange={(e) => setNumeroAlbaran(e.target.value)} />
         </Field>
-        <Field label="Fecha">
+        <Field label={t('albaran_venta_form:campos.fecha')}>
           <DateInput value={fecha} onChange={setFecha} required />
         </Field>
       </div>
-      <Field label="Notas (opcional)">
+      <Field label={t('albaran_venta_form:campos.notas_opcional')}>
         <Input type="text" value={notas} onChange={(e) => setNotas(e.target.value)} />
       </Field>
 
       <div>
-        <SectionLabel>Añadir productos finales</SectionLabel>
+        <SectionLabel>{t('albaran_venta_form:anadir_productos_finales_titulo')}</SectionLabel>
         <div className="flex flex-col gap-3">
           {productosMostrados.map((prod) => (
             <ProductoParaVender
@@ -341,7 +343,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 
       {articulosMostrados.length > 0 && (
         <div>
-          <SectionLabel>Añadir mercadería</SectionLabel>
+          <SectionLabel>{t('albaran_venta_form:anadir_mercaderia_titulo')}</SectionLabel>
           <div className="flex flex-col gap-3">
             {articulosMostrados.map((art) => (
               <ArticuloParaVender
@@ -360,7 +362,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 
       {lineasLibresPendientes.length > 0 && (
         <div>
-          <SectionLabel>Líneas pendientes de este pedido (otro / servicio)</SectionLabel>
+          <SectionLabel>{t('albaran_venta_form:lineas_pendientes_pedido_titulo')}</SectionLabel>
           <div className="flex flex-col gap-3">
             {lineasLibresPendientes.map((l) => (
               <LineaPedidoLibrePendiente key={l.id} linea={l} onAdd={addLineaLibre} />
@@ -370,24 +372,24 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
       )}
 
       <div>
-        <SectionLabel>Añadir otro / servicio</SectionLabel>
+        <SectionLabel>{t('albaran_venta_form:anadir_otro_servicio_titulo')}</SectionLabel>
         <LineaLibreParaVender onAdd={addLineaLibre} />
       </div>
 
       {lineas.length > 0 && (
         <div>
-          <SectionLabel>Líneas del albarán</SectionLabel>
+          <SectionLabel>{t('albaran_venta_form:lineas_albaran_titulo')}</SectionLabel>
           <table className="w-full text-sm">
             <tbody className="divide-y divide-gray-100">
               {lineas.map((l, index) => (
                 <tr key={index}>
                   <td className="py-1.5">
                     {l.display}
-                    {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs"> (mercadería)</span>}
-                    {l.tipo === 'libre' && <span className="text-gray-400 text-xs"> (otro/servicio)</span>}
+                    {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs">{t('albaran_venta_form:tipo_mercaderia_sufijo')}</span>}
+                    {l.tipo === 'libre' && <span className="text-gray-400 text-xs">{t('albaran_venta_form:tipo_libre_sufijo')}</span>}
                   </td>
-                  <td className="py-1.5">{l.cantidad} uds.</td>
-                  <td className="py-1.5">{l.precio_unitario != null ? `${formatMoneda(l.precio_unitario, negocio?.moneda)}/ud` : '-'}</td>
+                  <td className="py-1.5">{t('albaran_venta_form:cantidad_uds', { cantidad: l.cantidad })}</td>
+                  <td className="py-1.5">{l.precio_unitario != null ? t('albaran_venta_form:precio_por_ud', { precio: formatMoneda(l.precio_unitario, negocio?.moneda) }) : '-'}</td>
                   <td className="py-1.5 text-right">
                     <button type="button" onClick={() => removeLinea(index)}
                       className="text-gray-400 hover:text-red-600">
@@ -402,8 +404,8 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
       )}
 
       <div className="flex gap-2">
-        <Button type="submit">Guardar albarán</Button>
-        <Button type="button" variant="secondary" onClick={onCancelar}>Cancelar</Button>
+        <Button type="submit">{t('albaran_venta_form:guardar_albaran')}</Button>
+        <Button type="button" variant="secondary" onClick={onCancelar}>{t('common:actions.cancel')}</Button>
       </div>
     </form>
   )
@@ -415,6 +417,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 // Vuelve null en cuanto esa previsión concreta queda cubierta (restante <= 0), igual criterio que el
 // resto del sistema ("nada pendiente, no mostrar nada").
 function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas, lineaPedido }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const yaUsado = cantidadYaEnLineas(prevision.produccion_pf_id)
   const restante = Number(prevision.cantidad_prevista) - yaUsado
   const [cantidad, setCantidad] = useState(restante > 0 ? String(restante) : '')
@@ -434,21 +437,22 @@ function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLine
   return (
     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
       <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
-        {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}Producción {tandaInfo ? formatFecha(tandaInfo.fecha) : ''}
-        <span className="text-gray-400 text-xs"> — asignado desde Producciones del día</span>
+        {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: tandaInfo ? formatFecha(tandaInfo.fecha) : '' })}
+        <span className="text-gray-400 text-xs">{t('albaran_venta_form:asignado_tanda_nota')}</span>
       </div>
-      <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+      <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
         onChange={(e) => setCantidad(e.target.value)}
-        className="text-sm" title="Se redondeará a 3 decimales" />
-      <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+        className="text-sm" title={t('common:redondea_3_decimales')} />
+      <Input type="number" step="0.01" placeholder={t('albaran_venta_form:precio_placeholder')} value={precio}
         onChange={(e) => setPrecio(e.target.value)}
         className="text-sm" />
-      <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+      <LinkAction tone="blue" onClick={handleAdd}>{t('albaran_venta_form:anadir')}</LinkAction>
     </div>
   )
 }
 
 function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran, lineaPedido }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
@@ -518,7 +522,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
         {totalPrevisto > 0 && (
-          <p className="text-xs text-gray-400">Total previsto: {totalPrevisto.toFixed(3)}</p>
+          <p className="text-xs text-gray-400">{t('albaran_venta_form:total_previsto', { valor: totalPrevisto.toFixed(3) })}</p>
         )}
       </div>
 
@@ -537,24 +541,24 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
       {mostrarFilaManual && lotesConDisponibleReal.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
           <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
-            <option value="">Selecciona lote de producción</option>
+            <option value="">{t('albaran_venta_form:selecciona_lote_produccion')}</option>
             {lotesConDisponibleReal.map((l) => {
               const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
               const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
               return (
                 <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
-                  {l.codigo_lote ? `${l.codigo_lote} · ` : ''}Producción {formatFecha(l.fecha)} · {l.disponibleReal.toFixed(3)} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
+                  {l.codigo_lote ? `${l.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: formatFecha(l.fecha) })} · {t('albaran_venta_form:disponible_sufijo', { valor: l.disponibleReal.toFixed(3) })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : caducado ? t('albaran_venta_form:caducado_aviso') : ''}
                 </option>
               )
             })}
           </Select>
-          <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+          <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
-            className="text-sm" title="Se redondeará a 3 decimales" />
-          <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+            className="text-sm" title={t('common:redondea_3_decimales')} />
+          <Input type="number" step="0.01" placeholder={t('albaran_venta_form:precio_placeholder')} value={precio}
             onChange={(e) => setPrecio(e.target.value)}
             className="text-sm" />
-          <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+          <LinkAction tone="blue" onClick={handleAdd}>{t('albaran_venta_form:anadir')}</LinkAction>
         </div>
       )}
     </div>
@@ -562,6 +566,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
 }
 
 function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas, fechaAlbaran, lineaPedido }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const [lotes, setLotes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [loteId, setLoteId] = useState('')
@@ -609,24 +614,24 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
       <p className="text-sm font-medium text-gray-700">{articulo.nombre}</p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
-          <option value="">Selecciona lote</option>
+          <option value="">{t('albaran_venta_form:selecciona_lote')}</option>
           {lotesConDisponibleReal.map((l) => {
             const fechaPosterior = fechaAlbaran && l.fecha_recepcion > fechaAlbaran
             const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
             return (
               <option key={l.entrada_material_id} value={l.entrada_material_id} disabled={fechaPosterior}>
-                {l.proveedor ? `${l.proveedor} · ` : ''}Albarán {l.numero_albaran || '(s/n)'} · {formatFecha(l.fecha_recepcion)} · {l.disponibleReal.toFixed(3)} {articulo.unidad} disp.{fechaPosterior ? ' — ⚠ fecha posterior, no se podrá vender' : caducado ? ' — ⚠ caducado, revisar antes de vender' : ''}
+                {l.proveedor ? `${l.proveedor} · ` : ''}{t('albaran_venta_form:albaran_label', { numero: l.numero_albaran || t('albaran_venta_form:sin_numero') })} · {formatFecha(l.fecha_recepcion)} · {t('albaran_venta_form:disponible_unidad_sufijo', { valor: l.disponibleReal.toFixed(3), unidad: articulo.unidad })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : caducado ? t('albaran_venta_form:caducado_aviso') : ''}
               </option>
             )
           })}
         </Select>
-        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+        <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          className="text-sm" title="Se redondeará a 3 decimales" />
-        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          className="text-sm" title={t('common:redondea_3_decimales')} />
+        <Input type="number" step="0.01" placeholder={t('albaran_venta_form:precio_placeholder')} value={precio}
           onChange={(e) => setPrecio(e.target.value)}
           className="text-sm" />
-        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+        <LinkAction tone="blue" onClick={handleAdd}>{t('albaran_venta_form:anadir')}</LinkAction>
       </div>
     </div>
   )
@@ -637,6 +642,7 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
 // linea_pedido_id se fija explícitamente (a diferencia de LineaLibreParaVender,
 // que siempre lo deja en null) para que se compute como servida.
 function LineaPedidoLibrePendiente({ linea, onAdd }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const [descripcion, setDescripcion] = useState(linea.descripcion ?? '')
   const [cantidad, setCantidad] = useState(String(linea.restante))
   const [precio, setPrecio] = useState(linea.precio_unitario ?? '')
@@ -652,17 +658,17 @@ function LineaPedidoLibrePendiente({ linea, onAdd }) {
   return (
     <div className="border border-gray-200 rounded-md p-3">
       <p className="text-sm font-medium text-gray-700">
-        {linea.descripcion} <span className="text-gray-400 text-xs">— {linea.restante} uds. pendientes del pedido</span>
+        {linea.descripcion} <span className="text-gray-400 text-xs">— {t('albaran_venta_form:restante_pendiente_pedido', { restante: linea.restante })}</span>
       </p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="text-sm" />
-        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+        <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          className="text-sm" title="Se redondeará a 3 decimales" />
-        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          className="text-sm" title={t('common:redondea_3_decimales')} />
+        <Input type="number" step="0.01" placeholder={t('albaran_venta_form:precio_placeholder')} value={precio}
           onChange={(e) => setPrecio(e.target.value)}
           className="text-sm" />
-        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+        <LinkAction tone="blue" onClick={handleAdd}>{t('albaran_venta_form:anadir')}</LinkAction>
       </div>
     </div>
   )
@@ -671,6 +677,7 @@ function LineaPedidoLibrePendiente({ linea, onAdd }) {
 // Sin selector de lote: no hay stock ni catálogo que comprobar — solo
 // descripción de texto libre + cantidad + precio.
 function LineaLibreParaVender({ onAdd }) {
+  const { t } = useTranslation(['common', 'albaran_venta_form'])
   const [descripcion, setDescripcion] = useState('')
   const [cantidad, setCantidad] = useState('1')
   const [precio, setPrecio] = useState('')
@@ -685,16 +692,16 @@ function LineaLibreParaVender({ onAdd }) {
   return (
     <div className="border border-gray-200 rounded-md p-3">
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
-        <Input type="text" placeholder="Descripción (ej. Pan, Horas de showcooking extra...)" value={descripcion}
+        <Input type="text" placeholder={t('albaran_venta_form:descripcion_placeholder')} value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           className="text-sm" />
-        <Input type="number" step="0.001" placeholder="Cantidad" value={cantidad}
+        <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          className="text-sm" title="Se redondeará a 3 decimales" />
-        <Input type="number" step="0.01" placeholder="Precio/ud" value={precio}
+          className="text-sm" title={t('common:redondea_3_decimales')} />
+        <Input type="number" step="0.01" placeholder={t('albaran_venta_form:precio_placeholder')} value={precio}
           onChange={(e) => setPrecio(e.target.value)}
           className="text-sm" />
-        <LinkAction tone="blue" onClick={handleAdd}>+ Añadir</LinkAction>
+        <LinkAction tone="blue" onClick={handleAdd}>{t('albaran_venta_form:anadir')}</LinkAction>
       </div>
     </div>
   )

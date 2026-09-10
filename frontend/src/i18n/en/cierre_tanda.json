@@ -1,0 +1,30 @@
+{
+  "titulo": "Closing / delivery",
+  "subtitulo": "Allocate what was produced in this batch among the orders that make it up, and generate the sales delivery notes.",
+  "sin_tanda_aviso": "This screen needs a batch — access it from \"Close and allocate\" in Today's production.",
+  "nada_que_repartir": "There is nothing pending to allocate in this batch — it may already be fully delivered, or there may not be any closed production yet.",
+  "fecha_albaranes_label": "Delivery notes date",
+  "deficit_badge": "Deficit: only {{disponible}} of {{pedido}} available",
+  "sin_deficit_badge": "No deficit — automatic allocation",
+  "tabla": {
+    "cliente": "Customer",
+    "pedido": "Order",
+    "a_entregar": "To deliver"
+  },
+  "sin_cliente": "No customer",
+  "asignado_resumen": "Allocated {{asignado}} of {{disponible}} available.",
+  "supera_disponible_aviso": " Exceeds what's available — adjust before confirming.",
+  "lineas_libres_titulo": "Free-text lines (other / service) inherited by the allocation",
+  "tabla_libres": {
+    "cliente": "Customer",
+    "descripcion": "Description",
+    "cantidad": "Quantity"
+  },
+  "repartiendo": "Allocating...",
+  "cerrar_y_repartir": "Close and allocate",
+  "alertas": {
+    "supera_disponible": "\"{{nombre}}\": the allocated amount ({{asignado}}) exceeds what's available ({{disponible}}).",
+    "error_crear_albaran": "Error creating a delivery note for the allocation — the rest may be left half-done, check the delivery notes list:\n\n{{mensaje}}",
+    "error_guardar_lineas": "Error saving the lines of a delivery note for the allocation — the rest may be left half-done, check the delivery notes list:\n\n{{mensaje}}"
+  }
+}

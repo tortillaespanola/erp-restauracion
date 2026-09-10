@@ -1,8 +1,8 @@
 {
-  "titulo": "Ingredients",
-  "subtitulo": "Group interchangeable purchase articles together (e.g. different variants of the same product) so recipes can reference the ingredient instead of a specific article.",
-  "card_nuevo_titulo": "New ingredient",
-  "card_editar_titulo": "Edit ingredient",
+  "titulo": "Base articles",
+  "subtitulo": "Group interchangeable purchase articles together (e.g. different variants of the same product) so formulas can reference the base article instead of a specific article.",
+  "card_nuevo_titulo": "New base article",
+  "card_editar_titulo": "Edit base article",
   "campos": {
     "nombre": "Name",
     "categoria": "Category",
@@ -12,8 +12,8 @@
   "selecciona_categoria": "Select category",
   "selecciona_unidad": "Select unit",
   "guardar_cambios": "Save changes",
-  "guardar_ingrediente": "Save ingredient",
-  "sin_ingredientes": "There are no ingredients registered yet.",
+  "guardar_ingrediente": "Save base article",
+  "sin_ingredientes": "There are no base articles registered yet.",
   "editar": "Edit",
   "sin_categoria": "No category",
   "articulos_vinculados_titulo": "Linked articles",
@@ -25,7 +25,7 @@
     "error_guardar": "Error saving: {{mensaje}}",
     "selecciona_articulo": "Select an article",
     "error_vincular": "Error linking: {{mensaje}}",
-    "confirmar_desvincular": "Unlink this article from the ingredient? It will stop appearing as an available variant in recipes that use this ingredient.",
+    "confirmar_desvincular": "Unlink this article from the base article? It will stop appearing as an available variant in formulas that use this base article.",
     "error_desvincular": "Error unlinking: {{mensaje}}"
   }
 }

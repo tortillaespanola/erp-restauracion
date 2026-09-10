@@ -1,11 +1,11 @@
 {
   "tipo_articulo": "Artículo de compra",
-  "tipo_ingrediente": "Ingrediente (varias variantes)",
+  "tipo_ingrediente": "Artículo base (varias variantes)",
   "selecciona_articulo": "Selecciona artículo",
-  "selecciona_ingrediente": "Selecciona ingrediente",
+  "selecciona_ingrediente": "Selecciona artículo base",
   "selecciona_semielaborado": "Selecciona semielaborado",
-  "anadir_ingrediente": "Añadir ingrediente",
-  "receta_titulo": "Receta (ingredientes)",
+  "anadir_ingrediente": "Añadir componente",
+  "receta_titulo": "Fórmula (BOM)",
   "editar": "Editar",
   "borrar": "Borrar",
   "campos": {
@@ -15,20 +15,20 @@
     "dias_caducidad_opcional": "Días de caducidad por defecto (opcional)"
   },
   "tabla": {
-    "ingrediente": "Ingrediente",
+    "ingrediente": "Componente",
     "tipo": "Tipo",
     "cantidad": "Cantidad"
   },
   "tipo_label": {
     "articulo": "Artículo",
-    "ingrediente": "Ingrediente",
+    "ingrediente": "Artículo base",
     "semielaborado": "Semielaborado"
   },
   "alertas": {
-    "sin_ingredientes_receta": "Añade al menos un ingrediente a la receta",
+    "sin_ingredientes_receta": "Añade al menos un componente a la fórmula",
     "error_actualizar": "Error al actualizar: {{mensaje}}",
-    "error_actualizar_receta": "Error al actualizar la receta: {{mensaje}}",
-    "error_guardar_receta": "Error al guardar la receta: {{mensaje}}",
+    "error_actualizar_receta": "Error al actualizar la fórmula: {{mensaje}}",
+    "error_guardar_receta": "Error al guardar la fórmula: {{mensaje}}",
     "error_borrar": "Error al borrar: {{mensaje}}"
   }
 }

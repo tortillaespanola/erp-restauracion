@@ -24,10 +24,10 @@
   "necesidad_cubierta_semi_title": "Need already covered -- to produce more, use Productions",
   "cambiar_tanda_title": "Change assigned batch",
   "cargando_desglose": "Loading breakdown…",
-  "sin_semielaborados_ni_ingredientes": "This item has no semi-finished goods or ingredients in its recipe.",
+  "sin_semielaborados_ni_ingredientes": "This item has no semi-finished goods or base articles in its formula.",
   "tabla_desglose": {
     "semielaborado": "Semi-finished good",
-    "ingrediente": "Ingredient"
+    "ingrediente": "Base article"
   },
   "disponible_prefijo": "available: {{valor}} {{unidad}}",
   "cargando_distribucion": "Loading distribution…",

@@ -1,18 +1,18 @@
 {
   "titulo": "Lagerbestand",
-  "subtitulo": "Bestand und aggregierter Bedarf pro Zutat, aufgeschlüsselt bis zum Paar Artikel-Lieferant.",
+  "subtitulo": "Bestand und aggregierter Bedarf pro Basisartikel, aufgeschlüsselt bis zum Paar Artikel-Lieferant.",
   "filtros": {
     "proveedor": "Lieferant",
-    "ingredientes": "Zutat(en)",
+    "ingredientes": "Basisartikel",
     "semielaborados": "Halbfertigprodukt(e)",
     "productos_finales": "Fertigprodukt(e)",
     "solo_con_necesidad": "Nur mit Bedarf"
   },
   "necesidad_mayor_cero": "Bedarf > 0",
   "nada_pendiente_comprar": "Nichts zu kaufen ausstehend.",
-  "sin_coincidencias_filtros": "Keine Zutat entspricht den ausgewählten Filtern.",
+  "sin_coincidencias_filtros": "Kein Basisartikel entspricht den ausgewählten Filtern.",
   "tabla": {
-    "ingrediente": "Zutat",
+    "ingrediente": "Basisartikel",
     "stock": "Bestand",
     "necesidad_agregada": "Aggregierter Bedarf",
     "articulo": "Artikel",

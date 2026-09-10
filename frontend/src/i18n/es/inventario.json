@@ -1,18 +1,18 @@
 {
   "titulo": "Inventario",
-  "subtitulo": "Stock y necesidad agregada por ingrediente, con desglose hasta la dupla artículo-proveedor.",
+  "subtitulo": "Stock y necesidad agregada por artículo base, con desglose hasta la dupla artículo-proveedor.",
   "filtros": {
     "proveedor": "Proveedor",
-    "ingredientes": "Ingrediente(s)",
+    "ingredientes": "Artículo(s) base",
     "semielaborados": "Semielaborado(s)",
     "productos_finales": "Producto(s) final(es)",
     "solo_con_necesidad": "Solo con necesidad"
   },
   "necesidad_mayor_cero": "Necesidad > 0",
   "nada_pendiente_comprar": "Nada pendiente de comprar.",
-  "sin_coincidencias_filtros": "Ningún ingrediente coincide con los filtros seleccionados.",
+  "sin_coincidencias_filtros": "Ningún artículo base coincide con los filtros seleccionados.",
   "tabla": {
-    "ingrediente": "Ingrediente",
+    "ingrediente": "Artículo base",
     "stock": "Stock",
     "necesidad_agregada": "Necesidad agregada",
     "articulo": "Artículo",

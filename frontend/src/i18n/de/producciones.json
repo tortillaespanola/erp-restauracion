@@ -5,17 +5,17 @@
   "cantidad_a_producir_opcional": "Zu produzierende Menge (optional, prüft Bestand)",
   "sin_validar_placeholder": "Nicht geprüft",
   "comprobando_stock": "Verfügbarer Bestand wird geprüft…",
-  "aviso_stock_insuficiente_titulo": "Hinweis: unzureichender Rezeptbestand — du kannst trotzdem starten:",
+  "aviso_stock_insuficiente_titulo": "Hinweis: unzureichender Rezepturbestand — du kannst trotzdem starten:",
   "falta_de": "Es fehlen {{falta}} {{unidad}} von {{nombre}} (verfügbar: {{disponible}} {{unidad}})",
   "stock_disponible_titulo": "Verfügbarer Bestand",
   "stock_disponible_para": "Verfügbarer Bestand für {{nombre}}",
-  "sin_receta": "Dieses Halbfertigprodukt hat keine Halbfertigprodukte oder Zutaten in seinem Rezept.",
+  "sin_receta": "Dieses Halbfertigprodukt hat keine Halbfertigprodukte oder Komponenten in seiner Rezeptur.",
   "tabla": {
     "nombre": "Name",
     "tipo": "Typ",
     "stock_disponible": "Verfügbarer Bestand",
     "semielaborado": "Halbfertigprodukt",
-    "ingrediente": "Zutat"
+    "ingrediente": "Komponente"
   },
   "sin_produccion_en_curso": "Es läuft keine Produktion für dieses Halbfertigprodukt.",
   "historial_titulo": "Verlauf abgeschlossener Produktionen",

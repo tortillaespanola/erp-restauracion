@@ -1,11 +1,11 @@
 {
   "tipo_articulo": "Einkaufsartikel",
-  "tipo_ingrediente": "Zutat (mehrere Varianten)",
+  "tipo_ingrediente": "Basisartikel (mehrere Varianten)",
   "selecciona_articulo": "Artikel auswählen",
-  "selecciona_ingrediente": "Zutat auswählen",
+  "selecciona_ingrediente": "Basisartikel auswählen",
   "selecciona_semielaborado": "Halbfertigprodukt auswählen",
-  "anadir_ingrediente": "Zutat hinzufügen",
-  "receta_titulo": "Rezept (Zutaten)",
+  "anadir_ingrediente": "Komponente hinzufügen",
+  "receta_titulo": "Rezeptur (Stückliste)",
   "editar": "Bearbeiten",
   "borrar": "Löschen",
   "campos": {
@@ -15,20 +15,20 @@
     "dias_caducidad_opcional": "Standard-Verfallstage (optional)"
   },
   "tabla": {
-    "ingrediente": "Zutat",
+    "ingrediente": "Komponente",
     "tipo": "Typ",
     "cantidad": "Menge"
   },
   "tipo_label": {
     "articulo": "Artikel",
-    "ingrediente": "Zutat",
+    "ingrediente": "Basisartikel",
     "semielaborado": "Halbfertigprodukt"
   },
   "alertas": {
-    "sin_ingredientes_receta": "Füge mindestens eine Zutat zum Rezept hinzu",
+    "sin_ingredientes_receta": "Füge der Rezeptur mindestens eine Komponente hinzu",
     "error_actualizar": "Fehler beim Aktualisieren: {{mensaje}}",
-    "error_actualizar_receta": "Fehler beim Aktualisieren des Rezepts: {{mensaje}}",
-    "error_guardar_receta": "Fehler beim Speichern des Rezepts: {{mensaje}}",
+    "error_actualizar_receta": "Fehler beim Aktualisieren der Rezeptur: {{mensaje}}",
+    "error_guardar_receta": "Fehler beim Speichern der Rezeptur: {{mensaje}}",
     "error_borrar": "Fehler beim Löschen: {{mensaje}}"
   }
 }

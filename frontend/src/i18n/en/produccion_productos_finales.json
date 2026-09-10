@@ -1,7 +1,7 @@
 {
   "titulo": "Final product production",
   "subtitulo_tanda": "Starting production for a batch from \"Today's production\" — the just-closed Mix lot is suggested based on that batch's orders.",
-  "subtitulo_normal": "Start a production, record which lots you consume each ingredient from, and close it with the net quantity obtained.",
+  "subtitulo_normal": "Start a production, record which lots you consume each component from, and close it with the net quantity obtained.",
   "produccion_enlazada_pedido": "This production will be linked to the selected order.",
   "cantidad_a_producir_opcional": "Quantity to produce (optional)",
   "unidad_larga": "units",

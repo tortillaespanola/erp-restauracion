@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { PageHeader, Card, CardHeader, CardBody, Button, Badge, DateInput, Field, Input, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 
@@ -8,6 +9,7 @@ function claveAsignacion(productoId, pedidoId) {
 }
 
 function CierreTanda() {
+  const { t } = useTranslation(['common', 'cierre_tanda'])
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const tandaId = searchParams.get('tanda_id')
@@ -76,7 +78,7 @@ function CierreTanda() {
         porProducto.get(linea.producto_final_id).pedidos.push({
           pedidoId: p.id,
           lineaPedidoId: linea.id,
-          cliente: p.clientes?.nombre ?? 'Sin cliente',
+          cliente: p.clientes?.nombre ?? t('cierre_tanda:sin_cliente'),
           cantidadPedida: pendiente,
           precioUnitario: linea.precio_unitario,
         })
@@ -137,7 +139,7 @@ function CierreTanda() {
     for (const g of grupos) {
       const totalAsignado = g.pedidos.reduce((s, p) => s + (Number(asignaciones[claveAsignacion(g.id, p.pedidoId)]) || 0), 0)
       if (totalAsignado > g.disponibleTotal + 0.0001) {
-        alert(`"${g.nombre}": el reparto asignado (${totalAsignado.toFixed(3)}) supera el disponible (${g.disponibleTotal.toFixed(3)}).`)
+        alert(t('cierre_tanda:alertas.supera_disponible', { nombre: g.nombre, asignado: totalAsignado.toFixed(3), disponible: g.disponibleTotal.toFixed(3) }))
         return
       }
     }
@@ -207,7 +209,7 @@ function CierreTanda() {
         .single()
 
       if (errAlbaran) {
-        alert('Error al crear un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n' + errAlbaran.message)
+        alert(t('cierre_tanda:alertas.error_crear_albaran', { mensaje: errAlbaran.message }))
         setConfirmando(false)
         return
       }
@@ -229,7 +231,7 @@ function CierreTanda() {
 
       if (errLineas) {
         await supabase.from('albaranes_venta').delete().eq('id', albaran.id)
-        alert('Error al guardar las líneas de un albarán del reparto — el resto puede haber quedado a medias, revisa el listado de albaranes:\n\n' + errLineas.message)
+        alert(t('cierre_tanda:alertas.error_guardar_lineas', { mensaje: errLineas.message }))
         setConfirmando(false)
         return
       }
@@ -255,8 +257,8 @@ function CierreTanda() {
   if (!tandaId) {
     return (
       <div>
-        <PageHeader title="Cierre / entrega" />
-        <Card><EmptyState>Esta pantalla necesita una tanda — accede desde "Cerrar y repartir" en Pedidos del día.</EmptyState></Card>
+        <PageHeader title={t('cierre_tanda:titulo')} />
+        <Card><EmptyState>{t('cierre_tanda:sin_tanda_aviso')}</EmptyState></Card>
       </div>
     )
   }
@@ -266,19 +268,19 @@ function CierreTanda() {
   return (
     <div>
       <PageHeader
-        title="Cierre / entrega"
-        subtitle="Reparte lo producido en esta tanda entre los pedidos que la componen, y genera los albaranes de venta."
+        title={t('cierre_tanda:titulo')}
+        subtitle={t('cierre_tanda:subtitulo')}
       />
 
       {cargando ? (
         <LoadingState />
       ) : !hayAlgoQueRepartir ? (
-        <Card><EmptyState>No hay nada pendiente de repartir en esta tanda — puede que ya esté todo entregado, o que todavía no haya ninguna producción cerrada.</EmptyState></Card>
+        <Card><EmptyState>{t('cierre_tanda:nada_que_repartir')}</EmptyState></Card>
       ) : (
         <>
           <Card className="mb-6">
             <CardBody className="flex items-end gap-3">
-              <Field label="Fecha de los albaranes" className="w-48">
+              <Field label={t('cierre_tanda:fecha_albaranes_label')} className="w-48">
                 <DateInput value={fechaCierre} onChange={setFechaCierre} required />
               </Field>
             </CardBody>
@@ -292,18 +294,18 @@ function CierreTanda() {
                   title={g.nombre}
                   action={
                     g.deficit ? (
-                      <Badge color="amber">Déficit: solo hay {g.disponibleTotal.toFixed(3)} de {g.totalPedido.toFixed(3)}</Badge>
+                      <Badge color="amber">{t('cierre_tanda:deficit_badge', { disponible: g.disponibleTotal.toFixed(3), pedido: g.totalPedido.toFixed(3) })}</Badge>
                     ) : (
-                      <Badge color="green">Sin déficit — reparto automático</Badge>
+                      <Badge color="green">{t('cierre_tanda:sin_deficit_badge')}</Badge>
                     )
                   }
                 />
                 <CardBody className="p-0">
                   <Table>
                     <Thead>
-                      <Th>Cliente</Th>
-                      <Th>Pedido</Th>
-                      <Th>A entregar</Th>
+                      <Th>{t('cierre_tanda:tabla.cliente')}</Th>
+                      <Th>{t('cierre_tanda:tabla.pedido')}</Th>
+                      <Th>{t('cierre_tanda:tabla.a_entregar')}</Th>
                     </Thead>
                     <tbody className="divide-y divide-gray-100">
                       {g.pedidos.map((p) => (
@@ -329,8 +331,8 @@ function CierreTanda() {
                   </Table>
                   {g.deficit && (
                     <p className={`text-xs px-4 py-2 ${totalAsignado > g.disponibleTotal + 0.0001 ? 'text-red-600' : 'text-gray-500'}`}>
-                      Asignado {totalAsignado.toFixed(3)} de {g.disponibleTotal.toFixed(3)} disponibles.
-                      {totalAsignado > g.disponibleTotal + 0.0001 && ' Supera lo disponible — ajusta antes de confirmar.'}
+                      {t('cierre_tanda:asignado_resumen', { asignado: totalAsignado.toFixed(3), disponible: g.disponibleTotal.toFixed(3) })}
+                      {totalAsignado > g.disponibleTotal + 0.0001 && t('cierre_tanda:supera_disponible_aviso')}
                     </p>
                   )}
                 </CardBody>
@@ -340,20 +342,20 @@ function CierreTanda() {
 
           {lineasLibresPorPedido.size > 0 && (
             <Card className="mb-6">
-              <CardHeader title="Líneas de texto libre (otro / servicio) que se heredan al reparto" />
+              <CardHeader title={t('cierre_tanda:lineas_libres_titulo')} />
               <CardBody className="p-0">
                 <Table>
                   <Thead>
-                    <Th>Cliente</Th>
-                    <Th>Descripción</Th>
-                    <Th>Cantidad</Th>
+                    <Th>{t('cierre_tanda:tabla_libres.cliente')}</Th>
+                    <Th>{t('cierre_tanda:tabla_libres.descripcion')}</Th>
+                    <Th>{t('cierre_tanda:tabla_libres.cantidad')}</Th>
                   </Thead>
                   <tbody className="divide-y divide-gray-100">
                     {[...lineasLibresPorPedido.entries()].flatMap(([pedidoId, libres]) => {
                       const pedido = pedidos.find((p) => p.id === pedidoId)
                       return libres.map((l) => (
                         <tr key={l.id}>
-                          <Td className="font-medium">{pedido?.clientes?.nombre ?? 'Sin cliente'}</Td>
+                          <Td className="font-medium">{pedido?.clientes?.nombre ?? t('cierre_tanda:sin_cliente')}</Td>
                           <Td>{l.descripcion}</Td>
                           <Td>{(Number(l.cantidad) - l.entregado).toFixed(3)}</Td>
                         </tr>
@@ -366,7 +368,7 @@ function CierreTanda() {
           )}
 
           <Button onClick={confirmarCierre} disabled={confirmando}>
-            {confirmando ? 'Repartiendo...' : 'Cerrar y repartir'}
+            {confirmando ? t('cierre_tanda:repartiendo') : t('cierre_tanda:cerrar_y_repartir')}
           </Button>
         </>
       )}

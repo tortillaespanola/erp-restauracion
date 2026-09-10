@@ -15,6 +15,6 @@
   "unidad_label": "Einheit: {{unidad}}",
   "alertas": {
     "error_crear_semielaborado": "Fehler beim Erstellen des Halbfertigprodukts: {{mensaje}}",
-    "confirmar_borrar": "Möchtest du dieses Halbfertigprodukt wirklich löschen? Sein Rezept wird ebenfalls gelöscht."
+    "confirmar_borrar": "Möchtest du dieses Halbfertigprodukt wirklich löschen? Seine Rezeptur wird ebenfalls gelöscht."
   }
 }

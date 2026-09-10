@@ -15,6 +15,6 @@
   "unidad_label": "Unidad: {{unidad}}",
   "alertas": {
     "error_crear_semielaborado": "Error al crear el semielaborado: {{mensaje}}",
-    "confirmar_borrar": "¿Seguro que quieres borrar este semielaborado? Se borrará también su receta."
+    "confirmar_borrar": "¿Seguro que quieres borrar este semielaborado? Se borrará también su fórmula."
   }
 }
