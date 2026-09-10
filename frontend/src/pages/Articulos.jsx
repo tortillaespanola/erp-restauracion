@@ -3,11 +3,16 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatMoneda } from '../lib/formatCantidad'
-import { IconThermometer, IconPlus } from '@tabler/icons-react'
+import { IconThermometer, IconPlus, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Badge, EmptyState, LoadingState } from '../components/ui'
 import { useNegocio } from '../context/useNegocio'
 
 const NUEVO_INGREDIENTE = '__nuevo__'
+// CONTRATO_HARDENING_A5_A11.md (A11): mismo tamaño de página que el resto del proyecto
+// (AjustesStock.jsx, PedidosCompra.jsx...). Filtro y paginación son client-side porque los
+// artículos ya se cargan enteros en una sola consulta (cargarDatos) -- no hay aún un endpoint
+// paginado en servidor, y añadir uno sería un frente propio fuera de lo que pide este punto.
+const PAGE_SIZE = 20
 
 const vacio = {
   nombre: '', unidadId: '', categoriaId: '', iva: '', tipo_material: 'RM',
@@ -40,6 +45,9 @@ function Articulos() {
   const [cargando, setCargando] = useState(true)
   const [form, setForm] = useState(vacio)
   const [editandoId, setEditandoId] = useState(null)
+  const [filtro, setFiltro] = useState('')
+  const [pagina, setPagina] = useState(0)
+  const [expandidoId, setExpandidoId] = useState(null)
 
   async function cargarDatos() {
     setCargando(true)
@@ -195,6 +203,24 @@ function Articulos() {
     cargarDatos()
   }
 
+  function handleFiltro(valor) {
+    setPagina(0)
+    setFiltro(valor)
+  }
+
+  function toggleExpandido(id) {
+    setExpandidoId((prev) => (prev === id ? null : id))
+  }
+
+  const filtroNorm = filtro.trim().toLowerCase()
+  const articulosFiltrados = filtroNorm
+    ? articulos.filter((a) => a.nombre.toLowerCase().includes(filtroNorm) || a.codigo?.toLowerCase().includes(filtroNorm))
+    : articulos
+
+  const totalPaginas = Math.max(1, Math.ceil(articulosFiltrados.length / PAGE_SIZE))
+  const paginaSegura = Math.min(pagina, totalPaginas - 1)
+  const articulosPagina = articulosFiltrados.slice(paginaSegura * PAGE_SIZE, (paginaSegura + 1) * PAGE_SIZE)
+
   return (
     <div>
       <PageHeader title={t('articulos:titulo')} />
@@ -298,42 +324,69 @@ function Articulos() {
         </CardBody>
       </Card>
 
-      <h2 className="text-sm font-semibold text-ink mb-3">{t('common:listado_titulo')}</h2>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
+        <Field className="w-64">
+          <Input type="text" placeholder={t('articulos:filtro_placeholder')} value={filtro} onChange={(e) => handleFiltro(e.target.value)} />
+        </Field>
+      </div>
 
       {cargando ? (
         <LoadingState />
       ) : articulos.length === 0 ? (
         <Card><EmptyState>{t('articulos:sin_articulos')}</EmptyState></Card>
+      ) : articulosFiltrados.length === 0 ? (
+        <Card><EmptyState>{t('articulos:sin_resultados_filtro')}</EmptyState></Card>
       ) : (
-        <div className="flex flex-col gap-4">
-          {articulos.map((a) => (
-            <Card key={a.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-ink">
-                    {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
-                  </p>
-                  <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
-                    <span>{a.unidad} · {a.categorias_articulo?.nombre ?? t('articulos:sin_categoria')} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
-                    <Badge color="gray">{a.tipo_material}</Badge>
-                    {a.requiere_control_temperatura && (
-                      <span className="text-primary-600 flex items-center gap-1">
-                        <IconThermometer size={14} /> {t('articulos:control_temperatura_badge')}
-                        {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <div className="flex gap-3 shrink-0">
-                  <LinkAction tone="blue" onClick={() => handleEditar(a)}>{t('articulos:editar')}</LinkAction>
-                  <LinkAction tone="red" onClick={() => handleBorrar(a.id)}>{t('articulos:borrar')}</LinkAction>
-                </div>
-              </div>
+        <>
+          <div className="flex flex-col gap-4">
+            {articulosPagina.map((a) => {
+              const expandido = expandidoId === a.id
+              return (
+                <Card key={a.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-ink">
+                        {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
+                      </p>
+                      <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
+                        <span>{a.unidad} · {a.categorias_articulo?.nombre ?? t('articulos:sin_categoria')} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
+                        <Badge color="gray">{a.tipo_material}</Badge>
+                        {a.requiere_control_temperatura && (
+                          <span className="text-primary-600 flex items-center gap-1">
+                            <IconThermometer size={14} /> {t('articulos:control_temperatura_badge')}
+                            {a.temperatura_min != null && a.temperatura_max != null && ` (${a.temperatura_min}°C a ${a.temperatura_max}°C)`}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex gap-3 shrink-0">
+                      <LinkAction tone="blue" onClick={() => handleEditar(a)}>{t('articulos:editar')}</LinkAction>
+                      <LinkAction tone="red" onClick={() => handleBorrar(a.id)}>{t('articulos:borrar')}</LinkAction>
+                    </div>
+                  </div>
 
-              <ProveedoresDelArticulo articulo={a} onCambio={cargarDatos} />
-            </Card>
-          ))}
-        </div>
+                  <button type="button" onClick={() => toggleExpandido(a.id)}
+                    className="mt-3 pt-3 border-t border-gray-100 w-full flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-ink">
+                    {expandido ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                    {expandido ? t('articulos:ocultar_proveedores') : t('articulos:ver_proveedores', { count: a.articulo_proveedor.length })}
+                  </button>
+
+                  {expandido && <ProveedoresDelArticulo articulo={a} onCambio={cargarDatos} />}
+                </Card>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+            <span>{t('articulos:articulo_count', { count: articulosFiltrados.length })}</span>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" size="sm" disabled={paginaSegura === 0} onClick={() => setPagina(paginaSegura - 1)}>{t('common:actions.previous')}</Button>
+              <span>{t('articulos:pagina_de', { pagina: paginaSegura + 1, total: totalPaginas })}</span>
+              <Button variant="secondary" size="sm" disabled={paginaSegura + 1 >= totalPaginas} onClick={() => setPagina(paginaSegura + 1)}>{t('common:actions.next')}</Button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
