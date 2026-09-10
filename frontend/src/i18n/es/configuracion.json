@@ -17,5 +17,36 @@
     "error_guardar": "Error al guardar: {{mensaje}}",
     "guardado_correctamente": "Datos guardados correctamente",
     "error_subir_logo": "Error al subir el logo: {{mensaje}}"
+  },
+  "categorias": {
+    "titulo": "Categorías",
+    "campos": {
+      "nombre": "Nombre",
+      "acronimo": "Acrónimo"
+    },
+    "anadir": "+ Añadir categoría",
+    "editar": "Editar",
+    "borrar": "Borrar",
+    "sin_categorias": "Todavía no hay categorías dadas de alta.",
+    "alertas": {
+      "confirmar_duplicado": "Ya existe una categoría con este nombre o acrónimo. ¿Guardar de todas formas?",
+      "error_guardar": "Error al guardar: {{mensaje}}",
+      "confirmar_borrar": "¿Seguro que quieres borrar esta categoría?",
+      "error_borrar": "Error al borrar: {{mensaje}}"
+    }
+  },
+  "unidades": {
+    "titulo": "Unidades de medida",
+    "campos": {
+      "codigo": "Código",
+      "nombre": "Nombre",
+      "tipo": "Tipo"
+    },
+    "anadir": "+ Añadir unidad",
+    "editar": "Editar",
+    "sin_unidades": "Todavía no hay unidades de medida dadas de alta.",
+    "alertas": {
+      "error_guardar": "Error al guardar: {{mensaje}}"
+    }
   }
 }

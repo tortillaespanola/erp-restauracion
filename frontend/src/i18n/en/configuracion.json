@@ -17,5 +17,36 @@
     "error_guardar": "Error saving: {{mensaje}}",
     "guardado_correctamente": "Data saved successfully",
     "error_subir_logo": "Error uploading the logo: {{mensaje}}"
+  },
+  "categorias": {
+    "titulo": "Categories",
+    "campos": {
+      "nombre": "Name",
+      "acronimo": "Acronym"
+    },
+    "anadir": "+ Add category",
+    "editar": "Edit",
+    "borrar": "Delete",
+    "sin_categorias": "There are no categories registered yet.",
+    "alertas": {
+      "confirmar_duplicado": "A category with this name or acronym already exists. Save anyway?",
+      "error_guardar": "Error saving: {{mensaje}}",
+      "confirmar_borrar": "Are you sure you want to delete this category?",
+      "error_borrar": "Error deleting: {{mensaje}}"
+    }
+  },
+  "unidades": {
+    "titulo": "Units of measure",
+    "campos": {
+      "codigo": "Code",
+      "nombre": "Name",
+      "tipo": "Type"
+    },
+    "anadir": "+ Add unit",
+    "editar": "Edit",
+    "sin_unidades": "There are no units of measure registered yet.",
+    "alertas": {
+      "error_guardar": "Error saving: {{mensaje}}"
+    }
   }
 }

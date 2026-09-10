@@ -102,6 +102,10 @@ No se toca ningún trigger existente (`trg_sincronizar_unidad_texto_*`, `trg_cal
 
 ## 3. Fase 2 — Pantalla de administración de categorías y unidades de medida
 
+**Estado: ✅ Aplicada y verificada el 10-09-2026 (pendiente de commit/push — ver conversación).**
+
+Resumen de lo aplicado: dos secciones nuevas (`CategoriasArticulo`, `UnidadesMedida`) añadidas debajo del formulario de empresa en `Configuracion.jsx`, sin tocar el esquema de datos. Categorías con alta/edición/baja y aviso de duplicado (comparación case-insensitive de `nombre`/`acronimo` contra las demás filas, `confirm()` para continuar igualmente — verificado en navegador creando un duplicado real). Unidades de medida con alta/edición y **sin botón de borrar**; confirmado además con un intento real de `DELETE` por REST contra `unidades_medida` que devolvió `403` (sin `GRANT delete`), validando que la UI replica una restricción real, no supuesta. Nueva categoría/unidad verificada como visible de inmediato en los selectores de `Semielaborados.jsx` (Fase 1). Datos de prueba limpiados (la categoría por REST, la unidad por conexión directa ya que el propio 403 confirma que el frontend no puede borrarla con el rol `authenticated`). `npm run build` limpio, 0 errores de consola.
+
 Hoy `categorias_articulo` y `unidades_medida` son tablas configurables en base de datos pero **no hay ninguna UI** para gestionarlas (`Configuracion.jsx` solo gestiona `empresa_config`). Sin esto, dar categoría "consistente" a las 4 tablas es cosmético si el usuario no puede crear/editar categorías o unidades sin entrar a Supabase directamente.
 
 ### 3.1 Alcance

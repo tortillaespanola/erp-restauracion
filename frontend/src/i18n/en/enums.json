@@ -46,5 +46,10 @@
     "roto": "Broken",
     "evento_no_consumido": "Unused at event",
     "otro": "Other"
+  },
+  "unidad_tipo": {
+    "peso": "Weight",
+    "volumen": "Volume",
+    "unidad": "Unit"
   }
 }

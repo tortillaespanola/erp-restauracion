@@ -17,5 +17,36 @@
     "error_guardar": "Fehler beim Speichern: {{mensaje}}",
     "guardado_correctamente": "Daten erfolgreich gespeichert",
     "error_subir_logo": "Fehler beim Hochladen des Logos: {{mensaje}}"
+  },
+  "categorias": {
+    "titulo": "Kategorien",
+    "campos": {
+      "nombre": "Name",
+      "acronimo": "Kürzel"
+    },
+    "anadir": "+ Kategorie hinzufügen",
+    "editar": "Bearbeiten",
+    "borrar": "Löschen",
+    "sin_categorias": "Es sind noch keine Kategorien angelegt.",
+    "alertas": {
+      "confirmar_duplicado": "Es gibt bereits eine Kategorie mit diesem Namen oder Kürzel. Trotzdem speichern?",
+      "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+      "confirmar_borrar": "Möchtest du diese Kategorie wirklich löschen?",
+      "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+    }
+  },
+  "unidades": {
+    "titulo": "Maßeinheiten",
+    "campos": {
+      "codigo": "Code",
+      "nombre": "Name",
+      "tipo": "Typ"
+    },
+    "anadir": "+ Einheit hinzufügen",
+    "editar": "Bearbeiten",
+    "sin_unidades": "Es sind noch keine Maßeinheiten angelegt.",
+    "alertas": {
+      "error_guardar": "Fehler beim Speichern: {{mensaje}}"
+    }
   }
 }

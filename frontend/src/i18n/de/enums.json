@@ -46,5 +46,10 @@
     "roto": "Beschädigt",
     "evento_no_consumido": "Nicht verbraucht (Event)",
     "otro": "Sonstiges"
+  },
+  "unidad_tipo": {
+    "peso": "Gewicht",
+    "volumen": "Volumen",
+    "unidad": "Einheit"
   }
 }

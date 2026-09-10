@@ -46,5 +46,10 @@
     "roto": "Roto",
     "evento_no_consumido": "Evento no consumido",
     "otro": "Otro"
+  },
+  "unidad_tipo": {
+    "peso": "Peso",
+    "volumen": "Volumen",
+    "unidad": "Unidad"
   }
 }
