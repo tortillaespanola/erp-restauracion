@@ -29,6 +29,28 @@ export function formatCantidad(valor, unidad) {
   return Number(valor).toLocaleString(localeActual(), { maximumFractionDigits, useGrouping: true })
 }
 
+// CONTRATO_HARDENING_A1_A4.md (A3): companion inverso de formatCantidad -- ningún input numérico
+// real del proyecto lo necesita hoy (todos son <input type="number">, cuyo .value el propio
+// navegador normaliza siempre a punto decimal sin separador de miles, sea cual sea el idioma de la
+// interfaz), pero tampoco existía ningún parser seguro para un futuro campo de texto que sí muestre
+// cantidades ya formateadas (ej. un input de cantidad con separador de miles visible mientras se
+// edita). Sin este parser, la manera "natural" de leer ese texto habría sido parseFloat/Number
+// directos -- exactamente el bug descrito en el contrato (parseFloat("50.000") da 50, no 50000,
+// porque interpreta el punto como decimal en vez de como separador de miles de es-ES). Deriva los
+// separadores reales del locale activo con Intl en vez de hardcodearlos, para no desincronizarse si
+// LOCALE_POR_IDIOMA cambia.
+export function parseCantidad(texto) {
+  if (texto == null) return null
+  const str = String(texto).trim()
+  if (str === '') return null
+  const partes = new Intl.NumberFormat(localeActual()).formatToParts(1234567.8)
+  const separadorMiles = partes.find((p) => p.type === 'group')?.value ?? ','
+  const separadorDecimal = partes.find((p) => p.type === 'decimal')?.value ?? '.'
+  const normalizado = str.split(separadorMiles).join('').split(separadorDecimal).join('.')
+  const valor = Number(normalizado)
+  return Number.isNaN(valor) ? null : valor
+}
+
 // Moneda -- consolida todos los sitios que antes concatenaban " €" o " CHF" a mano (bug real:
 // varios mezclaban € heredado de una plantilla inicial con CHF, la moneda correcta del negocio).
 // `moneda` es un hecho de negocio (empresa_config.moneda), no depende del idioma de interfaz --
