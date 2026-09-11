@@ -11,6 +11,8 @@
   "sin_numero": "(no number)",
   "guardando": "Saving…",
   "guardar_factura": "Save invoice",
+  "aviso_periodo_texto_one": "There is 1 delivery note from the period {{fechaMin}}–{{fechaMax}} still pending invoicing.",
+  "aviso_periodo_texto_other": "There are {{count}} delivery notes from the period {{fechaMin}}–{{fechaMax}} still pending invoicing.",
   "alertas": {
     "selecciona_albaran": "Select at least one delivery note to associate with the invoice",
     "error_calcular_total": "Error calculating the invoice total: {{mensaje}}",

@@ -95,6 +95,27 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
       return
     }
 
+    // CONTRATO_FACTURA_PDF.md, sección 6: aviso no bloqueante de albaranes del mismo cliente y
+    // periodo (entre la fecha mínima y máxima de LO SELECCIONADO) que siguen disponibles para
+    // facturar pero se quedan fuera de esta factura. albaranesDisponibles ya aplica el mismo
+    // criterio de disponibilidad (excluye los ya facturados en una factura no anulada, ver el
+    // efecto de arriba), así que "fuera de periodo" es simplemente filtrar esa misma lista.
+    const fechasSeleccionadas = albaranesDisponibles
+      .filter((a) => albaranesSeleccionados.includes(a.id))
+      .map((a) => a.fecha)
+    const fechaMinPeriodo = fechasSeleccionadas.reduce((min, f) => (f < min ? f : min))
+    const fechaMaxPeriodo = fechasSeleccionadas.reduce((max, f) => (f > max ? f : max))
+    const albaranesFueraDePeriodo = albaranesDisponibles.filter(
+      (a) => !albaranesSeleccionados.includes(a.id) && a.fecha >= fechaMinPeriodo && a.fecha <= fechaMaxPeriodo
+    )
+    const avisoPeriodo = albaranesFueraDePeriodo.length > 0
+      ? t('factura_venta_form:aviso_periodo_texto', {
+          count: albaranesFueraDePeriodo.length,
+          fechaMin: formatFecha(fechaMinPeriodo),
+          fechaMax: formatFecha(fechaMaxPeriodo),
+        })
+      : null
+
     // numero_factura ya no se manda -- lo genera siempre el trigger BEFORE INSERT (Bloque 1),
     // que además lo sobreescribiría igual aunque se mandara algo.
     const { data: facturaCreada, error: errorFactura } = await supabase
@@ -103,6 +124,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
         cliente_id: parseInt(clienteId),
         fecha,
         total: totalCalculado,
+        aviso_periodo: avisoPeriodo,
       })
       .select()
       .single()
@@ -131,6 +153,7 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
 
     setGuardando(false)
     toast.success(t('common:feedback.guardado'))
+    if (avisoPeriodo) toast(avisoPeriodo, { icon: '⚠️', duration: 6000 })
     onGuardado(facturaCreada.id)
   }
 

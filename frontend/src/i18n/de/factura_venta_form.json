@@ -11,6 +11,8 @@
   "sin_numero": "(ohne Nummer)",
   "guardando": "Wird gespeichert…",
   "guardar_factura": "Rechnung speichern",
+  "aviso_periodo_texto_one": "Es gibt 1 Lieferschein aus dem Zeitraum {{fechaMin}}–{{fechaMax}}, der noch nicht fakturiert wurde.",
+  "aviso_periodo_texto_other": "Es gibt {{count}} Lieferscheine aus dem Zeitraum {{fechaMin}}–{{fechaMax}}, die noch nicht fakturiert wurden.",
   "alertas": {
     "selecciona_albaran": "Wähle mindestens einen Lieferschein aus, um ihn der Rechnung zuzuordnen",
     "error_calcular_total": "Fehler beim Berechnen der Rechnungssumme: {{mensaje}}",

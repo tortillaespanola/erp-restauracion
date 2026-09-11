@@ -11,6 +11,8 @@
   "sin_numero": "(sin número)",
   "guardando": "Guardando…",
   "guardar_factura": "Guardar factura",
+  "aviso_periodo_texto_one": "Existe 1 albarán del periodo {{fechaMin}}–{{fechaMax}} pendiente de facturar.",
+  "aviso_periodo_texto_other": "Existen {{count}} albaranes del periodo {{fechaMin}}–{{fechaMax}} pendientes de facturar.",
   "alertas": {
     "selecciona_albaran": "Selecciona al menos un albarán para asociar a la factura",
     "error_calcular_total": "Error al calcular el total de la factura: {{mensaje}}",

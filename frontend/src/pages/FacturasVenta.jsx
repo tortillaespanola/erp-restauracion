@@ -4,7 +4,8 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
-import { descargarPdf, imprimirPdf } from '../lib/generarPdf'
+import { descargarFacturaVentaPdf, imprimirFacturaVentaPdf, prepararDocumentoFacturaVenta } from '../lib/generarFacturaVentaPdf'
+import { nombreLineaVenta, unidadLineaVenta } from '../lib/generarAlbaranVentaPdf'
 import { estadoPago, clientesParaDrawer } from '../lib/saldosVenta'
 import { useNegocio } from '../context/useNegocio'
 import {
@@ -230,12 +231,18 @@ function FacturasVenta() {
     cargarDatos()
   }
 
+  // CONTRATO_FACTURA_PDF.md: el PDF nuevo necesita, por línea, la fecha del ALBARÁN de origen (no
+  // la de la factura, que puede agrupar varios) -- por eso se pide albaran_venta_id además de lo
+  // de siempre, y se delega el shape final a prepararDocumentoFacturaVenta (generarFacturaVentaPdf.js),
+  // que resuelve esa fecha por línea contra f.factura_venta_albaran (ya trae la fecha de cada
+  // albarán embebida desde cargarDatos). nombreLineaVenta/unidadLineaVenta son los mismos helpers
+  // ya usados por el albarán -- misma resolución producto_final/articulo_compra/descripción.
   async function prepararDocumento(f) {
     const albaranIds = f.factura_venta_albaran.map((rel) => rel.albaranes_venta?.id).filter(Boolean)
 
     const { data: lineasAlbaranes, error } = await supabase
       .from('lineas_albaran_venta')
-      .select('cantidad, precio_unitario, productos_finales(nombre), articulos_compra(nombre), descripcion, albaran_venta_id')
+      .select('cantidad, precio_unitario, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad), descripcion, albaran_venta_id')
       .in('albaran_venta_id', albaranIds)
 
     if (error) {
@@ -243,25 +250,14 @@ function FacturasVenta() {
     }
 
     const lineas = (lineasAlbaranes || []).map((l) => ({
-      concepto: l.productos_finales?.nombre ?? l.articulos_compra?.nombre ?? l.descripcion,
+      concepto: nombreLineaVenta(l),
       cantidad: l.cantidad,
+      unidad: unidadLineaVenta(l),
       precioUnitario: l.precio_unitario,
+      albaranVentaId: l.albaran_venta_id,
     }))
 
-    return {
-      numero: f.numero_factura || `#${f.id}`,
-      fecha: f.fecha,
-      tercero: {
-        nombre: f.clientes?.nombre,
-        direccion: f.clientes?.direccion,
-        cif: f.clientes?.cif,
-      },
-      lineas,
-      // BLOQUE 3: f.total ya viene persistido y fiable desde el INSERT (calcularTotalDeAlbaranes),
-      // nunca null para una factura nueva -- ya no hace falta recalcularlo ni un `?? totalCalculado`
-      // de respaldo, eso es justo lo que permitía la divergencia listado/PDF que cerramos aquí.
-      total: f.total,
-    }
+    return prepararDocumentoFacturaVenta({ ...f, lineas })
   }
 
   return (
@@ -364,10 +360,10 @@ function FacturasVenta() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" title={t('common:actions.print')} onClick={async () => imprimirPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
+                            <button type="button" title={t('common:actions.print')} onClick={async () => imprimirFacturaVentaPdf(await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarPdf('Factura', await prepararDocumento(f))} className="text-gray-400 hover:text-primary-600">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarFacturaVentaPdf(await prepararDocumento(f))} className="text-gray-400 hover:text-primary-600">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
