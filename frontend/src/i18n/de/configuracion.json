@@ -55,7 +55,11 @@
     }
   },
   "erp": {
-    "idioma_documentos": "Standardsprache für Dokumente"
+    "idioma_documentos": "Standardsprache für Dokumente",
+    "titulo_marca": "Dokumentenmarke",
+    "eslogan": "Slogan",
+    "comentario_eslogan": "Kommentar zum Slogan",
+    "pagina_web": "Webseite"
   },
   "bancario": {
     "titulo": "Bankverbindung",

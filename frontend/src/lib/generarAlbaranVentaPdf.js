@@ -45,22 +45,6 @@ import spaceMonoRegularUrl from '../assets/fonts/SpaceMono-Regular.ttf'
 import spaceMonoBoldUrl from '../assets/fonts/SpaceMono-Bold.ttf'
 import spaceMonoItalicUrl from '../assets/fonts/SpaceMono-Italic.ttf'
 
-// Footer fijo de marca -- copy de "Española", no dato de negocio, no viene de BD.
-const FOOTER = {
-  titulo: 'SPANISCHI STUURHAIT',
-  tagline: 'Basel’s local stuff, Spanish liquid gold, and a lot of Spanish stubbornness.',
-  cita: 'You can’t rush a masterpiece and you can’t mass-produce a soul.',
-  web: 'ESPANOLA.CH',
-}
-
-// Bullets de BEMERKUNGEN por defecto -- solo se usan si el albarán no tiene notas propias.
-// El campo `notas` del albarán (editable en el formulario) es el sitio real y parametrizable:
-// varias líneas separadas por ";" se muestran como bullets independientes.
-const BEMERKUNGEN_POR_DEFECTO = [
-  'Lokale handwerkliche Produktion in Basel.',
-  'Nicht Mehrwertsteuerpflichtig aufgrund der Umsatzgrenze (Art. 10 MWSTG).',
-]
-
 function urlToBase64Imagen(url) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -119,6 +103,14 @@ async function cargarEmpresa() {
   return data
 }
 
+// CONTRATO_PIE_DOCUMENTO.md, sección 5: fuente del fallback de BEMERKUNGEN cuando el albarán no
+// trae notas propias -- maybeSingle porque un negocio puede no tener fila en datos_bancarios
+// todavía (tabla creada en CONTRATO_CONFIGURACION_SUBMENUS.md, sin fila por defecto).
+async function cargarDatosBancarios() {
+  const { data } = await supabase.from('datos_bancarios').select('observaciones').maybeSingle()
+  return data
+}
+
 // Dibuja una línea de segmentos con fuentes distintas, terminando en xDerecha (todo alineado
 // a la derecha como bloque). Se recorre de derecha a izquierda acumulando el ancho de cada
 // segmento con getTextWidth(), ya que jsPDF no soporta estilos mixtos dentro de un mismo texto.
@@ -138,7 +130,7 @@ function lineaMixtaDerecha(doc, segmentos, xDerecha, y) {
 // documento: { numero, fecha, tercero: {nombre, direccion, cif},
 //              lineas: [{concepto, cantidad, unidad, precioUnitario}], total, notas }
 export async function generarAlbaranVentaPdf(documento) {
-  const empresa = await cargarEmpresa()
+  const [empresa, datosBancarios] = await Promise.all([cargarEmpresa(), cargarDatosBancarios()])
   const doc = new jsPDF()
   await registrarFuentes(doc)
 
@@ -231,38 +223,66 @@ export async function generarAlbaranVentaPdf(documento) {
   ], xDer, yFinal)
   yFinal += 12
 
-  // BEMERKUNGEN
-  const bullets = (documento.notas ? documento.notas.split(';').map((n) => n.trim()).filter(Boolean) : [])
-  const bemerkungen = bullets.length > 0 ? bullets : BEMERKUNGEN_POR_DEFECTO
+  // BEMERKUNGEN -- prioridad: notas propias del albarán > empresa.observaciones (datos_bancarios)
+  // > nada (CONTRATO_PIE_DOCUMENTO.md, sección 5: sin fallback hardcodeado en alemán). La sección
+  // entera se omite si no hay contenido, en vez de dibujar un encabezado vacío.
+  const bulletsNotas = documento.notas ? documento.notas.split(';').map((n) => n.trim()).filter(Boolean) : []
+  const bulletsObservaciones = datosBancarios?.observaciones
+    ? datosBancarios.observaciones.split(';').map((n) => n.trim()).filter(Boolean)
+    : []
+  const bemerkungen = bulletsNotas.length > 0 ? bulletsNotas : bulletsObservaciones
 
-  doc.setFont('Montserrat', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(20)
-  doc.text('BEMERKUNGEN:', xIzq, yFinal)
-  yFinal += 6
+  if (bemerkungen.length > 0) {
+    doc.setFont('Montserrat', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(20)
+    doc.text('BEMERKUNGEN:', xIzq, yFinal)
+    yFinal += 6
 
-  doc.setFont('SpaceMono', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(60)
-  for (const b of bemerkungen) {
-    doc.text(`* ${b}`, xIzq, yFinal)
-    yFinal += 5
+    doc.setFont('SpaceMono', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(60)
+    for (const b of bemerkungen) {
+      doc.text(`* ${b}`, xIzq, yFinal)
+      yFinal += 5
+    }
   }
 
-  // Footer -- fijo cerca del pie de página, nunca antes del contenido si este es largo
+  // Footer de marca -- fijo cerca del pie de página, nunca antes del contenido si este es largo.
+  // Cada línea viene de empresa_config (todas nullable, CONTRATO_PIE_DOCUMENTO.md sección 3) y se
+  // omite sin dejar hueco si no está configurada, en vez de un placeholder o el texto fijo de
+  // antes -- por eso cada bloque avanza yPie solo si dibujó algo.
   const yFooter = Math.max(270, yFinal + 15)
+  let yPie = yFooter
 
-  doc.setFont('Montserrat', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(20)
-  doc.text(FOOTER.titulo, xIzq, yFooter)
-  doc.text(FOOTER.web, xDer, yFooter, { align: 'right' })
+  if (empresa?.nombre) {
+    doc.setFont('Montserrat', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(20)
+    doc.text(empresa.nombre, xIzq, yPie)
+  }
+  if (empresa?.pagina_web) {
+    doc.setFont('Montserrat', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(20)
+    doc.text(empresa.pagina_web, xDer, yPie, { align: 'right' })
+  }
+  if (empresa?.nombre || empresa?.pagina_web) yPie += 5
 
-  doc.setFont('SpaceMono', 'italic')
-  doc.setFontSize(8)
-  doc.setTextColor(90)
-  doc.text(FOOTER.tagline, xIzq, yFooter + 5)
-  doc.text(`“${FOOTER.cita}”`, xIzq, yFooter + 10)
+  if (empresa?.eslogan) {
+    doc.setFont('SpaceMono', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(90)
+    doc.text(empresa.eslogan, xIzq, yPie)
+    yPie += 5
+  }
+  if (empresa?.comentario_eslogan) {
+    doc.setFont('SpaceMono', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(90)
+    doc.text(`“${empresa.comentario_eslogan}”`, xIzq, yPie)
+    yPie += 5
+  }
 
   const contacto = [empresa?.email ? `E: ${empresa.email}` : null, empresa?.telefono ? `T: ${empresa.telefono}` : null]
     .filter(Boolean)
@@ -271,7 +291,7 @@ export async function generarAlbaranVentaPdf(documento) {
     doc.setFont('SpaceMono', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(90)
-    doc.text(contacto, xDer, yFooter + 10, { align: 'right' })
+    doc.text(contacto, xDer, yPie, { align: 'right' })
   }
 
   return doc

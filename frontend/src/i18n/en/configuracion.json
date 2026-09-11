@@ -55,7 +55,11 @@
     }
   },
   "erp": {
-    "idioma_documentos": "Default document language"
+    "idioma_documentos": "Default document language",
+    "titulo_marca": "Document branding",
+    "eslogan": "Tagline",
+    "comentario_eslogan": "Tagline comment",
+    "pagina_web": "Website"
   },
   "bancario": {
     "titulo": "Bank details",

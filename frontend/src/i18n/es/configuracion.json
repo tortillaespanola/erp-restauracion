@@ -55,7 +55,11 @@
     }
   },
   "erp": {
-    "idioma_documentos": "Idioma por defecto de documentos"
+    "idioma_documentos": "Idioma por defecto de documentos",
+    "titulo_marca": "Marca de documentos",
+    "eslogan": "Eslogan",
+    "comentario_eslogan": "Comentario del eslogan",
+    "pagina_web": "Página web"
   },
   "bancario": {
     "titulo": "Datos bancarios",

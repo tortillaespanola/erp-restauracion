@@ -2,39 +2,46 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
-import { Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select } from '../../components/ui'
+import { Card, CardHeader, CardBody, Button, LinkAction, Field, Input, Select, Textarea } from '../../components/ui'
 import { IDIOMAS_VALIDOS } from '../../i18n'
 
 // CONTRATO_CONFIGURACION_SUBMENUS.md, sección 6: idioma por defecto de documentos, reutilizando
 // empresa_config.idioma (ya existe desde CONTRATO_I18N.md -- verificado en vivo, sin migración
 // nueva para esto). Este contrato solo guarda el valor, no lo aplica todavía a la generación de
 // PDF (queda para el contrato de configuración de facturas).
-function IdiomaDocumentos() {
+//
+// CONTRATO_PIE_DOCUMENTO.md, sección 4: eslogan/comentario_eslogan/pagina_web se añaden a este
+// mismo formulario (todos campos de empresa_config) en vez de crear una tarjeta aparte -- un único
+// submit que guarda los 4 campos a la vez, mismo patrón que ConfiguracionGeneral.jsx, en vez del
+// autoguardado por campo que tenía el idioma antes de este contrato.
+function MarcaDocumentos() {
   const { t } = useTranslation(['configuracion', 'enums'])
-  const [negocioId, setNegocioId] = useState(null)
-  const [idioma, setIdioma] = useState('es')
+  const [form, setForm] = useState({ negocio_id: null, idioma: 'es', eslogan: '', comentario_eslogan: '', pagina_web: '' })
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     async function cargar() {
       setCargando(true)
-      const { data, error } = await supabase.from('empresa_config').select('negocio_id, idioma').single()
+      const { data, error } = await supabase
+        .from('empresa_config')
+        .select('negocio_id, idioma, eslogan, comentario_eslogan, pagina_web')
+        .single()
       if (error) console.error(error)
-      else {
-        setNegocioId(data.negocio_id)
-        setIdioma(data.idioma)
-      }
+      else setForm(data)
       setCargando(false)
     }
     cargar()
   }, [])
 
-  async function handleChange(valor) {
-    const anterior = idioma
-    setIdioma(valor)
-    const { error } = await supabase.from('empresa_config').update({ idioma: valor }).eq('negocio_id', negocioId)
+  function handleChange(campo, valor) {
+    setForm((prev) => ({ ...prev, [campo]: valor }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const { negocio_id, ...payload } = form
+    const { error } = await supabase.from('empresa_config').update(payload).eq('negocio_id', negocio_id)
     if (error) {
-      setIdioma(anterior)
       alert(t('configuracion:alertas.error_guardar', { mensaje: error.message }))
       return
     }
@@ -45,14 +52,28 @@ function IdiomaDocumentos() {
 
   return (
     <Card className="mt-6">
+      <CardHeader title={t('configuracion:erp.titulo_marca')} />
       <CardBody>
-        <Field label={t('configuracion:erp.idioma_documentos')} className="max-w-xs">
-          <Select value={idioma} onChange={(e) => handleChange(e.target.value)}>
-            {IDIOMAS_VALIDOS.map((codigo) => (
-              <option key={codigo} value={codigo}>{t(`enums:idioma.${codigo}`)}</option>
-            ))}
-          </Select>
-        </Field>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <Field label={t('configuracion:erp.idioma_documentos')} className="max-w-xs">
+            <Select value={form.idioma} onChange={(e) => handleChange('idioma', e.target.value)}>
+              {IDIOMAS_VALIDOS.map((codigo) => (
+                <option key={codigo} value={codigo}>{t(`enums:idioma.${codigo}`)}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={t('configuracion:erp.eslogan')}>
+            <Input type="text" value={form.eslogan ?? ''} onChange={(e) => handleChange('eslogan', e.target.value)} />
+          </Field>
+          <Field label={t('configuracion:erp.comentario_eslogan')}>
+            <Textarea rows={2} value={form.comentario_eslogan ?? ''} onChange={(e) => handleChange('comentario_eslogan', e.target.value)} />
+          </Field>
+          <Field label={t('configuracion:erp.pagina_web')} className="max-w-xs">
+            <Input type="text" value={form.pagina_web ?? ''} onChange={(e) => handleChange('pagina_web', e.target.value)} />
+          </Field>
+
+          <Button type="submit" className="self-start mt-1">{t('configuracion:guardar')}</Button>
+        </form>
       </CardBody>
     </Card>
   )
@@ -299,7 +320,7 @@ function ConfiguracionErp() {
     <>
       <CategoriasArticulo />
       <UnidadesMedida />
-      <IdiomaDocumentos />
+      <MarcaDocumentos />
     </>
   )
 }
