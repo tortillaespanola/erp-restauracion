@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconComponents, IconStack3, IconTools, IconSquareCheck, IconRoute,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
-  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash,
+  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
 import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
@@ -85,13 +86,32 @@ function iniciales(email) {
 function Layout({ children, session, onLogout }) {
   const location = useLocation()
   const { t, i18n } = useTranslation('common')
+  const [sidebarAbierto, setSidebarAbierto] = useState(false)
   const claveRuta = RUTA_A_CLAVE[location.pathname]
   const titulo = claveRuta ? t(`titles.${claveRuta}.title`) : 'FlowBase'
   const breadcrumb = claveRuta ? t(`titles.${claveRuta}.breadcrumb`) : ''
 
+  function cerrarSidebar() {
+    setSidebarAbierto(false)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-canvas text-ink">
-      <aside className="w-sidebar bg-surface-sunken border-r border-border flex flex-col shrink-0">
+      {/* CONTRATO_RESPONSIVE_LAYOUT.md: breakpoint md (768px) es el corte sidebar-visible /
+          sidebar-drawer. <md el sidebar vive fuera del flujo (fixed) y entra como overlay; en
+          md+ vuelve a formar parte del flex normal (md:static, siempre visible, sin transform). */}
+      {sidebarAbierto && (
+        <div
+          className="fixed inset-0 z-40 bg-ink/34 backdrop-blur-[1.5px] md:hidden"
+          onClick={cerrarSidebar}
+        />
+      )}
+
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-sidebar bg-surface-sunken border-r border-border flex flex-col shrink-0 transition-transform duration-200 md:translate-x-0 ${
+          sidebarAbierto ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="h-topbar flex items-center gap-2.5 px-4 border-b border-border shrink-0">
           <img src={logoIconOnbrand} alt="" width={24} height={24} className="rounded-control shrink-0" />
           <span className="font-semibold text-title text-ink tracking-tight">FlowBase</span>
@@ -109,6 +129,7 @@ function Layout({ children, session, onLogout }) {
                   <Link
                     key={to}
                     to={to}
+                    onClick={cerrarSidebar}
                     className={`flex items-center gap-2.5 px-2.5 py-[7px] rounded-control text-meta leading-tight ${
                       activo
                         ? 'bg-primary-100 text-primary-700 font-semibold'
@@ -145,6 +166,7 @@ function Layout({ children, session, onLogout }) {
 
         <Link
           to="/configuracion"
+          onClick={cerrarSidebar}
           className={`border-t border-border p-2.5 flex items-center gap-2.5 hover:bg-surface-hover ${
             location.pathname === '/configuracion' ? 'bg-surface-hover' : ''
           }`}
@@ -163,9 +185,19 @@ function Layout({ children, session, onLogout }) {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-topbar bg-surface border-b border-border flex items-center justify-between px-5 shrink-0">
-          <div>
-            <h1 className="text-title text-ink">{titulo}</h1>
-            <p className="text-micro text-ink-subtle">{breadcrumb}</p>
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setSidebarAbierto(true)}
+              className="md:hidden text-ink-faint hover:text-ink-body shrink-0"
+              aria-label={t('actions.abrir_menu')}
+            >
+              <IconMenu2 size={20} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-title text-ink truncate">{titulo}</h1>
+              <p className="text-micro text-ink-subtle truncate">{breadcrumb}</p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative hidden sm:block">
@@ -187,7 +219,7 @@ function Layout({ children, session, onLogout }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   )

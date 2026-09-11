@@ -246,6 +246,26 @@ Durante la auditoría que dio origen a ese contrato (`AUDITORIA_FLOWBASE_UI.md` 
 
 **Cuándo retomarlo**: si se decide continuar la genericización de FlowBase más allá del catálogo, abrir un contrato dedicado por pieza (iconografía, impuestos, dashboard) en vez de uno combinado — cada una tiene su propio conjunto de decisiones de diseño previas necesarias.
 
+## 21. ✅ Resuelto — Convención responsive del shell (sidebar colapsable <768px)
+
+*Ver `CONTRATO_RESPONSIVE_LAYOUT.md` para el contexto/objetivo completo.*
+
+**Problema real**: el sidebar (`Layout.jsx`) tenía un ancho fijo (`w-sidebar`, 236px) sin ningún breakpoint — en móvil ocupaba ~40% del ancho de pantalla de forma permanente, empujando el contenido principal a un ancho inservible (texto envuelto letra por línea, formularios ilegibles). No era un problema de una pantalla concreta: el layout raíz (shell) nunca tuvo lógica responsive.
+
+**Convención fijada** (aplica a toda pantalla nueva sin necesidad de auditoría adicional):
+- Breakpoint estándar: `md:` de Tailwind (768px) es el corte sidebar-visible / sidebar-drawer.
+- `<md`: sidebar oculto por defecto, fuera del flujo (`position: fixed`), entra como overlay/drawer encima del contenido (con backdrop) al pulsar el botón hamburguesa del header — no empuja el layout ni lo comparte.
+- `md+`: sidebar vuelve a formar parte del flex normal (`md:static`), siempre visible, sin transform.
+- El drawer del sidebar se cierra automáticamente al navegar (clic en cualquier item del menú, incluido "Configuración").
+- Contenido principal (`<main>`): ya usa `flex-1 min-w-0`, así que ocupa el ancho completo automáticamente en cuanto el sidebar sale del flujo — no hace falta clase `w-full` explícita en el propio `<main>`. Padding responsive (`p-4 md:p-6`).
+- Evitar anchos fijos en px en contenedores raíz de pantalla — usar `w-full`/`max-w-*` + padding responsive (mismo criterio que ya seguía el `Drawer` genérico de `ui.jsx`, con `w-full max-w-md`).
+
+**Implementado** en `Layout.jsx`: estado `sidebarAbierto`, backdrop (`fixed inset-0 md:hidden`), `<aside>` con `fixed md:static` + `-translate-x-full`/`translate-x-0` + `transition-transform`, botón hamburguesa (`IconMenu2`, `md:hidden`) en el header. Clave i18n nueva `common:actions.abrir_menu` (es/en/de).
+
+**Verificado visualmente** (Playwright, viewport 375×667 y 1280×800) en 3 pantallas representativas: Albaranes de compra (listado), Artículos (formulario largo vía drawer), y `/` (Artículos, hace de inicio — no existe una pantalla de dashboard separada en el proyecto). Sidebar oculto y contenido a ancho completo en móvil; hamburguesa abre el overlay; clic en un item de menú navega y cierra el drawer; en desktop el comportamiento no cambia (sidebar siempre visible, sin hamburguesa).
+
+**Fuera de alcance de esta pasada** (Fase 2 del contrato, pendiente, probablemente menor): tablas anchas (Albaranes, Facturas, Inventario) sin decisión tomada aún entre scroll horizontal contenido vs. colapso a tarjetas en móvil; confirmar caso a caso que el contenido interno de cada `Drawer` (formularios multi-columna, tablas anidadas) cae a una columna en móvil — el propio `Drawer` ya es `w-full` (no haría falta tocar su ancho), pero su contenido no se ha auditado pantalla por pantalla.
+
 ---
 
 ## Notas de diseño confirmadas (no pendientes — comportamiento ya verificado)
