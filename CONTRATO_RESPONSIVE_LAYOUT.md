@@ -1,5 +1,7 @@
 # CONTRATO_RESPONSIVE_LAYOUT.md
 
+**Estado: ✅ Cerrado.** Fase 0 (convención) y Fase 1 (shell) implementadas y verificadas — commit `594890c`, desplegado en Vercel. Fase 2 descartada por decisión de producto (scroll horizontal nativo aceptado en tablas anchas; formularios ya caían a una columna sin cambios), no por falta de tiempo. Detalle completo en `PENDIENTES_MODELO.md` #21.
+
 ## Contexto
 FlowBase se ve "responsive pero no funcional" en móvil: el sidebar nunca colapsa
 y se queda fijo ocupando ~40% del ancho de pantalla en cualquier resolución.
