@@ -1,7 +1,12 @@
 {
-  "titulo": "Company settings",
-  "subtitulo": "This data will appear on the letterhead of delivery notes and invoices.",
+  "titulo": "Settings",
+  "subtitulo": "Company data, ERP catalogs and bank details.",
   "cargando": "Loading...",
+  "tabs": {
+    "general": "General",
+    "erp": "ERP settings",
+    "bancario": "Bank details"
+  },
   "campos": {
     "logo": "Logo",
     "nombre_comercial": "Trade name",
@@ -47,6 +52,28 @@
     "sin_unidades": "There are no units of measure registered yet.",
     "alertas": {
       "error_guardar": "Error saving: {{mensaje}}"
+    }
+  },
+  "erp": {
+    "idioma_documentos": "Default document language"
+  },
+  "bancario": {
+    "titulo": "Bank details",
+    "campos": {
+      "beneficiario": "Beneficiary",
+      "direccion_beneficiario": "Beneficiary address",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "referencia_pago": "Payment reference",
+      "banco": "Bank",
+      "condiciones_pago": "General payment terms",
+      "observaciones": "Notes",
+      "enlace_pago_online": "Online payment link"
+    },
+    "guardar": "Save",
+    "alertas": {
+      "error_guardar": "Error saving: {{mensaje}}",
+      "guardado_correctamente": "Data saved successfully"
     }
   }
 }

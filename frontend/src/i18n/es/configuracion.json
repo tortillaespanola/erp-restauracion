@@ -1,7 +1,12 @@
 {
-  "titulo": "Configuración de empresa",
-  "subtitulo": "Estos datos aparecerán en el membrete de albaranes y facturas.",
+  "titulo": "Configuración",
+  "subtitulo": "Datos de empresa, catálogos del ERP y datos bancarios.",
   "cargando": "Cargando...",
+  "tabs": {
+    "general": "General",
+    "erp": "Configuración ERP",
+    "bancario": "Datos bancarios"
+  },
   "campos": {
     "logo": "Logo",
     "nombre_comercial": "Nombre comercial",
@@ -47,6 +52,28 @@
     "sin_unidades": "Todavía no hay unidades de medida dadas de alta.",
     "alertas": {
       "error_guardar": "Error al guardar: {{mensaje}}"
+    }
+  },
+  "erp": {
+    "idioma_documentos": "Idioma por defecto de documentos"
+  },
+  "bancario": {
+    "titulo": "Datos bancarios",
+    "campos": {
+      "beneficiario": "Beneficiario",
+      "direccion_beneficiario": "Dirección del beneficiario",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "referencia_pago": "Referencia de pago",
+      "banco": "Banco",
+      "condiciones_pago": "Condiciones generales de pago",
+      "observaciones": "Observaciones",
+      "enlace_pago_online": "Enlace de pago online"
+    },
+    "guardar": "Guardar",
+    "alertas": {
+      "error_guardar": "Error al guardar: {{mensaje}}",
+      "guardado_correctamente": "Datos guardados correctamente"
     }
   }
 }

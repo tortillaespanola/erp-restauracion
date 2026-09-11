@@ -1,7 +1,12 @@
 {
-  "titulo": "Firmeneinstellungen",
-  "subtitulo": "Diese Angaben erscheinen im Briefkopf von Lieferscheinen und Rechnungen.",
+  "titulo": "Einstellungen",
+  "subtitulo": "Firmendaten, ERP-Kataloge und Bankverbindung.",
   "cargando": "Lädt...",
+  "tabs": {
+    "general": "Allgemein",
+    "erp": "ERP-Einstellungen",
+    "bancario": "Bankverbindung"
+  },
   "campos": {
     "logo": "Logo",
     "nombre_comercial": "Handelsname",
@@ -47,6 +52,28 @@
     "sin_unidades": "Es sind noch keine Maßeinheiten angelegt.",
     "alertas": {
       "error_guardar": "Fehler beim Speichern: {{mensaje}}"
+    }
+  },
+  "erp": {
+    "idioma_documentos": "Standardsprache für Dokumente"
+  },
+  "bancario": {
+    "titulo": "Bankverbindung",
+    "campos": {
+      "beneficiario": "Begünstigter",
+      "direccion_beneficiario": "Adresse des Begünstigten",
+      "iban": "IBAN",
+      "bic": "BIC",
+      "referencia_pago": "Zahlungsreferenz",
+      "banco": "Bank",
+      "condiciones_pago": "Allgemeine Zahlungsbedingungen",
+      "observaciones": "Bemerkungen",
+      "enlace_pago_online": "Online-Zahlungslink"
+    },
+    "guardar": "Speichern",
+    "alertas": {
+      "error_guardar": "Fehler beim Speichern: {{mensaje}}",
+      "guardado_correctamente": "Daten erfolgreich gespeichert"
     }
   }
 }

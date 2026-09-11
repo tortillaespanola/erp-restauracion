@@ -51,5 +51,10 @@
     "peso": "Gewicht",
     "volumen": "Volumen",
     "unidad": "Einheit"
+  },
+  "idioma": {
+    "es": "Español",
+    "en": "English",
+    "de": "Deutsch"
   }
 }
