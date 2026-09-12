@@ -33,10 +33,10 @@ import AdminEmpresas from './pages/AdminEmpresas'
 // qué stylesheet se inyectó último.
 const TOAST_STYLE = {
   background: '#ffffff',
-  color: 'oklch(0.30 0.02 265)',
-  border: '1px solid oklch(0.925 0.004 265)',
+  color: 'oklch(0.30 0.02 160)',
+  border: '1px solid oklch(0.925 0.006 160)',
   borderRadius: '10px',
-  boxShadow: '0 1px 2px rgba(16,24,40,.06), 0 8px 24px -12px rgba(16,24,40,.18)',
+  boxShadow: '0 1px 2px rgba(16,40,30,.06), 0 8px 24px -12px rgba(16,40,30,.18)',
   fontFamily: '"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif',
   fontSize: '12.5px',
   lineHeight: '17px',
