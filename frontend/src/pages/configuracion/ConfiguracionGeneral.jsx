@@ -62,7 +62,7 @@ function ConfiguracionGeneral() {
     setSubiendoLogo(false)
   }
 
-  if (cargando) return <div className="text-sm text-gray-400">{t('configuracion:cargando')}</div>
+  if (cargando) return <div className="text-sm text-ink-faint">{t('configuracion:cargando')}</div>
 
   return (
     <Card>
@@ -70,10 +70,10 @@ function ConfiguracionGeneral() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <Field label={t('configuracion:campos.logo')}>
             {form.logo_url && (
-              <img src={form.logo_url} alt="Logo" className="h-16 object-contain mb-2 border border-gray-200 rounded p-1" />
+              <img src={form.logo_url} alt="Logo" className="h-16 object-contain mb-2 border border-border rounded p-1" />
             )}
             <input type="file" accept="image/*" onChange={handleLogoChange} className="text-sm" />
-            {subiendoLogo && <p className="text-sm text-gray-400 mt-1">{t('configuracion:subiendo')}</p>}
+            {subiendoLogo && <p className="text-sm text-ink-faint mt-1">{t('configuracion:subiendo')}</p>}
           </Field>
 
           <Field label={t('configuracion:campos.nombre_comercial')}>

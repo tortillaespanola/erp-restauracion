@@ -232,9 +232,9 @@ export default function FacturaCompraForm({ factura, proveedores, onGuardado, on
         <SectionLabel>{t('facturas_compra:albaranes_a_incluir_titulo')}</SectionLabel>
 
         {!proveedorId ? (
-          <p className="text-sm text-gray-400">{t('facturas_compra:elige_proveedor_para_albaranes')}</p>
+          <p className="text-sm text-ink-faint">{t('facturas_compra:elige_proveedor_para_albaranes')}</p>
         ) : albaranesDisponibles.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('facturas_compra:sin_albaranes_pendientes')}</p>
+          <p className="text-sm text-ink-faint">{t('facturas_compra:sin_albaranes_pendientes')}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {albaranesDisponibles.map((alb) => (

@@ -51,7 +51,7 @@ function ConfiguracionBancaria() {
     toast.success(t('configuracion:bancario.alertas.guardado_correctamente'))
   }
 
-  if (cargando) return <div className="text-sm text-gray-400">{t('configuracion:cargando')}</div>
+  if (cargando) return <div className="text-sm text-ink-faint">{t('configuracion:cargando')}</div>
 
   return (
     <Card>

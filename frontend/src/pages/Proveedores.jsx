@@ -76,14 +76,14 @@ function Proveedores() {
                 <Th>{t('contactos_comun:telefono')}</Th>
                 <Th></Th>
               </Thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border-subtle">
                 {proveedores.map((p) => (
-                  <tr key={p.id} className="hover:bg-blue-50/40">
+                  <tr key={p.id} className="hover:bg-primary-50/40">
                     <Td className="font-medium">{p.razon_fiscal}</Td>
-                    <Td className="text-gray-500">{p.nombre_comercial}</Td>
-                    <Td className="text-gray-500">{p.cif ?? '-'}</Td>
-                    <Td className="text-gray-500">{p.email ?? '-'}</Td>
-                    <Td className="text-gray-500">{p.telefono ?? '-'}</Td>
+                    <Td className="text-ink-muted">{p.nombre_comercial}</Td>
+                    <Td className="text-ink-muted">{p.cif ?? '-'}</Td>
+                    <Td className="text-ink-muted">{p.email ?? '-'}</Td>
+                    <Td className="text-ink-muted">{p.telefono ?? '-'}</Td>
                     <Td className="text-right whitespace-nowrap">
                       <LinkAction tone="blue" onClick={() => setModoDrawer(p)} className="mr-3">{t('proveedores:editar')}</LinkAction>
                       <LinkAction tone="red" onClick={() => handleBorrar(p.id)}>{t('proveedores:borrar')}</LinkAction>

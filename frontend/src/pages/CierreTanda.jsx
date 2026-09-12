@@ -312,7 +312,7 @@ function CierreTanda() {
                       <Th>{t('cierre_tanda:tabla.pedido')}</Th>
                       <Th>{t('cierre_tanda:tabla.a_entregar')}</Th>
                     </Thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border-subtle">
                       {g.pedidos.map((p) => (
                         <tr key={p.pedidoId}>
                           <Td className="font-medium">{p.cliente}</Td>
@@ -335,7 +335,7 @@ function CierreTanda() {
                     </tbody>
                   </Table>
                   {g.deficit && (
-                    <p className={`text-xs px-4 py-2 ${totalAsignado > g.disponibleTotal + 0.0001 ? 'text-red-600' : 'text-gray-500'}`}>
+                    <p className={`text-xs px-4 py-2 ${totalAsignado > g.disponibleTotal + 0.0001 ? 'text-danger-600' : 'text-ink-muted'}`}>
                       {t('cierre_tanda:asignado_resumen', { asignado: totalAsignado.toFixed(3), disponible: g.disponibleTotal.toFixed(3) })}
                       {totalAsignado > g.disponibleTotal + 0.0001 && t('cierre_tanda:supera_disponible_aviso')}
                     </p>
@@ -355,7 +355,7 @@ function CierreTanda() {
                     <Th>{t('cierre_tanda:tabla_libres.descripcion')}</Th>
                     <Th>{t('cierre_tanda:tabla_libres.cantidad')}</Th>
                   </Thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border-subtle">
                     {[...lineasLibresPorPedido.entries()].flatMap(([pedidoId, libres]) => {
                       const pedido = pedidos.find((p) => p.id === pedidoId)
                       return libres.map((l) => (

@@ -87,18 +87,18 @@ function Clientes() {
                 <Th>{t('clientes:tabla.estado')}</Th>
                 <Th></Th>
               </Thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border-subtle">
                 {clientes.map((c) => (
-                  <tr key={c.id} className={`hover:bg-blue-50/40 ${c.activo === false ? 'opacity-60' : ''}`}>
+                  <tr key={c.id} className={`hover:bg-primary-50/40 ${c.activo === false ? 'opacity-60' : ''}`}>
                     <Td>
                       <Badge color={c.tipo === 'empresa' ? 'blue' : 'gray'}>
                         {t(`enums:tipo_cliente.${c.tipo === 'empresa' ? 'empresa' : 'particular'}`)}
                       </Badge>
                     </Td>
                     <Td className="font-medium">{c.nombre}</Td>
-                    <Td className="text-gray-500">{c.cif ?? '-'}</Td>
-                    <Td className="text-gray-500">{c.email ?? '-'}</Td>
-                    <Td className="text-gray-500">{c.telefono ?? '-'}</Td>
+                    <Td className="text-ink-muted">{c.cif ?? '-'}</Td>
+                    <Td className="text-ink-muted">{c.email ?? '-'}</Td>
+                    <Td className="text-ink-muted">{c.telefono ?? '-'}</Td>
                     <Td>
                       <button type="button" onClick={() => handleToggleActivo(c)} title={t('clientes:clic_cambiar_estado_title')}>
                         <Badge color={c.activo === false ? 'gray' : 'green'}>

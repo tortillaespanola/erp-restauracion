@@ -119,12 +119,12 @@ function AdminEmpresas() {
                 <Th>{t('admin_empresas:tabla.codigo_corto')}</Th>
                 <Th>{t('admin_empresas:tabla.creado')}</Th>
               </Thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border-subtle">
                 {negocios.map((n) => (
-                  <tr key={n.id} className="hover:bg-blue-50/40">
+                  <tr key={n.id} className="hover:bg-primary-50/40">
                     <Td className="font-medium">{n.nombre}</Td>
-                    <Td className="text-gray-500">{n.codigo_corto ?? '-'}</Td>
-                    <Td className="text-gray-500">{new Date(n.created_at).toLocaleDateString()}</Td>
+                    <Td className="text-ink-muted">{n.codigo_corto ?? '-'}</Td>
+                    <Td className="text-ink-muted">{new Date(n.created_at).toLocaleDateString()}</Td>
                   </tr>
                 ))}
               </tbody>

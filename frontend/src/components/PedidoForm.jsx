@@ -212,7 +212,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
         <Field label={t('pedido_form:campos.fecha_entrega_opcional')}>
           <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
           {fechaEntrega && fechaEntrega < fecha && (
-            <p className="text-red-600 text-xs mt-1">{t('pedido_form:fecha_entrega_anterior')}</p>
+            <p className="text-danger-600 text-xs mt-1">{t('pedido_form:fecha_entrega_anterior')}</p>
           )}
         </Field>
       </div>
@@ -224,7 +224,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
         <SectionLabel>{t('pedido_form:lineas_pedido_titulo')}</SectionLabel>
         <div className="flex flex-col gap-3">
           {lineas.map((linea, index) => (
-            <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
+            <div key={index} className="border border-border-subtle rounded-control bg-canvas p-3 flex flex-col gap-2">
               <div className="flex gap-4 text-sm flex-wrap">
                 <label className="flex items-center gap-1.5">
                   <input type="radio" checked={linea.tipo === 'producto'}
@@ -275,7 +275,7 @@ export default function PedidoForm({ pedido, clientes, productos, articulosMerca
                   <Input type="number" step="0.01" placeholder={t('pedido_form:precio_placeholder')} value={linea.precio_unitario}
                     onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
                   <button type="button" onClick={() => removeLinea(index)}
-                    className="text-gray-400 hover:text-red-600 justify-self-center">
+                    className="text-ink-faint hover:text-danger-600 justify-self-center">
                     <IconTrash size={16} />
                   </button>
                 </div>

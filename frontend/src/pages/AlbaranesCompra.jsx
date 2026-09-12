@@ -19,13 +19,13 @@ import RegistrarPagoProveedorForm from '../components/RegistrarPagoProveedorForm
 // contrato descarta explícitamente añadirlo) -- todo lo no facturado colapsa a un único
 // 'pendiente' ámbar, con IconAlertTriangle (mismo icono que usaba el caso ámbar de Venta).
 const ESTADO_FACTURACION_ICONO = {
-  facturado: { icon: IconCircleCheck, color: 'text-green-600' },
-  pendiente: { icon: IconAlertTriangle, color: 'text-amber-600' },
+  facturado: { icon: IconCircleCheck, color: 'text-success-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-warning-600' },
 }
 const ESTADO_COBRO_ICONO = {
-  pagada: { icon: IconCircleCheck, color: 'text-green-600' },
-  parcial: { icon: IconCircleHalf2, color: 'text-amber-600' },
-  pendiente: { icon: IconAlertTriangle, color: 'text-red-600' },
+  pagada: { icon: IconCircleCheck, color: 'text-success-600' },
+  parcial: { icon: IconCircleHalf2, color: 'text-warning-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-danger-600' },
 }
 
 function EstadoIcono({ cfg, label }) {
@@ -143,7 +143,7 @@ function AlbaranesCompra() {
     setPagina(1) // cambiar de orden con otra página abierta dejaría una página vacía o repetida
   }
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -361,7 +361,7 @@ function AlbaranesCompra() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('albaranes_compra:filtros.proveedor')} className="w-48">
           <Select value={filtroProveedorId} onChange={(e) => cambiarFiltroProveedor(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -396,11 +396,11 @@ function AlbaranesCompra() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('albaranes_compra:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
@@ -428,21 +428,21 @@ function AlbaranesCompra() {
                     <Fragment key={alb.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(alb.id, el); else filaRefs.current.delete(alb.id) }}
-                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        className="border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer"
                         onClick={() => toggleExpandido(alb.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(alb.fecha)}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('common:sin_numero')}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(alb.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{alb.numero_albaran || t('common:sin_numero')}</td>
                         <td className="px-3 py-3 font-medium text-ink">{alb.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-xs font-mono text-gray-400">{alb.codigo_interno || '—'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs font-mono text-ink-faint">{alb.codigo_interno || '—'}</td>
                         <td className="px-3 py-3">
                           {codigosPedido.length === 0 ? (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-ink-faint">—</span>
                           ) : codigosPedido.length === 1 ? (
                             <Badge color="blue">{codigosPedido[0]}</Badge>
                           ) : (
@@ -476,10 +476,10 @@ function AlbaranesCompra() {
                         <td colSpan={9} className="p-0">
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3">
+                              <div className="bg-canvas/60 px-3 py-3">
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                    <tr className="text-left text-overline text-ink-subtle border-b border-border">
                                       <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.articulo')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.cantidad')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.precio')}</th>
@@ -489,19 +489,19 @@ function AlbaranesCompra() {
                                       <th className="py-1.5 font-medium">{t('albaranes_compra:tabla.lote')}</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-gray-100">
+                                  <tbody className="divide-y divide-border-subtle">
                                     {alb.entrada_material.map((linea) => (
                                       <tr key={linea.id}>
                                         <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
                                         <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
                                         <td className="py-1.5">{linea.precio ?? '-'}</td>
                                         <td className="py-1.5">{linea.fecha_caducidad ? formatFecha(linea.fecha_caducidad) : '-'}</td>
-                                        <td className="py-1.5 text-gray-500">{linea.notas ?? '-'}</td>
-                                        <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-red-600 font-semibold' : ''}`}>
+                                        <td className="py-1.5 text-ink-muted">{linea.notas ?? '-'}</td>
+                                        <td className={`py-1.5 ${linea.temperatura_fuera_rango ? 'text-danger-600 font-semibold' : ''}`}>
                                           {linea.temperatura_recepcion != null ? `${linea.temperatura_recepcion}°C` : '-'}
                                           {linea.temperatura_fuera_rango && ' ⚠️'}
                                         </td>
-                                        <td className="py-1.5 text-gray-400 font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
+                                        <td className="py-1.5 text-ink-faint font-mono text-xs">{linea.codigo_lote ?? '-'}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -522,7 +522,7 @@ function AlbaranesCompra() {
 
       {!cargando && totalAlbaranes > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('albaranes_compra:albaran_pagina_count', { count: totalAlbaranes, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -538,7 +538,7 @@ function AlbaranesCompra() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

@@ -128,7 +128,7 @@ function AjustesStock() {
       {cargando ? (
         <LoadingState />
       ) : errorCarga ? (
-        <Card><p className="text-sm text-red-600 py-6 text-center">{t('ajustes_stock:error_cargar_historico', { mensaje: errorCarga })}</p></Card>
+        <Card><p className="text-sm text-danger-600 py-6 text-center">{t('ajustes_stock:error_cargar_historico', { mensaje: errorCarga })}</p></Card>
       ) : historial.length === 0 ? (
         <Card><EmptyState>{t('ajustes_stock:sin_ajustes_filtro')}</EmptyState></Card>
       ) : (
@@ -143,16 +143,16 @@ function AjustesStock() {
                 <Th>{t('ajustes_stock:tabla.usuario')}</Th>
                 <Th></Th>
               </Thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border-subtle">
                 {historial.map((a) => (
-                  <tr key={`${a.tipo}-${a.id}`} className="hover:bg-blue-50/40">
-                    <Td className="text-gray-500">{formatFecha(a.fecha)}</Td>
-                    <Td className="font-medium">{a.item_nombre} <span className="text-gray-400 text-xs font-normal">({t(`enums:tipo_ajuste.${a.tipo}`, { defaultValue: a.tipo })})</span></Td>
-                    <Td className={`font-medium ${a.cantidad >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <tr key={`${a.tipo}-${a.id}`} className="hover:bg-primary-50/40">
+                    <Td className="text-ink-muted">{formatFecha(a.fecha)}</Td>
+                    <Td className="font-medium">{a.item_nombre} <span className="text-ink-faint text-xs font-normal">({t(`enums:tipo_ajuste.${a.tipo}`, { defaultValue: a.tipo })})</span></Td>
+                    <Td className={`font-medium ${a.cantidad >= 0 ? 'text-success-600' : 'text-danger-600'}`}>
                       {a.cantidad >= 0 ? '+' : ''}{formatCantidad(a.cantidad, a.unidad)} {a.unidad}
                     </Td>
-                    <Td className="text-gray-500">{motivoMostrado(a, t)}</Td>
-                    <Td className="text-gray-500">{a.user_email || '—'}</Td>
+                    <Td className="text-ink-muted">{motivoMostrado(a, t)}</Td>
+                    <Td className="text-ink-muted">{a.user_email || '—'}</Td>
                     <Td className="text-right">
                       <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">{t('ajustes_stock:borrar')}</LinkAction>
                     </Td>
@@ -162,7 +162,7 @@ function AjustesStock() {
             </Table>
           </Card>
 
-          <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
+          <div className="flex items-center justify-between mt-3 text-sm text-ink-muted">
             <span>{t('ajustes_stock:movimiento_count', { count: total })}</span>
             <div className="flex items-center gap-3">
               <Button variant="secondary" size="sm" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>{t('common:actions.previous')}</Button>

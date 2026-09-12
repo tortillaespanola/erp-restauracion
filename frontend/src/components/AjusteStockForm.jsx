@@ -138,11 +138,11 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {fijo ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
+        <div className="bg-surface-sunken border border-border rounded-control p-3 text-sm">
           <p className="font-medium text-ink">{fijo.itemNombre}</p>
-          <p className="text-gray-500 text-xs mt-0.5">{fijo.loteLabel}</p>
+          <p className="text-ink-muted text-xs mt-0.5">{fijo.loteLabel}</p>
           {stockActualLote != null && (
-            <p className="text-gray-500 text-xs mt-1">{t('ajuste_stock_form:stock_actual_del_lote', { cantidad: formatCantidad(stockActualLote, unidad), unidad })}</p>
+            <p className="text-ink-muted text-xs mt-1">{t('ajuste_stock_form:stock_actual_del_lote', { cantidad: formatCantidad(stockActualLote, unidad), unidad })}</p>
           )}
         </div>
       ) : (

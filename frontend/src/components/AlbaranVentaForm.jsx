@@ -380,19 +380,19 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
         <div>
           <SectionLabel>{t('albaran_venta_form:lineas_albaran_titulo')}</SectionLabel>
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {lineas.map((l, index) => (
                 <tr key={index}>
                   <td className="py-1.5">
                     {l.display}
-                    {l.tipo === 'mercaderia' && <span className="text-gray-400 text-xs">{t('albaran_venta_form:tipo_mercaderia_sufijo')}</span>}
-                    {l.tipo === 'libre' && <span className="text-gray-400 text-xs">{t('albaran_venta_form:tipo_libre_sufijo')}</span>}
+                    {l.tipo === 'mercaderia' && <span className="text-ink-faint text-xs">{t('albaran_venta_form:tipo_mercaderia_sufijo')}</span>}
+                    {l.tipo === 'libre' && <span className="text-ink-faint text-xs">{t('albaran_venta_form:tipo_libre_sufijo')}</span>}
                   </td>
                   <td className="py-1.5">{t('albaran_venta_form:cantidad_uds', { cantidad: l.cantidad })}</td>
                   <td className="py-1.5">{l.precio_unitario != null ? t('albaran_venta_form:precio_por_ud', { precio: formatMoneda(l.precio_unitario, negocio?.moneda) }) : '-'}</td>
                   <td className="py-1.5 text-right">
                     <button type="button" onClick={() => removeLinea(index)}
-                      className="text-gray-400 hover:text-red-600">
+                      className="text-ink-faint hover:text-danger-600">
                       <IconTrash size={15} />
                     </button>
                   </td>
@@ -436,9 +436,9 @@ function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLine
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
-      <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
+      <div className="text-sm text-ink-body bg-surface-sunken border border-border rounded-control px-2.5 py-1.5">
         {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: tandaInfo ? formatFecha(tandaInfo.fecha) : '' })}
-        <span className="text-gray-400 text-xs">{t('albaran_venta_form:asignado_tanda_nota')}</span>
+        <span className="text-ink-faint text-xs">{t('albaran_venta_form:asignado_tanda_nota')}</span>
       </div>
       <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
         onChange={(e) => setCantidad(e.target.value)}
@@ -518,11 +518,11 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
   if (previsionesConTanda.length === 0 && lotesConDisponibleReal.length === 0) return null
 
   return (
-    <div className="border border-gray-200 rounded-md p-3">
+    <div className="border border-border rounded-control p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-700">{producto.nombre}</p>
+        <p className="text-sm font-medium text-ink">{producto.nombre}</p>
         {totalPrevisto > 0 && (
-          <p className="text-xs text-gray-400">{t('albaran_venta_form:total_previsto', { valor: totalPrevisto.toFixed(3) })}</p>
+          <p className="text-xs text-ink-faint">{t('albaran_venta_form:total_previsto', { valor: totalPrevisto.toFixed(3) })}</p>
         )}
       </div>
 
@@ -610,8 +610,8 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
   if (lotesConDisponibleReal.length === 0) return null
 
   return (
-    <div className="border border-gray-200 rounded-md p-3">
-      <p className="text-sm font-medium text-gray-700">{articulo.nombre}</p>
+    <div className="border border-border rounded-control p-3">
+      <p className="text-sm font-medium text-ink">{articulo.nombre}</p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Select value={loteId} onChange={(e) => setLoteId(e.target.value)} className="text-sm">
           <option value="">{t('albaran_venta_form:selecciona_lote')}</option>
@@ -656,9 +656,9 @@ function LineaPedidoLibrePendiente({ linea, onAdd }) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-md p-3">
-      <p className="text-sm font-medium text-gray-700">
-        {linea.descripcion} <span className="text-gray-400 text-xs">— {t('albaran_venta_form:restante_pendiente_pedido', { restante: linea.restante })}</span>
+    <div className="border border-border rounded-control p-3">
+      <p className="text-sm font-medium text-ink">
+        {linea.descripcion} <span className="text-ink-faint text-xs">— {t('albaran_venta_form:restante_pendiente_pedido', { restante: linea.restante })}</span>
       </p>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
         <Input type="text" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="text-sm" />
@@ -690,7 +690,7 @@ function LineaLibreParaVender({ onAdd }) {
   }
 
   return (
-    <div className="border border-gray-200 rounded-md p-3">
+    <div className="border border-border rounded-control p-3">
       <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
         <Input type="text" placeholder={t('albaran_venta_form:descripcion_placeholder')} value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}

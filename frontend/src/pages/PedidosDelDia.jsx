@@ -226,11 +226,11 @@ function estadoCadenaPF(faltantesDirectos, direccionesSemiDirectas, filasSemiPor
 // crudos de un enum de BD -- viven en su propio namespace estados_calculados.json, jamás en
 // enums.json (ver Fase 0).
 const ESTADOS_ICONO = {
-  ok: { icon: IconCircleCheck, color: 'text-green-600' },
-  pendiente: { icon: IconClock, color: 'text-blue-600' },
-  semi: { icon: IconStack3, color: 'text-amber-600' },
+  ok: { icon: IconCircleCheck, color: 'text-success-600' },
+  pendiente: { icon: IconClock, color: 'text-primary-600' },
+  semi: { icon: IconStack3, color: 'text-warning-600' },
   ingrediente: { icon: IconComponents, color: 'text-orange-600' },
-  ambos: { icon: IconAlertTriangle, color: 'text-red-600' },
+  ambos: { icon: IconAlertTriangle, color: 'text-danger-600' },
   en_curso_insuficiente: { icon: IconProgress, color: 'text-cyan-600' },
   en_curso_cubre: { icon: IconProgressCheck, color: 'text-teal-600' },
   semis_en_curso_insuficiente: { icon: IconProgress, color: 'text-cyan-600' },
@@ -251,7 +251,7 @@ function EstadoCelda({ estado, detalle, nota, tooltipExtra }) {
       <Icon size={16} />
       <span className="text-xs font-medium whitespace-nowrap">
         {label}
-        {nota && <span className="text-gray-400 font-normal"> ({nota})</span>}
+        {nota && <span className="text-ink-faint font-normal"> ({nota})</span>}
       </span>
     </span>
   )
@@ -323,20 +323,20 @@ function DesgloseComponentes({ filas, colSpan }) {
   const { t } = useTranslation('pedidos_del_dia')
   return (
     <tr>
-      <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
+      <Td colSpan={colSpan} className="bg-canvas/60 py-2">
         {filas === 'cargando' ? (
-          <p className="text-xs text-gray-400 px-2 py-1">{t('cargando_desglose')}</p>
+          <p className="text-xs text-ink-faint px-2 py-1">{t('cargando_desglose')}</p>
         ) : filas.length === 0 ? (
-          <p className="text-xs text-gray-400 px-2 py-1">{t('sin_semielaborados_ni_ingredientes')}</p>
+          <p className="text-xs text-ink-faint px-2 py-1">{t('sin_semielaborados_ni_ingredientes')}</p>
         ) : (
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {filas.map((f) => (
                 <tr key={`${f.tipo}-${f.nombre}`}>
-                  <td className="pl-8 pr-2 py-1 text-gray-600">{f.nombre}</td>
-                  <td className="px-2 py-1 text-gray-500">{f.tipo === 'semielaborado' ? t('tabla_desglose.semielaborado') : t('tabla_desglose.ingrediente')}</td>
+                  <td className="pl-8 pr-2 py-1 text-ink-body">{f.nombre}</td>
+                  <td className="px-2 py-1 text-ink-muted">{f.tipo === 'semielaborado' ? t('tabla_desglose.semielaborado') : t('tabla_desglose.ingrediente')}</td>
                   <td className="px-2 py-1">{f.necesidad.toFixed(3)} {f.unidad}</td>
-                  <td className="px-2 py-1 text-gray-500">{t('disponible_prefijo', { valor: f.disponible.toFixed(3), unidad: f.unidad })}</td>
+                  <td className="px-2 py-1 text-ink-muted">{t('disponible_prefijo', { valor: f.disponible.toFixed(3), unidad: f.unidad })}</td>
                   <td className="px-2 py-1"><EstadoCelda estado={f.estado} /></td>
                 </tr>
               ))}
@@ -367,8 +367,8 @@ function DesgloseDistribucionPF({
   if (filas === 'cargando') {
     return (
       <tr>
-        <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
-          <p className="text-xs text-gray-400 px-2 py-1">{t('pedidos_del_dia:cargando_distribucion')}</p>
+        <Td colSpan={colSpan} className="bg-canvas/60 py-2">
+          <p className="text-xs text-ink-faint px-2 py-1">{t('pedidos_del_dia:cargando_distribucion')}</p>
         </Td>
       </tr>
     )
@@ -379,8 +379,8 @@ function DesgloseDistribucionPF({
   if (filas.length === 0) {
     return (
       <tr>
-        <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
-          <p className="text-xs text-red-500 px-2 py-1">{t('pedidos_del_dia:error_cargar_distribucion')}</p>
+        <Td colSpan={colSpan} className="bg-canvas/60 py-2">
+          <p className="text-xs text-danger-600 px-2 py-1">{t('pedidos_del_dia:error_cargar_distribucion')}</p>
         </Td>
       </tr>
     )
@@ -421,15 +421,15 @@ function DesgloseDistribucionPF({
 
   return (
     <tr>
-      <Td colSpan={colSpan} className="bg-gray-50/60 py-2">
-        <div className="px-2 py-1 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 border-b border-gray-200 pb-2 mb-2">
+      <Td colSpan={colSpan} className="bg-canvas/60 py-2">
+        <div className="px-2 py-1 flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-muted border-b border-border pb-2 mb-2">
           <span>{t('pedidos_del_dia:producido_hoy', { valor: Number(resumen.total_producido_hoy).toFixed(3) })}</span>
           <span>{t('pedidos_del_dia:stock_disponible_resumen', { valor: stockRealDisponible.toFixed(3) })}</span>
           <span>{t('pedidos_del_dia:distribuido', { valor: Number(resumen.total_distribuido).toFixed(3) })}</span>
           {(() => {
             const residualLibre = stockRealDisponible - Number(resumen.total_distribuido)
             return (
-              <span className={residualLibre < 0 ? 'text-red-600 font-medium' : ''}>
+              <span className={residualLibre < 0 ? 'text-danger-600 font-medium' : ''}>
                 {t('pedidos_del_dia:residual_libre', { valor: residualLibre.toFixed(3) })}
                 {residualLibre < 0 && t('pedidos_del_dia:residual_libre_excede')}
               </span>
@@ -438,11 +438,11 @@ function DesgloseDistribucionPF({
         </div>
 
         {sinPedidos ? (
-          <p className="text-xs text-gray-400 px-2 py-1">{t('pedidos_del_dia:sin_pedidos_pendientes')}</p>
+          <p className="text-xs text-ink-faint px-2 py-1">{t('pedidos_del_dia:sin_pedidos_pendientes')}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+              <tr className="text-left text-overline text-ink-subtle">
                 <th className="pl-8 pr-2 py-1 font-medium">{t('pedidos_del_dia:tabla_distribucion.cliente')}</th>
                 <th className="px-2 py-1 font-medium">{t('pedidos_del_dia:tabla_distribucion.pedido')}</th>
                 <th className="px-2 py-1 font-medium">{t('pedidos_del_dia:tabla_distribucion.entrega_prevista')}</th>
@@ -450,7 +450,7 @@ function DesgloseDistribucionPF({
                 <th className="px-2 py-1 font-medium">{t('pedidos_del_dia:tabla_distribucion.previsto')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {grupos.map((grupo) => {
                 const tandasProducto = tandas || []
                 // Tandas ya usadas por ESTA línea (en cualquiera de sus filas-tanda) -- una tanda que
@@ -505,14 +505,14 @@ function DesgloseDistribucionPF({
 
                       return (
                         <tr key={`${f.linea_pedido_id}-${f.produccion_pf_id}`}>
-                          <td className="pl-8 pr-2 py-1 text-gray-700">{esPrimeraDelGrupo ? f.cliente_nombre : ''}</td>
-                          <td className="px-2 py-1 text-gray-500 font-mono text-xs">{esPrimeraDelGrupo ? f.codigo_pedido : ''}</td>
-                          <td className="px-2 py-1 text-gray-500">{esPrimeraDelGrupo ? (f.fecha_entrega_prevista ? formatFecha(f.fecha_entrega_prevista) : t('pedidos_del_dia:sin_fecha')) : ''}</td>
+                          <td className="pl-8 pr-2 py-1 text-ink">{esPrimeraDelGrupo ? f.cliente_nombre : ''}</td>
+                          <td className="px-2 py-1 text-ink-muted font-mono text-xs">{esPrimeraDelGrupo ? f.codigo_pedido : ''}</td>
+                          <td className="px-2 py-1 text-ink-muted">{esPrimeraDelGrupo ? (f.fecha_entrega_prevista ? formatFecha(f.fecha_entrega_prevista) : t('pedidos_del_dia:sin_fecha')) : ''}</td>
                           <td className="px-2 py-1">{esPrimeraDelGrupo ? Number(f.cantidad_pedida).toFixed(3) : ''}</td>
                           <td className="px-2 py-1">
                             <div className="flex items-center gap-1">
                               {lineaYaServida ? (
-                                <span className="text-sm text-gray-500">{Number(f.cantidad_prevista).toFixed(3)}</span>
+                                <span className="text-sm text-ink-muted">{Number(f.cantidad_prevista).toFixed(3)}</span>
                               ) : (
                                 <>
                                   <Input
@@ -527,7 +527,7 @@ function DesgloseDistribucionPF({
                                     <button
                                       type="button"
                                       onClick={() => onAbrirTanda(editandoTanda ? null : f.linea_pedido_id)}
-                                      className="text-gray-400 hover:text-primary-600"
+                                      className="text-ink-faint hover:text-primary-600"
                                       title={t('pedidos_del_dia:cambiar_tanda_title')}
                                     >
                                       <IconArrowsExchange size={15} />
@@ -537,7 +537,7 @@ function DesgloseDistribucionPF({
                               )}
                             </div>
                             {hayCantidadPrevista && (
-                              <p className={`text-[11px] mt-0.5 ${tandaInsuficiente ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
+                              <p className={`text-[11px] mt-0.5 ${tandaInsuficiente ? 'text-danger-600 font-medium' : 'text-ink-faint'}`}>
                                 {f.produccion_pf_id == null
                                   ? t('pedidos_del_dia:sin_tanda_asignada')
                                   : tandaActual
@@ -600,7 +600,7 @@ function DesgloseDistribucionPF({
                             >
                               {t('common:actions.save')}
                             </button>
-                            <button type="button" onClick={onCancelarNuevoSplit} className="text-xs text-gray-400 hover:underline">
+                            <button type="button" onClick={onCancelarNuevoSplit} className="text-xs text-ink-faint hover:underline">
                               {t('common:actions.cancel')}
                             </button>
                           </div>
@@ -1243,14 +1243,14 @@ function PedidosDelDia() {
               <Th>{t('pedidos_del_dia:tabla.stock_disponible')}</Th>
               <Th>{t('pedidos_del_dia:tabla.estado')}</Th>
             </Thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {filasPF.map((f) => {
                 const expandido = expandidosPF.has(f.id)
                 return (
                   <Fragment key={f.id}>
-                    <tr className="hover:bg-blue-50/40">
+                    <tr className="hover:bg-primary-50/40">
                       <Td>
-                        <button type="button" onClick={() => toggleExpandPF(f)} className="text-gray-400 hover:text-gray-600" title={t('pedidos_del_dia:ver_desglose_title')}>
+                        <button type="button" onClick={() => toggleExpandPF(f)} className="text-ink-faint hover:text-ink-body" title={t('pedidos_del_dia:ver_desglose_title')}>
                           {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                         </button>
                       </Td>
@@ -1259,7 +1259,7 @@ function PedidosDelDia() {
                           Producción de productos finales). */}
                       <Td>
                         {f.estado === 'ok' ? (
-                          <span title={t('pedidos_del_dia:necesidad_cubierta_pf_title')} className="text-gray-300 inline-flex">
+                          <span title={t('pedidos_del_dia:necesidad_cubierta_pf_title')} className="text-ink-faint inline-flex">
                             <IconPlayerPlay size={16} />
                           </span>
                         ) : (
@@ -1320,14 +1320,14 @@ function PedidosDelDia() {
               <Th>{t('pedidos_del_dia:tabla.stock_disponible')}</Th>
               <Th>{t('pedidos_del_dia:tabla.estado')}</Th>
             </Thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {filasSemi.map((f) => {
                 const expandido = expandidosSemi.has(f.id)
                 return (
                   <Fragment key={f.id}>
-                    <tr className="hover:bg-blue-50/40">
+                    <tr className="hover:bg-primary-50/40">
                       <Td>
-                        <button type="button" onClick={() => toggleExpandSemi(f)} className="text-gray-400 hover:text-gray-600" title={t('pedidos_del_dia:ver_desglose_title')}>
+                        <button type="button" onClick={() => toggleExpandSemi(f)} className="text-ink-faint hover:text-ink-body" title={t('pedidos_del_dia:ver_desglose_title')}>
                           {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                         </button>
                       </Td>
@@ -1335,7 +1335,7 @@ function PedidosDelDia() {
                           tiene sentido este atajo; sobreproducir sigue siendo posible desde Producciones. */}
                       <Td>
                         {f.estado === 'ok' ? (
-                          <span title={t('pedidos_del_dia:necesidad_cubierta_semi_title')} className="text-gray-300 inline-flex">
+                          <span title={t('pedidos_del_dia:necesidad_cubierta_semi_title')} className="text-ink-faint inline-flex">
                             <IconPlayerPlay size={16} />
                           </span>
                         ) : (

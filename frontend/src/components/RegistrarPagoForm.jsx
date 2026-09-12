@@ -146,11 +146,11 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
   const sinAplicar = montoRecibido - totalAplicado
   const excedeLoRecibido = totalAplicado > montoRecibido + EPSILON
 
-  let colorIndicador = 'text-gray-500'
+  let colorIndicador = 'text-ink-muted'
   if (montoRecibido > 0) {
-    if (excedeLoRecibido) colorIndicador = 'text-red-600'
-    else if (Math.abs(sinAplicar) < EPSILON) colorIndicador = 'text-green-600'
-    else colorIndicador = 'text-amber-600'
+    if (excedeLoRecibido) colorIndicador = 'text-danger-600'
+    else if (Math.abs(sinAplicar) < EPSILON) colorIndicador = 'text-success-600'
+    else colorIndicador = 'text-warning-600'
   }
 
   async function handleSubmit(e) {
@@ -245,11 +245,11 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
         <SectionLabel>{t('registrar_pago_form:documentos_saldo_pendiente_titulo')}</SectionLabel>
 
         {!clienteId ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_form:elige_cliente_primero')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_form:elige_cliente_primero')}</p>
         ) : cargandoDocumentos ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_form:cargando_documentos')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_form:cargando_documentos')}</p>
         ) : documentos.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_form:sin_documentos_pendientes')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_form:sin_documentos_pendientes')}</p>
         ) : (
           // Ajuste tras pruebas reales (sección 5 del contrato, actualizada): una lista plana
           // mezclando facturas y albaranes hacía que una factura real pasara desapercibida entre
@@ -266,7 +266,7 @@ export default function RegistrarPagoForm({ clientes, clienteIdInicial = null, d
               if (docsDelGrupo.length === 0) return null
               return (
                 <div key={tipo}>
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{titulo}</p>
+                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">{titulo}</p>
                   <div className="flex flex-col gap-1.5">
                     {docsDelGrupo.map((d) => {
                       const key = claveDoc(d)

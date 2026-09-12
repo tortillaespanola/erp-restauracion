@@ -182,16 +182,16 @@ function CategoriasArticulo() {
         </form>
 
         {cargando ? (
-          <p className="text-sm text-gray-400">{t('common:actions.loading')}</p>
+          <p className="text-sm text-ink-faint">{t('common:actions.loading')}</p>
         ) : categorias.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('configuracion:categorias.sin_categorias')}</p>
+          <p className="text-sm text-ink-faint">{t('configuracion:categorias.sin_categorias')}</p>
         ) : (
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {categorias.map((c) => (
                 <tr key={c.id}>
                   <td className="py-1.5">{c.nombre}</td>
-                  <td className="py-1.5 text-gray-400 font-mono">{c.acronimo}</td>
+                  <td className="py-1.5 text-ink-faint font-mono">{c.acronimo}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">
                     <LinkAction tone="blue" onClick={() => handleEditar(c)} className="mr-3">{t('configuracion:categorias.editar')}</LinkAction>
                     <LinkAction tone="red" onClick={() => handleBorrar(c.id)}>{t('configuracion:categorias.borrar')}</LinkAction>
@@ -291,17 +291,17 @@ function UnidadesMedida() {
         </form>
 
         {cargando ? (
-          <p className="text-sm text-gray-400">{t('common:actions.loading')}</p>
+          <p className="text-sm text-ink-faint">{t('common:actions.loading')}</p>
         ) : unidades.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('configuracion:unidades.sin_unidades')}</p>
+          <p className="text-sm text-ink-faint">{t('configuracion:unidades.sin_unidades')}</p>
         ) : (
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {unidades.map((u) => (
                 <tr key={u.id}>
                   <td className="py-1.5 font-mono">{u.codigo}</td>
                   <td className="py-1.5">{u.nombre}</td>
-                  <td className="py-1.5 text-gray-400">{t(`enums:unidad_tipo.${u.tipo}`)}</td>
+                  <td className="py-1.5 text-ink-faint">{t(`enums:unidad_tipo.${u.tipo}`)}</td>
                   <td className="py-1.5 text-right">
                     <LinkAction tone="blue" onClick={() => handleEditar(u)}>{t('configuracion:unidades.editar')}</LinkAction>
                   </td>

@@ -606,14 +606,14 @@ function Producciones() {
             <Button type="submit">{t('produccion_comun:campos.iniciar')}</Button>
           </form>
 
-          {validandoStock && <p className="text-xs text-gray-400 mt-2">{t('producciones:comprobando_stock')}</p>}
+          {validandoStock && <p className="text-xs text-ink-faint mt-2">{t('producciones:comprobando_stock')}</p>}
 
           {!validandoStock && faltantes.length > 0 && (
-            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-md p-3">
-              <p className="text-sm font-semibold text-amber-700 mb-1">
+            <div className="mt-3 bg-warning-50 border border-warning-600/25 rounded-control p-3">
+              <p className="text-sm font-semibold text-warning-700 mb-1">
                 {t('producciones:aviso_stock_insuficiente_titulo')}
               </p>
-              <ul className="text-sm text-amber-700 list-disc list-inside">
+              <ul className="text-sm text-warning-700 list-disc list-inside">
                 {faltantes.map((f, i) => (
                   <li key={i}>
                     {t('producciones:falta_de', { falta: (f.necesario - f.disponible).toFixed(3), unidad: f.unidad, nombre: f.nombre, disponible: f.disponible.toFixed(3) })}
@@ -649,11 +649,11 @@ function Producciones() {
                   <Th>{t('producciones:tabla.tipo')}</Th>
                   <Th>{t('producciones:tabla.stock_disponible')}</Th>
                 </Thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border-subtle">
                   {cadenaStock.map((f) => (
-                    <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-blue-50/40">
+                    <tr key={`${f.tipo}-${f.nombre}`} className="hover:bg-primary-50/40">
                       <Td className="font-medium">{f.nombre}</Td>
-                      <Td className="text-gray-500">{f.tipo === 'semielaborado' ? t('producciones:tabla.semielaborado') : t('producciones:tabla.ingrediente')}</Td>
+                      <Td className="text-ink-muted">{f.tipo === 'semielaborado' ? t('producciones:tabla.semielaborado') : t('producciones:tabla.ingrediente')}</Td>
                       <Td>{f.stock.toFixed(3)} {f.unidad}</Td>
                     </tr>
                   ))}
@@ -681,8 +681,8 @@ function Producciones() {
         <Card className="overflow-hidden mb-3">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">{t('produccion_comun:campos.fecha')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('producciones:tabla_historial.semielaborado')}</th>
@@ -712,7 +712,7 @@ function Producciones() {
 
       {!cargandoHistorial && totalHistorial > 0 && (
         <div className="flex items-center justify-between mb-8">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('produccion_comun:historial_pagina_count', { count: totalHistorial, pagina: historialPagina, total: totalPaginasHistorial })}
           </p>
           <div className="flex items-center gap-1">
@@ -728,7 +728,7 @@ function Producciones() {
                 key={n}
                 type="button"
                 onClick={() => setHistorialPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === historialPagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === historialPagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>
@@ -1028,8 +1028,8 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
     <Card className="p-4 border-l-4 border-l-amber-400!">
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-semibold text-ink">{produccion.semielaborados?.nombre} <span className="text-amber-600 text-sm font-normal">— {t('produccion_comun:en_curso_badge')}</span></p>
-          <p className="text-sm text-gray-500">{t('produccion_comun:iniciada_el', { fecha: formatFecha(produccion.fecha) })}</p>
+          <p className="font-semibold text-ink">{produccion.semielaborados?.nombre} <span className="text-warning-600 text-sm font-normal">— {t('produccion_comun:en_curso_badge')}</span></p>
+          <p className="text-sm text-ink-muted">{t('produccion_comun:iniciada_el', { fecha: formatFecha(produccion.fecha) })}</p>
         </div>
         <LinkAction tone="red" onClick={onCancelar}>{t('produccion_comun:cancelar_produccion')}</LinkAction>
       </div>
@@ -1046,11 +1046,11 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
             title={t('produccion_comun:ajuste_referencia_title')}
           />
         </Field>
-        {guardandoObjetivo && <span className="text-xs text-gray-400">{t('common:actions.saving')}</span>}
+        {guardandoObjetivo && <span className="text-xs text-ink-faint">{t('common:actions.saving')}</span>}
       </div>
 
       {produccion.tanda_id && (
-        <div className="mt-3 bg-blue-50/60 border border-blue-100 rounded-md p-3 flex items-end gap-3 flex-wrap">
+        <div className="mt-3 bg-primary-50 border border-primary-100 rounded-control p-3 flex items-end gap-3 flex-wrap">
           <Field label={t('producciones:cantidad_sugerida_tanda', { unidad: produccion.semielaborados?.unidad })} className="w-64">
             <Input
               type="number"
@@ -1069,7 +1069,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
       {/* Addenda "reorganización del bloque de registro de consumo": botones de acción movidos aquí,
           por encima de "Consumo ya registrado" y "Registrar consumo" -- visibles sin scroll aunque la
           lista de ingredientes sea larga (antes quedaban al final de la tarjeta). */}
-      <div className="border-t border-gray-100 mt-4 pt-4 flex items-center gap-3 flex-wrap">
+      <div className="border-t border-border-subtle mt-4 pt-4 flex items-center gap-3 flex-wrap">
         {!cargandoIngredientes && (
           <Button variant="success" size="sm" onClick={confirmarConsumo} disabled={confirmando}>
             {confirmando ? t('produccion_comun:confirmando') : `${t('produccion_comun:confirmar_consumo')}${filasCompletas().length > 0 ? ` (${filasCompletas().length})` : ''}`}
@@ -1083,7 +1083,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
         {/* Addenda "indicador listo para cerrar": puramente informativo, no deshabilita ni sustituye al
             botón de arriba -- cerrar con más o menos de lo estimado sigue siendo decisión del operador. */}
         {listoParaCerrar && (
-          <span className="text-xs text-green-700 font-medium inline-flex items-center gap-1">
+          <span className="text-xs text-success-700 font-medium inline-flex items-center gap-1">
             <IconCircleCheck size={14} /> {t('produccion_comun:consumo_suficiente_cerrar')}
           </span>
         )}
@@ -1102,12 +1102,12 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
       {produccion.consumo_produccion.length > 0 && (
         <table className="w-full mt-3 text-sm">
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {produccion.consumo_produccion.map((c) => {
               const { nombre, unidad } = nombreIngredienteDeLinea(c)
               return (
                 <tr key={c.id}>
-                  <td className="py-1.5 text-gray-500">{nombre}</td>
+                  <td className="py-1.5 text-ink-muted">{nombre}</td>
                   <td className="py-1.5">{c.cantidad} {unidad}</td>
                   <td className="py-1.5 text-right">
                     <LinkAction tone="red" onClick={() => quitarConsumo(c.id)} className="text-xs">{t('produccion_comun:quitar')}</LinkAction>
@@ -1121,7 +1121,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
 
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-3">
-          <h3 className="text-sm font-semibold text-gray-600">{t('produccion_comun:registrar_consumo_titulo')}</h3>
+          <h3 className="text-sm font-semibold text-ink-body">{t('produccion_comun:registrar_consumo_titulo')}</h3>
           {filasOrdenadas.map(({ ing, estimacion }) => (
             <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
@@ -1177,14 +1177,14 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
   }
 
   return (
-    <div className={`border rounded-md p-3 ${estimacion?.cubierto ? 'opacity-70' : ''} ${esSustitucion ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
-      <p className="text-sm font-medium text-gray-700 flex items-center gap-2 flex-wrap">
+    <div className={`border rounded-control p-3 ${estimacion?.cubierto ? 'opacity-70' : ''} ${esSustitucion ? 'border-warning-600/50 bg-warning-50' : 'border-border'}`}>
+      <p className="text-sm font-medium text-ink flex items-center gap-2 flex-wrap">
         <span>
           {ingrediente.nombre}
-          <span className="text-gray-400 font-normal"> — {t('orientativo', { cantidad: ingrediente.cantidadOrientativa, unidad: ingrediente.unidad })}</span>
-          {cargandoEstimacion && <span className="text-gray-400 font-normal"> · {t('calculando_estimacion')}</span>}
+          <span className="text-ink-faint font-normal"> — {t('orientativo', { cantidad: ingrediente.cantidadOrientativa, unidad: ingrediente.unidad })}</span>
+          {cargandoEstimacion && <span className="text-ink-faint font-normal"> · {t('calculando_estimacion')}</span>}
           {estimacion && (
-            <span className={`font-normal ${estimacion.insuficiente ? 'text-red-600' : 'text-gray-400'}`}>
+            <span className={`font-normal ${estimacion.insuficiente ? 'text-danger-600' : 'text-ink-faint'}`}>
               {' '}· {t('estimacion_linea', { necesario: estimacion.necesario.toFixed(3), unidad: ingrediente.unidad, disponible: estimacion.disponible.toFixed(3) })}
               {estimacion.insuficiente ? ` — ${t('insuficiente')}` : ''}
               {estimacion.registrado > 0 && ` · ${t('registrado_linea', { registrado: estimacion.registrado.toFixed(3), unidad: ingrediente.unidad })}${estimacion.cubierto ? ` ${t('cubre_estimacion')}` : ''}`}
@@ -1198,7 +1198,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
             <IconWand size={14} /> {t('usar_estimacion')}
           </button>
         )}
-        {esSustitucion && <span className="text-xs font-semibold text-amber-600">{t('sustitucion_badge')}</span>}
+        {esSustitucion && <span className="text-xs font-semibold text-warning-600">{t('sustitucion_badge')}</span>}
       </p>
 
       {deReceta.length > 0 && (
@@ -1215,7 +1215,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
       )}
 
       {deReceta.length === 0 && !panelSustitutoVisible && (
-        <p className="text-sm text-red-500 mt-1">{t('sin_stock_ingrediente')}</p>
+        <p className="text-sm text-danger-600 mt-1">{t('sin_stock_ingrediente')}</p>
       )}
 
       {otros.length > 0 && !panelSustitutoVisible && (
@@ -1225,8 +1225,8 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
       )}
 
       {otros.length > 0 && panelSustitutoVisible && (
-        <div className="mt-2 pt-2 border-t border-amber-200">
-          <p className="text-xs font-semibold text-amber-700 mb-1.5 uppercase tracking-wide">{t('sustitucion_titulo')}</p>
+        <div className="mt-2 pt-2 border-t border-warning-600/25">
+          <p className="text-xs font-semibold text-warning-700 mb-1.5 uppercase tracking-wide">{t('sustitucion_titulo')}</p>
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-2 items-center">
             <Select value={esSustitucion ? value.loteId : ''}
               onChange={(e) => onChange({ ...value, loteId: e.target.value })} className="text-sm">
@@ -1272,19 +1272,19 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
 
   return (
     <Fragment>
-      <tr className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer" onClick={onToggleExpandir}>
+      <tr className="border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer" onClick={onToggleExpandir}>
         <td className="px-3 py-3">
-          <button type="button" className="text-gray-400 hover:text-gray-600">
+          <button type="button" className="text-ink-faint hover:text-ink-body">
             {abierto ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
           </button>
         </td>
-        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(produccion.fecha)}</td>
+        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(produccion.fecha)}</td>
         <td className="px-3 py-3 font-medium text-ink">
           {produccion.semielaborados?.nombre}
-          {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+          {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-ink-faint">{produccion.codigo_lote}</span>}
         </td>
-        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} {produccion.semielaborados?.unidad}</td>
-        <td className="px-3 py-3 text-gray-500 italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
+        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{produccion.cantidad_producida} {produccion.semielaborados?.unidad}</td>
+        <td className="px-3 py-3 text-ink-muted italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
@@ -1299,7 +1299,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
               BLOQUE 4 -- la fila de detalle queda siempre montada, solo colapsada. */}
           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
             <div className="overflow-hidden">
-              <div className="bg-gray-50/60 px-3 py-3">
+              <div className="bg-canvas/60 px-3 py-3">
                 {editando ? (
                   <ProduccionCerradaEdicion
                     produccion={produccion}
@@ -1310,19 +1310,19 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                   <>
                     {/* Punto 1.6.1: ingredientes consumidos por esta producción (aguas arriba) -- la
                         misma tabla que ya existía, sin cambios de fondo, solo movida aquí dentro. */}
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">
                       {t('produccion_comun:ingredientes_consumidos_titulo')}
                     </p>
                     {produccion.consumo_produccion.length === 0 ? (
-                      <p className="text-sm text-gray-400 mb-3">{t('produccion_comun:sin_consumo_registrado')}</p>
+                      <p className="text-sm text-ink-faint mb-3">{t('produccion_comun:sin_consumo_registrado')}</p>
                     ) : (
                       <table className="w-full text-sm mb-3">
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border-subtle">
                           {produccion.consumo_produccion.map((c) => {
                             const { nombre, unidad } = nombreIngredienteDeLinea(c)
                             return (
                               <tr key={c.id}>
-                                <td className="py-1.5 text-gray-500">{nombre}</td>
+                                <td className="py-1.5 text-ink-muted">{nombre}</td>
                                 <td className="py-1.5">{c.cantidad} {unidad}</td>
                               </tr>
                             )
@@ -1332,19 +1332,19 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     )}
 
                     {/* Punto 1.6.2: consumido por (aguas abajo) -- nuevo, a partir de consumidoInfo. */}
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('producciones:consumido_por_titulo')}</p>
+                    <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">{t('producciones:consumido_por_titulo')}</p>
                     {detalleConsumidoPor.length === 0 ? (
-                      <p className="text-sm text-gray-400 mb-3">{t('producciones:sin_consumo_registrado_todavia')}</p>
+                      <p className="text-sm text-ink-faint mb-3">{t('producciones:sin_consumo_registrado_todavia')}</p>
                     ) : (
                       <table className="w-full text-sm mb-3">
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border-subtle">
                           {detalleConsumidoPor.map((d, i) => (
                             <tr key={i}>
-                              <td className="py-1.5 text-gray-500">
+                              <td className="py-1.5 text-ink-muted">
                                 {d.nombre ?? '(sin nombre)'}{' '}
-                                <span className="text-gray-400">({d.tipo === 'semielaborado' ? t('producciones:tipo_semielaborado') : t('producciones:tipo_producto_final')})</span>
+                                <span className="text-ink-faint">({d.tipo === 'semielaborado' ? t('producciones:tipo_semielaborado') : t('producciones:tipo_producto_final')})</span>
                               </td>
-                              <td className="py-1.5 text-gray-500">{d.fecha ? formatFecha(d.fecha) : '—'}</td>
+                              <td className="py-1.5 text-ink-muted">{d.fecha ? formatFecha(d.fecha) : '—'}</td>
                               <td className="py-1.5">{d.cantidad} {produccion.semielaborados?.unidad}</td>
                             </tr>
                           ))}
@@ -1355,17 +1355,17 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                     {/* Punto 1.6.3 (corrección post-implementación, caso real WIP-MIXKZ-260060): ajustes
                         de stock -- sin este bloque, un lote corregido manualmente aparece "Completo" sin
                         explicar por qué el consumo por producción no llega al 100%. */}
-                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('produccion_comun:ajustes_stock_titulo')}</p>
+                    <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">{t('produccion_comun:ajustes_stock_titulo')}</p>
                     {detalleAjustes.length === 0 ? (
-                      <p className="text-sm text-gray-400">{t('produccion_comun:sin_ajustes_registrados')}</p>
+                      <p className="text-sm text-ink-faint">{t('produccion_comun:sin_ajustes_registrados')}</p>
                     ) : (
                       <table className="w-full text-sm">
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-border-subtle">
                           {detalleAjustes.map((a, i) => (
                             <tr key={i}>
-                              <td className="py-1.5 text-gray-500">{a.motivo || '(sin motivo)'}</td>
-                              <td className="py-1.5 text-gray-500">{a.fecha ? formatFecha(a.fecha) : '—'}</td>
-                              <td className={`py-1.5 ${Number(a.cantidad) < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                              <td className="py-1.5 text-ink-muted">{a.motivo || '(sin motivo)'}</td>
+                              <td className="py-1.5 text-ink-muted">{a.fecha ? formatFecha(a.fecha) : '—'}</td>
+                              <td className={`py-1.5 ${Number(a.cantidad) < 0 ? 'text-danger-600' : 'text-success-700'}`}>
                                 {Number(a.cantidad) > 0 ? '+' : ''}{a.cantidad} {produccion.semielaborados?.unidad}
                               </td>
                             </tr>
@@ -1508,7 +1508,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
     <Card className="p-4 border-l-4 border-l-primary-600!">
       <p className="font-semibold text-ink mb-3">
         {t('produccion_comun:editando_produccion_de', { nombre: produccion.semielaborados?.nombre })}
-        {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+        {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-ink-faint">{produccion.codigo_lote}</span>}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1527,28 +1527,28 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         </Field>
       </div>
 
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">{t('produccion_comun:lineas_consumo_titulo')}</p>
+      <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mt-4 mb-2">{t('produccion_comun:lineas_consumo_titulo')}</p>
       <div className="flex flex-col gap-2">
         {lineas.filter((l) => !l._deleted).map((linea) => {
           const index = lineas.indexOf(linea)
           return (
-            <div key={index} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-center border border-gray-200 rounded-md p-2">
-              <span className="text-sm text-gray-600">{linea._nombre}</span>
+            <div key={index} className="grid grid-cols-[2fr_1fr_auto] gap-2 items-center border border-border rounded-control p-2">
+              <span className="text-sm text-ink-body">{linea._nombre}</span>
               <Input type="number" step="0.001" value={linea.cantidad}
                 onChange={(e) => cambiarCantidadLinea(index, e.target.value)}
                 className="text-sm" title={t('common:redondea_3_decimales')} />
-              <button type="button" onClick={() => quitarLinea(index)} className="text-gray-400 hover:text-red-600 justify-self-center">
+              <button type="button" onClick={() => quitarLinea(index)} className="text-ink-faint hover:text-danger-600 justify-self-center">
                 <IconTrash size={16} />
               </button>
             </div>
           )
         })}
-        {lineas.every((l) => l._deleted) && <p className="text-sm text-gray-400">{t('produccion_comun:sin_lineas_consumo')}</p>}
+        {lineas.every((l) => l._deleted) && <p className="text-sm text-ink-faint">{t('produccion_comun:sin_lineas_consumo')}</p>}
       </div>
 
       {!cargandoIngredientes && (
         <div className="mt-3 flex flex-col gap-2">
-          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{t('produccion_comun:anadir_mas_consumo')}</p>
+          <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide">{t('produccion_comun:anadir_mas_consumo')}</p>
           {ingredientes.map((ing) => (
             <IngredienteConsumo key={claveIngrediente(ing)}
               ingrediente={ing}
@@ -1562,7 +1562,7 @@ function ProduccionCerradaEdicion({ produccion, onCancelar, onGuardado }) {
         </div>
       )}
 
-      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+      <div className="flex gap-2 mt-4 pt-4 border-t border-border-subtle">
         <Button onClick={guardar} disabled={guardando}>{guardando ? t('common:actions.saving') : t('produccion_comun:guardar_cambios')}</Button>
         <Button variant="secondary" onClick={onCancelar} disabled={guardando}>{t('common:actions.cancel')}</Button>
       </div>

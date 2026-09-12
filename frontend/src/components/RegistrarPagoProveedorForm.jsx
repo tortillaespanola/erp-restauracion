@@ -136,11 +136,11 @@ export default function RegistrarPagoProveedorForm({ proveedores, proveedorIdIni
   const sinAplicar = montoPagado - totalAplicado
   const excedeLoPagado = totalAplicado > montoPagado + EPSILON
 
-  let colorIndicador = 'text-gray-500'
+  let colorIndicador = 'text-ink-muted'
   if (montoPagado > 0) {
-    if (excedeLoPagado) colorIndicador = 'text-red-600'
-    else if (Math.abs(sinAplicar) < EPSILON) colorIndicador = 'text-green-600'
-    else colorIndicador = 'text-amber-600'
+    if (excedeLoPagado) colorIndicador = 'text-danger-600'
+    else if (Math.abs(sinAplicar) < EPSILON) colorIndicador = 'text-success-600'
+    else colorIndicador = 'text-warning-600'
   }
 
   async function handleSubmit(e) {
@@ -235,11 +235,11 @@ export default function RegistrarPagoProveedorForm({ proveedores, proveedorIdIni
         <SectionLabel>{t('registrar_pago_proveedor_form:documentos_saldo_pendiente_titulo')}</SectionLabel>
 
         {!proveedorId ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_proveedor_form:elige_proveedor_primero')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_proveedor_form:elige_proveedor_primero')}</p>
         ) : cargandoDocumentos ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_proveedor_form:cargando_documentos')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_proveedor_form:cargando_documentos')}</p>
         ) : documentos.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('registrar_pago_proveedor_form:sin_documentos_pendientes')}</p>
+          <p className="text-sm text-ink-faint">{t('registrar_pago_proveedor_form:sin_documentos_pendientes')}</p>
         ) : (
           // Mismo agrupamiento visual por tipo que RegistrarPagoForm.jsx (sección 5 del contrato de
           // venta, ya probado en real): documentos sigue siendo el mismo array plano en orden de
@@ -253,7 +253,7 @@ export default function RegistrarPagoProveedorForm({ proveedores, proveedorIdIni
               if (docsDelGrupo.length === 0) return null
               return (
                 <div key={tipo}>
-                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{titulo}</p>
+                  <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-1.5">{titulo}</p>
                   <div className="flex flex-col gap-1.5">
                     {docsDelGrupo.map((d) => {
                       const key = claveDoc(d)

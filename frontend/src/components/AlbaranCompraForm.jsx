@@ -297,7 +297,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
               ))}
             </Select>
             {proveedorId && (
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-ink-faint mt-1">
                 {t('albaranes_compra:proveedor_label')}{proveedores.find((p) => p.id === parseInt(proveedorId))?.nombre_comercial}
                 {pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor && (
                   <>{t('albaranes_compra:ref_proveedor_label')}{pedidosCompraPendientes.find((p) => p.id === parseInt(pedidoCompraId))?.referencia_proveedor}</>
@@ -325,7 +325,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
       </div>
 
       {proveedorId && !cargandoArticulos && articulosDelProveedor.length === 0 && (
-        <p className="text-sm text-amber-600 flex items-center gap-1.5">
+        <p className="text-sm text-warning-600 flex items-center gap-1.5">
           <IconAlertTriangle size={15} />
           {t('compras_comun:articulo_no_asignado_aviso')}
         </p>
@@ -338,7 +338,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
             if (linea.locked) {
               const art = articulosDelProveedor.find((a) => a.id === parseInt(linea.articulo_id))
               return (
-                <div key={index} className="border border-gray-200 rounded-md p-3 bg-gray-50 text-sm text-gray-500 flex flex-col gap-2">
+                <div key={index} className="border border-border rounded-control p-3 bg-surface-sunken text-sm text-ink-muted flex flex-col gap-2">
                   <div className="flex items-start gap-2">
                     <IconLock size={15} className="mt-0.5 shrink-0" />
                     <div>
@@ -358,7 +358,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
             }
 
             return (
-              <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
+              <div key={index} className="border border-border rounded-control p-3 flex flex-col gap-2">
                 <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 items-center">
                   <Select value={linea.articulo_id}
                     onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
@@ -385,7 +385,7 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
                     onChange={(iso) => handleLineaChange(index, 'fecha_caducidad', iso)}
                     title={t('albaranes_compra:fecha_caducidad_opcional_title')} />
                   <button type="button" onClick={() => removeLinea(index)}
-                    className="text-gray-400 hover:text-red-600 justify-self-center">
+                    className="text-ink-faint hover:text-danger-600 justify-self-center">
                     <IconTrash size={16} />
                   </button>
                 </div>
@@ -406,9 +406,9 @@ export default function AlbaranCompraForm({ albaran, proveedores, pedidosCompraP
                         value={linea.temperatura}
                         onChange={(e) => handleLineaChange(index, 'temperatura', e.target.value)}
                         onFocus={seleccionarAlEnfocar} onMouseUp={evitarColapsoDeSeleccion}
-                        className={`border rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-red-300 bg-red-50 focus:ring-red-100' : 'border-blue-200 focus:ring-blue-100'}`} />
+                        className={`border rounded-control px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 ${fueraDeRango ? 'border-danger-600/40 bg-danger-50 focus:ring-danger-600/15' : 'border-primary-300 focus:ring-primary-600/15'}`} />
                       {fueraDeRango && (
-                        <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                        <p className="text-danger-600 text-xs mt-1 flex items-center gap-1">
                           <IconAlertTriangle size={13} /> {t('albaranes_compra:temperatura.fuera_rango_aviso', { min: art.temperaturaMin, max: art.temperaturaMax })}
                         </p>
                       )}

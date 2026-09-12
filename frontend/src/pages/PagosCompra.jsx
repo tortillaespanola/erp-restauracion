@@ -59,7 +59,7 @@ function PagosCompra() {
   }
 
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -152,11 +152,11 @@ function PagosCompra() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('pagos_compra:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
@@ -177,31 +177,31 @@ function PagosCompra() {
                   return (
                     <Fragment key={p.id}>
                       <tr
-                        className={`border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer ${p.anulada ? 'opacity-60 bg-gray-50' : ''}`}
+                        className={`border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer ${p.anulada ? 'opacity-60 bg-surface-sunken' : ''}`}
                         onClick={() => toggleExpandido(p.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3 font-medium text-ink">
                           <div className="flex items-center gap-2 flex-wrap">
                             {p.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}
                             {p.anulada && <Badge color="red">{t('enums:estado_pago.anulada')}</Badge>}
                           </div>
                         </td>
-                        <td className={`px-3 py-3 whitespace-nowrap text-gray-600 ${p.anulada ? 'line-through' : ''}`}>{formatMoneda(p.monto, negocio?.moneda)}</td>
+                        <td className={`px-3 py-3 whitespace-nowrap text-ink-body ${p.anulada ? 'line-through' : ''}`}>{formatMoneda(p.monto, negocio?.moneda)}</td>
                         <td className="px-3 py-3">
                           <Badge color={METODO_BADGE[p.metodo] ?? 'gray'}>{t(`enums:metodo_pago.${p.metodo}`, { defaultValue: p.metodo })}</Badge>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatMoneda(aplicado, negocio?.moneda)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatMoneda(aplicado, negocio?.moneda)}</td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           {sinAplicar > 0 ? (
-                            <span className="text-amber-600 font-medium">{formatMoneda(sinAplicar, negocio?.moneda)}</span>
+                            <span className="text-warning-600 font-medium">{formatMoneda(sinAplicar, negocio?.moneda)}</span>
                           ) : (
-                            <span className="text-gray-300">—</span>
+                            <span className="text-ink-faint">—</span>
                           )}
                         </td>
                         <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -214,20 +214,20 @@ function PagosCompra() {
                         <td colSpan={8} className="p-0">
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3">
-                                {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
+                              <div className="bg-canvas/60 px-3 py-3">
+                                {p.notas && <p className="text-sm text-ink-muted italic mb-2">{p.notas}</p>}
                                 {aplicaciones.length === 0 ? (
-                                  <p className="text-sm text-gray-400">{t('pagos_compra:sin_aplicaciones')}</p>
+                                  <p className="text-sm text-ink-faint">{t('pagos_compra:sin_aplicaciones')}</p>
                                 ) : (
                                   <table className="w-full text-sm">
                                     <thead>
-                                      <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                      <tr className="text-left text-overline text-ink-subtle border-b border-border">
                                         <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.tipo')}</th>
                                         <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.documento')}</th>
                                         <th className="py-1.5 font-medium">{t('pagos_compra:tabla_aplicaciones.monto_aplicado')}</th>
                                       </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-border-subtle">
                                       {aplicaciones.map((pa) => {
                                         const { tipo, codigo } = documentoDeAplicacion(pa, t)
                                         return (
@@ -257,7 +257,7 @@ function PagosCompra() {
 
       {!cargando && totalPagos > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('pagos_compra:pago_pagina_count', { count: totalPagos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -273,7 +273,7 @@ function PagosCompra() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

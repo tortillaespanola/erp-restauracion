@@ -243,7 +243,7 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
         <Field label={t('pedidos_compra:campos.fecha_entrega_opcional')}>
           <DateInput value={fechaEntrega} onChange={setFechaEntrega} />
           {fechaEntrega && fechaEntrega < fecha && (
-            <p className="text-red-600 text-xs mt-1">{t('pedidos_compra:fecha_entrega_anterior')}</p>
+            <p className="text-danger-600 text-xs mt-1">{t('pedidos_compra:fecha_entrega_anterior')}</p>
           )}
         </Field>
         <Field label={t('pedidos_compra:campos.referencia_proveedor_opcional')}>
@@ -256,7 +256,7 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
       </div>
 
       {proveedorId && !cargandoArticulos && articulosDelProveedor.length === 0 && (
-        <p className="text-sm text-amber-600 flex items-center gap-1.5">
+        <p className="text-sm text-warning-600 flex items-center gap-1.5">
           <IconAlertTriangle size={15} />
           {t('compras_comun:articulo_no_asignado_aviso')}
         </p>
@@ -266,7 +266,7 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
         <SectionLabel>{t('pedidos_compra:lineas_titulo')}</SectionLabel>
         <div className="flex flex-col gap-3">
           {lineas.map((linea, index) => (
-            <div key={index} className="border border-gray-200 rounded-md p-3">
+            <div key={index} className="border border-border rounded-control p-3">
               <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
                 <Select value={linea.articulo_id}
                   onChange={(e) => handleLineaChange(index, 'articulo_id', e.target.value)}
@@ -290,7 +290,7 @@ export default function PedidoCompraForm({ pedido, proveedores, onGuardado, onCa
                 <Input type="number" step="0.01" placeholder={t('pedidos_compra:placeholders.precio')} value={linea.precio_unitario}
                   onChange={(e) => handleLineaChange(index, 'precio_unitario', e.target.value)} />
                 <button type="button" onClick={() => removeLinea(index)}
-                  className="text-gray-400 hover:text-red-600 justify-self-center">
+                  className="text-ink-faint hover:text-danger-600 justify-self-center">
                   <IconTrash size={16} />
                 </button>
               </div>

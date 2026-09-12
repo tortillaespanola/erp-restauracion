@@ -367,7 +367,7 @@ function Inventario() {
             />
           </Field>
           <Field label={t('inventario:filtros.solo_con_necesidad')} className="w-52">
-            <label className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer">
+            <label className="flex items-center gap-2 border border-border rounded-control px-3 py-2 text-sm text-ink-body bg-surface cursor-pointer">
               <input type="checkbox" checked={soloConNecesidad} onChange={(e) => setSoloConNecesidad(e.target.checked)} />
               {t('inventario:necesidad_mayor_cero')}
             </label>
@@ -389,29 +389,29 @@ function Inventario() {
             <Thead>
               <Th></Th>
               <Th>{t('inventario:tabla.ingrediente')}</Th>
-              <Th>{t('inventario:tabla.stock')}</Th>
-              <Th>{t('inventario:tabla.necesidad_agregada')}</Th>
+              <Th className="text-right">{t('inventario:tabla.stock')}</Th>
+              <Th className="text-right">{t('inventario:tabla.necesidad_agregada')}</Th>
             </Thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border-subtle">
               {filasVisibles.map((ing) => {
                 const expandido = expandidosIngrediente.has(ing.id)
                 return (
                   <Fragment key={ing.id}>
-                    <tr className="hover:bg-blue-50/40">
+                    <tr className="hover:bg-primary-50/40">
                       <Td className="w-8">
-                        <button type="button" onClick={() => toggleIngrediente(ing.id)} className="text-gray-400 hover:text-gray-600">
+                        <button type="button" onClick={() => toggleIngrediente(ing.id)} className="text-ink-faint hover:text-ink-body">
                           {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                         </button>
                       </Td>
                       <Td className="font-medium">{ing.nombre}</Td>
-                      <Td>{formatCantidad(ing.stock, ing.unidad)} {ing.unidad}</Td>
-                      <Td>
+                      <Td className="font-mono tabular-nums text-right">{formatCantidad(ing.stock, ing.unidad)} {ing.unidad}</Td>
+                      <Td className="font-mono tabular-nums text-right">
                         {cargandoNecesidad ? (
-                          <span className="text-gray-400">…</span>
+                          <span className="text-ink-faint">…</span>
                         ) : ing.necesidad == null ? (
                           '—'
                         ) : (
-                          <span className={ing.necesidad > 0 ? 'text-red-600 font-medium' : ''}>
+                          <span className={ing.necesidad > 0 ? 'text-danger-600 font-medium' : ''}>
                             {formatCantidad(ing.necesidad, ing.unidad)} {ing.unidad}
                           </span>
                         )}
@@ -419,27 +419,27 @@ function Inventario() {
                     </tr>
                     {expandido && (
                       <tr>
-                        <Td colSpan={4} className="bg-gray-50/60 py-2">
+                        <Td colSpan={4} className="bg-canvas/60 py-2">
                           {ing.articulos.length === 0 ? (
-                            <p className="text-sm text-gray-400 px-2 py-1">{t('inventario:sin_articulos_vinculados')}</p>
+                            <p className="text-sm text-ink-faint px-2 py-1">{t('inventario:sin_articulos_vinculados')}</p>
                           ) : (
                             <table className="w-full text-sm">
                               <thead>
-                                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+                                <tr className="text-left text-overline text-ink-subtle">
                                   <th className="pl-8 pr-2 py-1 font-medium"></th>
                                   <th className="px-2 py-1 font-medium">{t('inventario:tabla.articulo')}</th>
                                   <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-100">
+                              <tbody className="divide-y divide-border-subtle">
                                 {ing.articulos.map((art) => {
                                   const claveArt = `${ing.id}:${art.articulo_id}`
                                   const expandidoArt = expandidosArticulo.has(claveArt)
                                   return (
                                     <Fragment key={art.articulo_id}>
-                                      <tr className="hover:bg-blue-50/30">
+                                      <tr className="hover:bg-primary-50/30">
                                         <td className="pl-8 pr-2 py-1.5">
-                                          <button type="button" onClick={() => toggleArticulo(claveArt)} className="text-gray-400 hover:text-gray-600">
+                                          <button type="button" onClick={() => toggleArticulo(claveArt)} className="text-ink-faint hover:text-ink-body">
                                             {expandidoArt ? <IconChevronDown size={15} /> : <IconChevronRight size={15} />}
                                           </button>
                                         </td>
@@ -448,13 +448,13 @@ function Inventario() {
                                       </tr>
                                       {expandidoArt && (
                                         <tr>
-                                          <td colSpan={3} className="bg-white py-1.5">
+                                          <td colSpan={3} className="bg-surface py-1.5">
                                             {art.duplas.length === 0 ? (
-                                              <p className="text-xs text-gray-400 pl-16 py-1">{t('inventario:sin_proveedores_asignados')}</p>
+                                              <p className="text-xs text-ink-faint pl-16 py-1">{t('inventario:sin_proveedores_asignados')}</p>
                                             ) : (
                                               <table className="w-full text-sm">
                                                 <thead>
-                                                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+                                                  <tr className="text-left text-overline text-ink-subtle">
                                                     <th className="pl-16 pr-2 py-1 font-medium"></th>
                                                     <th className="px-2 py-1 font-medium">{t('inventario:tabla.proveedor')}</th>
                                                     <th className="px-2 py-1 font-medium">{t('inventario:tabla.precio')}</th>
@@ -462,16 +462,16 @@ function Inventario() {
                                                     <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
                                                   </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-100">
+                                                <tbody className="divide-y divide-border-subtle">
                                                   {art.duplas.map((d) => {
                                                     const claveDupla = `${claveArt}:${d.proveedorId}`
                                                     const expandidoDupla = expandidosDupla.has(claveDupla)
                                                     return (
                                                       <Fragment key={d.proveedorId}>
-                                                        <tr className="hover:bg-blue-50/20">
+                                                        <tr className="hover:bg-primary-50/20">
                                                           <td className="pl-16 pr-2 py-1.5">
                                                             {d.lotes.length > 0 && (
-                                                              <button type="button" onClick={() => toggleDupla(claveDupla)} className="text-gray-400 hover:text-gray-600">
+                                                              <button type="button" onClick={() => toggleDupla(claveDupla)} className="text-ink-faint hover:text-ink-body">
                                                                 {expandidoDupla ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
                                                               </button>
                                                             )}
@@ -485,13 +485,13 @@ function Inventario() {
                                                         </tr>
                                                         {expandidoDupla && (
                                                           <tr>
-                                                            <td colSpan={5} className="bg-gray-50/40 py-1.5">
+                                                            <td colSpan={5} className="bg-canvas/40 py-1.5">
                                                               {d.lotes.length === 0 ? (
-                                                                <p className="text-xs text-gray-400 pl-24 py-1">{t('inventario:sin_lotes_vivos')}</p>
+                                                                <p className="text-xs text-ink-faint pl-24 py-1">{t('inventario:sin_lotes_vivos')}</p>
                                                               ) : (
                                                                 <table className="w-full text-sm">
                                                                   <thead>
-                                                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
+                                                                    <tr className="text-left text-overline text-ink-subtle">
                                                                       <th className="pl-24 pr-2 py-1 font-medium">{t('inventario:tabla.recepcion')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.lote')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.entrado')}</th>
@@ -500,7 +500,7 @@ function Inventario() {
                                                                       <th className="px-2 py-1 font-medium"></th>
                                                                     </tr>
                                                                   </thead>
-                                                                  <tbody className="divide-y divide-gray-100">
+                                                                  <tbody className="divide-y divide-border-subtle">
                                                                     {d.lotes.map((lote) => (
                                                                       <tr key={lote.entradaMaterialId}>
                                                                         <td className="pl-24 pr-2 py-1.5">{lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—'}</td>
@@ -508,7 +508,7 @@ function Inventario() {
                                                                         <td className="px-2 py-1.5">
                                                                           {formatCantidad(lote.entrado, art.unidad)} {art.unidad}
                                                                           {lote.ajustesPositivos > 0 && (
-                                                                            <div className="text-[10px] text-gray-400">
+                                                                            <div className="text-[10px] text-ink-faint">
                                                                               {t('inventario:recibido_ajuste', { cantidad: formatCantidad(lote.cantidadRecibida, art.unidad), ajuste: formatCantidad(lote.ajustesPositivos, art.unidad) })}
                                                                             </div>
                                                                           )}
@@ -516,7 +516,7 @@ function Inventario() {
                                                                         <td className="px-2 py-1.5">
                                                                           {formatCantidad(lote.consumido, art.unidad)} {art.unidad}
                                                                           {lote.ajustesNegativos > 0 && (
-                                                                            <div className="text-[10px] text-gray-400">
+                                                                            <div className="text-[10px] text-ink-faint">
                                                                               {t('inventario:produccion_ajuste', { cantidad: formatCantidad(lote.consumoProduccionTotal, art.unidad), ajuste: formatCantidad(lote.ajustesNegativos, art.unidad) })}
                                                                             </div>
                                                                           )}

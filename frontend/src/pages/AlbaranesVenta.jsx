@@ -25,14 +25,14 @@ import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EP
 // gris) -- Cobro usa los mismos 3 colores tanto si el estado es propio del albarán (suelto) como si
 // se hereda de su factura (facturado), nunca gris: "pendiente" pasa a rojo en este rediseño.
 const ESTADO_FACTURACION_ICONO = {
-  facturado: { icon: IconCircleCheck, color: 'text-green-600' },
-  pendiente_particular: { icon: IconClock, color: 'text-gray-400' },
-  pendiente_empresa: { icon: IconAlertTriangle, color: 'text-amber-600' },
+  facturado: { icon: IconCircleCheck, color: 'text-success-600' },
+  pendiente_particular: { icon: IconClock, color: 'text-ink-faint' },
+  pendiente_empresa: { icon: IconAlertTriangle, color: 'text-warning-600' },
 }
 const ESTADO_COBRO_ICONO = {
-  pagada: { icon: IconCircleCheck, color: 'text-green-600' },
-  parcial: { icon: IconCircleHalf2, color: 'text-amber-600' },
-  pendiente: { icon: IconAlertTriangle, color: 'text-red-600' },
+  pagada: { icon: IconCircleCheck, color: 'text-success-600' },
+  parcial: { icon: IconCircleHalf2, color: 'text-warning-600' },
+  pendiente: { icon: IconAlertTriangle, color: 'text-danger-600' },
 }
 
 function EstadoIcono({ cfg, label }) {
@@ -183,7 +183,7 @@ function AlbaranesVenta() {
   }
 
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -388,7 +388,7 @@ function AlbaranesVenta() {
 
       {/* BLOQUE 2 (CONTRATO_FILTROS_VENTA.md): dos MultiSelect de estado independientes
           (Facturación / Cobro, sección 3 del contrato) -- nunca mezclados en uno solo. */}
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('albaranes_venta:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -426,11 +426,11 @@ function AlbaranesVenta() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('albaranes_venta:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
@@ -484,20 +484,20 @@ function AlbaranesVenta() {
                     <Fragment key={alb.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(alb.id, el); else filaRefs.current.delete(alb.id) }}
-                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        className="border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer"
                         onClick={() => toggleExpandido(alb.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(alb.fecha)}</td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{alb.numero_albaran || t('common:sin_numero')}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(alb.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{alb.numero_albaran || t('common:sin_numero')}</td>
                         <td className="px-3 py-3 font-medium text-ink">{alb.clientes?.nombre ?? t('common:sin_cliente')}</td>
                         <td className="px-3 py-3">
                           {codigosPedido.length === 0 ? (
-                            <span className="text-gray-400">—</span>
+                            <span className="text-ink-faint">—</span>
                           ) : codigosPedido.length === 1 ? (
                             <Badge color="blue">{codigosPedido[0]}</Badge>
                           ) : (
@@ -517,22 +517,22 @@ function AlbaranesVenta() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" title={t('common:actions.print')} onClick={() => imprimirAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-primary-600">
+                            <button type="button" title={t('common:actions.print')} onClick={() => imprimirAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-ink-faint hover:text-primary-600">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title={t('common:actions.download_pdf')} onClick={() => descargarAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-gray-400 hover:text-primary-600">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={() => descargarAlbaranVentaPdf(prepararDocumentoAlbaranVenta(alb))} className="text-ink-faint hover:text-primary-600">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
                               <button
                                 type="button" title={t('ventas_comun:tooltip_registrar_cobro')}
                                 onClick={() => setPagoDrawer({ clienteId: alb.cliente_id, clienteNombre: alb.clientes?.nombre, documento: { tipo: 'albaran', id: alb.id, saldo } })}
-                                className="text-gray-400 hover:text-green-700"
+                                className="text-ink-faint hover:text-success-700"
                               >
                                 <IconCash size={16} />
                               </button>
                             )}
-                            <button type="button" title={t('albaranes_venta:borrar')} onClick={() => handleBorrar(alb.id)} className="text-gray-400 hover:text-red-600">
+                            <button type="button" title={t('albaranes_venta:borrar')} onClick={() => handleBorrar(alb.id)} className="text-ink-faint hover:text-danger-600">
                               <IconTrash size={16} />
                             </button>
                           </div>
@@ -544,17 +544,17 @@ function AlbaranesVenta() {
                               la fila -- así el expandir/colapsar tiene una transición CSS suave. */}
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3">
-                                {alb.notas && <p className="text-sm text-gray-500 italic mb-2">{alb.notas}</p>}
+                              <div className="bg-canvas/60 px-3 py-3">
+                                {alb.notas && <p className="text-sm text-ink-muted italic mb-2">{alb.notas}</p>}
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                    <tr className="text-left text-overline text-ink-subtle border-b border-border">
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.producto')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.cantidad')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.precio')}</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-gray-100">
+                                  <tbody className="divide-y divide-border-subtle">
                                     {alb.lineas_albaran_venta.map((linea) => (
                                       <tr key={linea.id}>
                                         <td className="py-1.5">{nombreLineaVenta(linea)}</td>
@@ -580,7 +580,7 @@ function AlbaranesVenta() {
 
       {!cargando && totalAlbaranes > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('albaranes_venta:albaran_pagina_count', { count: totalAlbaranes, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -596,7 +596,7 @@ function AlbaranesVenta() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

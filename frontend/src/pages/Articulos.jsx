@@ -290,7 +290,7 @@ function Articulos() {
                 onChange={(e) => handleChange('iva', e.target.value)} />
             </Field>
 
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="flex items-center gap-2 text-sm text-ink-body">
               <input type="checkbox" checked={form.requiere_control_temperatura}
                 onChange={(e) => handleChange('requiere_control_temperatura', e.target.checked)} />
               {t('articulos:requiere_control_temperatura')}
@@ -317,7 +317,7 @@ function Articulos() {
                 <Button type="button" variant="secondary" onClick={handleCancelar}>{t('common:actions.cancel')}</Button>
               )}
               {!editandoId && (
-                <p className="text-xs text-gray-400">{t('articulos:codigo_automatico_aviso')}</p>
+                <p className="text-xs text-ink-faint">{t('articulos:codigo_automatico_aviso')}</p>
               )}
             </div>
           </form>
@@ -347,9 +347,9 @@ function Articulos() {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-ink">
-                        {a.nombre} {a.codigo && <span className="text-gray-400 font-mono text-xs">({a.codigo})</span>}
+                        {a.nombre} {a.codigo && <span className="text-ink-faint font-mono text-xs">({a.codigo})</span>}
                       </p>
-                      <p className="text-sm text-gray-500 flex items-center gap-2 flex-wrap mt-0.5">
+                      <p className="text-sm text-ink-muted flex items-center gap-2 flex-wrap mt-0.5">
                         <span>{a.unidad} · {a.categorias_articulo?.nombre ?? t('articulos:sin_categoria')} · IVA {a.iva != null ? `${a.iva}%` : '-'}</span>
                         <Badge color="gray">{a.tipo_material}</Badge>
                         {a.requiere_control_temperatura && (
@@ -367,7 +367,7 @@ function Articulos() {
                   </div>
 
                   <button type="button" onClick={() => toggleExpandido(a.id)}
-                    className="mt-3 pt-3 border-t border-gray-100 w-full flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-ink">
+                    className="mt-3 pt-3 border-t border-border-subtle w-full flex items-center gap-1.5 text-xs font-semibold text-ink-muted uppercase tracking-wide hover:text-ink">
                     {expandido ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
                     {expandido ? t('articulos:ocultar_proveedores') : t('articulos:ver_proveedores', { count: a.articulo_proveedor.length })}
                   </button>
@@ -378,7 +378,7 @@ function Articulos() {
             })}
           </div>
 
-          <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+          <div className="flex items-center justify-between mt-4 text-sm text-ink-muted">
             <span>{t('articulos:articulo_count', { count: articulosFiltrados.length })}</span>
             <div className="flex items-center gap-3">
               <Button variant="secondary" size="sm" disabled={paginaSegura === 0} onClick={() => setPagina(paginaSegura - 1)}>{t('common:actions.previous')}</Button>
@@ -495,22 +495,22 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
   }
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('articulos:proveedores.titulo')}</p>
+    <div className="mt-3 border-t border-border-subtle pt-3">
+      <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">{t('articulos:proveedores.titulo')}</p>
 
       {articulo.articulo_proveedor.length === 0 ? (
-        <p className="text-sm text-gray-400 mb-2">{t('articulos:proveedores.sin_proveedores')}</p>
+        <p className="text-sm text-ink-faint mb-2">{t('articulos:proveedores.sin_proveedores')}</p>
       ) : (
         <table className="w-full text-sm mb-2">
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {articulo.articulo_proveedor.map((ap) => {
               const enEdicion = editandoRelacionId === ap.id
 
               if (enEdicion) {
                 return (
-                  <tr key={ap.id} className="bg-blue-50/50">
+                  <tr key={ap.id} className="bg-primary-50">
                     <td className="py-1.5">
-                      {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
+                      {ap.preferente && <span className="text-warning-600 mr-1">★</span>}
                       {ap.proveedores?.nombre_comercial}
                     </td>
                     <td className="py-1.5">
@@ -532,13 +532,13 @@ function ProveedoresDelArticulo({ articulo, onCambio }) {
               }
 
               return (
-                <tr key={ap.id} className="hover:bg-blue-50/40">
+                <tr key={ap.id} className="hover:bg-primary-50/40">
                   <td className="py-1.5">
-                    {ap.preferente && <span className="text-amber-500 mr-1">★</span>}
+                    {ap.preferente && <span className="text-warning-600 mr-1">★</span>}
                     {ap.proveedores?.nombre_comercial}
                   </td>
-                  <td className="py-1.5">{ap.precio != null ? formatMoneda(ap.precio, negocio?.moneda) : '-'}</td>
-                  <td className="py-1.5 text-gray-400">{ap.referencia_proveedor ?? '-'}</td>
+                  <td className="py-1.5 font-mono tabular-nums">{ap.precio != null ? formatMoneda(ap.precio, negocio?.moneda) : '-'}</td>
+                  <td className="py-1.5 font-mono text-xs text-ink-faint">{ap.referencia_proveedor ?? '-'}</td>
                   <td className="py-1.5 text-right whitespace-nowrap">
                     <LinkAction tone="blue" onClick={() => handleEmpezarEdicion(ap)} className="text-xs mr-3">{t('articulos:proveedores.editar')}</LinkAction>
                     {!ap.preferente && (

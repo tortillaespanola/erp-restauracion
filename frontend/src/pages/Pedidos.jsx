@@ -127,7 +127,7 @@ function Pedidos() {
   }
 
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -318,7 +318,7 @@ function Pedidos() {
       <PageHeader title={t('pedidos:titulo')} subtitle={t('pedidos:subtitulo')} />
 
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-ink">{t('common:listado_titulo')}</h2>
+        <h2 className="text-title text-ink">{t('common:listado_titulo')}</h2>
         <Button onClick={() => setModoDrawer('nuevo')}>
           <IconPlus size={15} /> {t('pedidos:nuevo_pedido')}
         </Button>
@@ -327,7 +327,7 @@ function Pedidos() {
       {/* BLOQUE 1 (CONTRATO_FILTROS_VENTA.md): barra de filtros server-side -- Cliente (todos,
           activos e inactivos), Estado (MultiSelect, OR entre valores), rango de fechas. Se
           combinan con AND entre sí en cargarDatos(). */}
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('pedidos:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -362,17 +362,17 @@ function Pedidos() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('pedidos:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
                   <th className="px-3 py-2.5 font-medium">{t('pedidos:tabla.cliente')}</th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('pedidos:tabla.entrega_prevista')} {iconoOrden('fecha_entrega_prevista')}
                     </button>
                   </th>
@@ -391,20 +391,20 @@ function Pedidos() {
                     <Fragment key={p.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(p.id, el); else filaRefs.current.delete(p.id) }}
-                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        className="border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer"
                         onClick={() => toggleExpandido(p.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap font-mono text-ink-body tabular-nums">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3">
                           <div className="font-medium text-ink">{p.clientes?.nombre ?? t('common:sin_cliente')}</div>
-                          {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
+                          {p.codigo_pedido && <div className="text-xs font-mono text-ink-faint">{p.codigo_pedido}</div>}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">
+                        <td className="px-3 py-3 whitespace-nowrap font-mono text-ink-body tabular-nums">
                           {p.fecha_entrega_prevista ? formatFecha(p.fecha_entrega_prevista) : '—'}
                         </td>
                         <td className="px-3 py-3">
@@ -412,19 +412,19 @@ function Pedidos() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
-                            <span className={progresoCompleto ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                            <span className={progresoCompleto ? 'text-success-600 font-medium' : 'text-ink-body'}>
                               {t('pedidos:lineas_servidas', { servidas: lineasServidas, total: totalLineas })}
                             </span>
                             {algunaConAvisoStock && (
                               <span title={t('pedidos:aviso_stock_insuficiente_title')}>
-                                <IconAlertTriangle size={14} className="text-red-600" />
+                                <IconAlertTriangle size={14} className="text-danger-600" />
                               </span>
                             )}
                           </div>
                           {totalLineas > 0 && (
-                            <div className="mt-1 h-[3px] w-24 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="mt-1 h-[3px] w-24 bg-border-subtle rounded-full overflow-hidden">
                               <div
-                                className={`h-full ${progresoCompleto ? 'bg-green-600' : 'bg-primary-600'}`}
+                                className={`h-full ${progresoCompleto ? 'bg-success-600' : 'bg-primary-600'}`}
                                 style={{ width: `${(lineasServidas / totalLineas) * 100}%` }}
                               />
                             </div>
@@ -434,13 +434,13 @@ function Pedidos() {
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
                             {puedeGestionar && (
                               <>
-                                <button type="button" title={t('pedidos:editar_title')} onClick={() => handleEditar(p)} className="text-gray-400 hover:text-primary-600">
+                                <button type="button" title={t('pedidos:editar_title')} onClick={() => handleEditar(p)} className="text-ink-faint hover:text-primary-600">
                                   <IconEdit size={16} />
                                 </button>
-                                <button type="button" title={t('pedidos:crear_albaran_title')} onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-gray-400 hover:text-primary-600">
+                                <button type="button" title={t('pedidos:crear_albaran_title')} onClick={() => navigate(`/albaranes-venta?pedido_id=${p.id}`)} className="text-ink-faint hover:text-primary-600">
                                   <IconTruckDelivery size={16} />
                                 </button>
-                                <button type="button" title={t('pedidos:cancelar_pedido_title')} onClick={() => handleCancelar(p.id)} className="text-gray-400 hover:text-red-600">
+                                <button type="button" title={t('pedidos:cancelar_pedido_title')} onClick={() => handleCancelar(p.id)} className="text-ink-faint hover:text-danger-600">
                                   <IconX size={16} />
                                 </button>
                               </>
@@ -454,18 +454,18 @@ function Pedidos() {
                               la fila -- así el expandir/colapsar tiene una transición CSS suave. */}
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3">
-                                {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
+                              <div className="bg-canvas/60 px-3 py-3">
+                                {p.notas && <p className="text-sm text-ink-muted italic mb-2">{p.notas}</p>}
                                 <table className="w-full text-sm">
                               <thead>
-                                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                                   <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.linea')}</th>
                                   <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.pedido')}</th>
                                   <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.previsto')}</th>
                                   <th className="py-1.5 font-medium">{t('pedidos:tabla_detalle.servido')}</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-100">
+                              <tbody className="divide-y divide-border-subtle">
                                 {p.lineas_pedido_venta.map((linea) => {
                                   const tipo = linea.producto_final_id ? 'producto' : linea.articulo_id ? 'mercaderia' : 'libre'
                                   const nombre = tipo === 'producto' ? linea.productos_finales?.nombre : tipo === 'mercaderia' ? linea.articulos_compra?.nombre : linea.descripcion
@@ -501,11 +501,11 @@ function Pedidos() {
                                     <tr key={linea.id}>
                                       <td className="py-1.5">
                                         {nombre}
-                                        {tipo === 'mercaderia' && <span className="text-gray-400 text-xs">{t('pedidos:tipo_mercaderia')}</span>}
-                                        {tipo === 'libre' && <span className="text-gray-400 text-xs">{t('pedidos:tipo_libre')}</span>}
+                                        {tipo === 'mercaderia' && <span className="text-ink-faint text-xs">{t('pedidos:tipo_mercaderia')}</span>}
+                                        {tipo === 'libre' && <span className="text-ink-faint text-xs">{t('pedidos:tipo_libre')}</span>}
                                       </td>
                                       <td className="py-1.5">{linea.cantidad} {unidad}</td>
-                                      <td className={`py-1.5 ${stockInsuficiente ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                                      <td className={`py-1.5 ${stockInsuficiente ? 'text-danger-600 font-medium' : 'text-ink-muted'}`}>
                                         {tipo === 'producto' ? (
                                           <>
                                             {previsto} {unidad}
@@ -517,7 +517,7 @@ function Pedidos() {
                                           </>
                                         ) : '-'}
                                       </td>
-                                      <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{servido} {unidad}</td>
+                                      <td className={`py-1.5 ${completa ? 'text-success-600' : 'text-ink-muted'}`}>{servido} {unidad}</td>
                                     </tr>
                                   )
                                 })}
@@ -539,7 +539,7 @@ function Pedidos() {
 
       {!cargando && totalPedidos > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('pedidos:pedido_pagina_count', { count: totalPedidos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -555,7 +555,7 @@ function Pedidos() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

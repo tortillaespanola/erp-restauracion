@@ -267,7 +267,7 @@ function Semielaborados() {
               <SectionLabel>{t('recetas_comun:receta_titulo')}</SectionLabel>
               <div className="flex flex-col gap-3">
                 {lineas.map((linea, index) => (
-                  <div key={index} className="border border-gray-200 rounded-md p-3 flex flex-col gap-2">
+                  <div key={index} className="border border-border rounded-control p-3 flex flex-col gap-2">
                     <div className="flex gap-4 text-sm">
                       <label className="flex items-center gap-1.5">
                         <input type="radio" checked={linea.tipo === 'articulo'}
@@ -323,7 +323,7 @@ function Semielaborados() {
                         onChange={(e) => handleLineaChange(index, 'cantidad', e.target.value)}
                         required title={t('common:redondea_3_decimales')} />
                       <button type="button" onClick={() => removeLinea(index)}
-                        className="text-gray-400 hover:text-red-600 justify-self-center">
+                        className="text-ink-faint hover:text-danger-600 justify-self-center">
                         <IconTrash size={16} />
                       </button>
                     </div>
@@ -359,10 +359,10 @@ function Semielaborados() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-ink">
-                    {s.nombre} {s.codigo && <span className="text-gray-400 font-mono text-xs">({s.codigo})</span>}
+                    {s.nombre} {s.codigo && <span className="text-ink-faint font-mono text-xs">({s.codigo})</span>}
                   </p>
-                  <p className="text-sm text-gray-500">{t('semielaborados:unidad_label', { unidad: s.unidad })} · {s.categorias_articulo?.nombre ?? t('semielaborados:sin_categoria')}</p>
-                  {s.notas && <p className="text-sm text-gray-400 italic">{s.notas}</p>}
+                  <p className="text-sm text-ink-muted">{t('semielaborados:unidad_label', { unidad: s.unidad })} · {s.categorias_articulo?.nombre ?? t('semielaborados:sin_categoria')}</p>
+                  {s.notas && <p className="text-sm text-ink-faint italic">{s.notas}</p>}
                 </div>
                 <div className="flex gap-3 shrink-0">
                   <LinkAction tone="blue" onClick={() => handleEditar(s)}>{t('recetas_comun:editar')}</LinkAction>
@@ -372,20 +372,20 @@ function Semielaborados() {
 
               <table className="w-full mt-3 text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                  <tr className="text-left text-overline text-ink-subtle border-b border-border-subtle">
                     <th className="py-1.5 font-medium">{t('recetas_comun:tabla.ingrediente')}</th>
                     <th className="py-1.5 font-medium">{t('recetas_comun:tabla.tipo')}</th>
                     <th className="py-1.5 font-medium">{t('recetas_comun:tabla.cantidad')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border-subtle">
                   {s.receta_semielaborado.map((linea) => {
                     const tipo = linea.articulos_compra ? t('recetas_comun:tipo_label.articulo') : linea.ingredientes ? t('recetas_comun:tipo_label.ingrediente') : t('recetas_comun:tipo_label.semielaborado')
                     const fuente = linea.articulos_compra ?? linea.ingredientes ?? linea.semielaborados
                     return (
                       <tr key={linea.id}>
                         <td className="py-1.5">{fuente?.nombre ?? '—'}</td>
-                        <td className="py-1.5 text-gray-400">{tipo}</td>
+                        <td className="py-1.5 text-ink-faint">{tipo}</td>
                         <td className="py-1.5">{linea.cantidad} {fuente?.unidad}</td>
                       </tr>
                     )

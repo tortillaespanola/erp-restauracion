@@ -81,7 +81,7 @@ function FacturasCompra() {
     setPagina(1) // cambiar de orden con otra página abierta dejaría una página vacía o repetida
   }
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -189,7 +189,7 @@ function FacturasCompra() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('facturas_compra:filtros.proveedor')} className="w-48">
           <Select value={filtroProveedorId} onChange={(e) => cambiarFiltroProveedor(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -224,11 +224,11 @@ function FacturasCompra() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('facturas_compra:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
@@ -252,15 +252,15 @@ function FacturasCompra() {
                     <Fragment key={f.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(f.id, el); else filaRefs.current.delete(f.id) }}
-                        className={`border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer ${f.anulada ? 'opacity-60 bg-gray-50' : ''}`}
+                        className={`border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer ${f.anulada ? 'opacity-60 bg-surface-sunken' : ''}`}
                         onClick={() => toggleExpandido(f.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(f.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(f.fecha)}</td>
                         <td className="px-3 py-3 whitespace-nowrap text-ink">{f.numero_factura || t('common:sin_numero')}</td>
                         <td className={`px-3 py-3 font-medium text-ink ${f.anulada ? 'line-through' : ''}`}>
                           {f.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}
@@ -268,10 +268,10 @@ function FacturasCompra() {
                         <td className="px-3 py-3">
                           <Badge color={ESTADO_PAGO_BADGE[f.estado_pago]}>{t(`enums:estado_pago.${f.estado_pago}`)}</Badge>
                         </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap text-gray-600">
+                        <td className="px-3 py-3 text-right whitespace-nowrap text-ink-body">
                           {f.total != null ? formatMoneda(f.total, negocio?.moneda) : '—'}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-xs font-mono text-gray-400">{f.codigo_interno || '—'}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-xs font-mono text-ink-faint">{f.codigo_interno || '—'}</td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
                             {tieneSaldoPendiente && (
@@ -292,7 +292,7 @@ function FacturasCompra() {
                         <td colSpan={8} className="p-0">
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3 text-sm text-gray-600">
+                              <div className="bg-canvas/60 px-3 py-3 text-sm text-ink-body">
                                 <span className="font-medium">{t('facturas_compra:albaranes_incluidos')}</span>
                                 {f.factura_compra_albaran.length === 0
                                   ? '—'
@@ -315,7 +315,7 @@ function FacturasCompra() {
 
       {!cargando && totalFacturas > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('facturas_compra:factura_pagina_count', { count: totalFacturas, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -331,7 +331,7 @@ function FacturasCompra() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

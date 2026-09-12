@@ -180,9 +180,9 @@ export default function FacturaVentaForm({ clientes, onGuardado, onCancelar }) {
         <SectionLabel>{t('factura_venta_form:albaranes_incluir_titulo')}</SectionLabel>
 
         {!clienteId ? (
-          <p className="text-sm text-gray-400">{t('factura_venta_form:elige_cliente_primero')}</p>
+          <p className="text-sm text-ink-faint">{t('factura_venta_form:elige_cliente_primero')}</p>
         ) : albaranesDisponibles.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('factura_venta_form:sin_albaranes_pendientes')}</p>
+          <p className="text-sm text-ink-faint">{t('factura_venta_form:sin_albaranes_pendientes')}</p>
         ) : (
           <div className="flex flex-col gap-1.5">
             {albaranesDisponibles.map((alb) => (

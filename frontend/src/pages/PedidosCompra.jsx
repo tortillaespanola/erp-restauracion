@@ -99,7 +99,7 @@ function PedidosCompra() {
     setPagina(1) // cambiar de orden con otra página abierta dejaría una página vacía o repetida
   }
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -208,7 +208,7 @@ function PedidosCompra() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('pedidos_compra:filtros.proveedor')} className="w-48">
           <Select value={filtroProveedorId} onChange={(e) => cambiarFiltroProveedor(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -243,17 +243,17 @@ function PedidosCompra() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('pedidos_compra:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
                   <th className="px-3 py-2.5 font-medium">{t('pedidos_compra:tabla.proveedor')}</th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha_entrega_prevista')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('pedidos_compra:tabla.entrega_prevista')} {iconoOrden('fecha_entrega_prevista')}
                     </button>
                   </th>
@@ -272,25 +272,25 @@ function PedidosCompra() {
                     <Fragment key={p.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(p.id, el); else filaRefs.current.delete(p.id) }}
-                        className="border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer"
+                        className="border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer"
                         onClick={() => toggleExpandido(p.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(p.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(p.fecha)}</td>
                         <td className="px-3 py-3">
                           <div className="font-medium text-ink">{p.proveedores?.nombre_comercial ?? t('compras_comun:sin_proveedor')}</div>
-                          {p.codigo_pedido && <div className="text-xs font-mono text-gray-400">{p.codigo_pedido}</div>}
+                          {p.codigo_pedido && <div className="text-xs font-mono text-ink-faint">{p.codigo_pedido}</div>}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">
                           {p.fecha_entrega_prevista ? formatFecha(p.fecha_entrega_prevista) : '—'}
                         </td>
-                        <td className="px-3 py-3 text-gray-600">{p.referencia_proveedor || '—'}</td>
+                        <td className="px-3 py-3 text-ink-body">{p.referencia_proveedor || '—'}</td>
                         <td className="px-3 py-3 whitespace-nowrap">
-                          <span className={recibidas === total && total > 0 ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                          <span className={recibidas === total && total > 0 ? 'text-success-600 font-medium' : 'text-ink-body'}>
                             {t('pedidos_compra:lineas_recibidas', { recibidas, total })}
                           </span>
                         </td>
@@ -315,17 +315,17 @@ function PedidosCompra() {
                         <td colSpan={8} className="p-0">
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3">
-                                {p.notas && <p className="text-sm text-gray-500 italic mb-2">{p.notas}</p>}
+                              <div className="bg-canvas/60 px-3 py-3">
+                                {p.notas && <p className="text-sm text-ink-muted italic mb-2">{p.notas}</p>}
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                                    <tr className="text-left text-overline text-ink-subtle border-b border-border">
                                       <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.articulo')}</th>
                                       <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.pedido')}</th>
                                       <th className="py-1.5 font-medium">{t('pedidos_compra:tabla.recibido')}</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-gray-100">
+                                  <tbody className="divide-y divide-border-subtle">
                                     {p.lineas_pedido_compra.map((linea) => {
                                       const recibido = (linea.entrada_material || []).reduce((sum, e) => sum + Number(e.cantidad), 0)
                                       const completa = recibido >= linea.cantidad
@@ -333,7 +333,7 @@ function PedidosCompra() {
                                         <tr key={linea.id}>
                                           <td className="py-1.5">{linea.articulos_compra?.nombre}</td>
                                           <td className="py-1.5">{linea.cantidad} {linea.articulos_compra?.unidad}</td>
-                                          <td className={`py-1.5 ${completa ? 'text-green-600' : 'text-gray-500'}`}>{recibido} {linea.articulos_compra?.unidad}</td>
+                                          <td className={`py-1.5 ${completa ? 'text-success-600' : 'text-ink-muted'}`}>{recibido} {linea.articulos_compra?.unidad}</td>
                                         </tr>
                                       )
                                     })}
@@ -355,7 +355,7 @@ function PedidosCompra() {
 
       {!cargando && totalPedidos > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('pedidos_compra:pedido_pagina_count', { count: totalPedidos, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -371,7 +371,7 @@ function PedidosCompra() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>

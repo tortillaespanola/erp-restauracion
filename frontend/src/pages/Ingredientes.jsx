@@ -146,7 +146,7 @@ function Ingredientes() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-ink">{i.nombre}</p>
-                  <p className="text-sm text-gray-500">{i.unidad} · {i.categorias_articulo?.nombre ?? t('ingredientes:sin_categoria')}</p>
+                  <p className="text-sm text-ink-muted">{i.unidad} · {i.categorias_articulo?.nombre ?? t('ingredientes:sin_categoria')}</p>
                 </div>
                 <LinkAction tone="blue" onClick={() => handleEditar(i)} className="shrink-0">{t('ingredientes:editar')}</LinkAction>
               </div>
@@ -220,18 +220,18 @@ function ArticulosDelIngrediente({ ingrediente, onCambio }) {
   }
 
   return (
-    <div className="mt-3 border-t border-gray-100 pt-3">
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('ingredientes:articulos_vinculados_titulo')}</p>
+    <div className="mt-3 border-t border-border-subtle pt-3">
+      <p className="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">{t('ingredientes:articulos_vinculados_titulo')}</p>
 
       {ingrediente.articulo_ingrediente.length === 0 ? (
-        <p className="text-sm text-gray-400 mb-2">{t('ingredientes:sin_articulos_vinculados')}</p>
+        <p className="text-sm text-ink-faint mb-2">{t('ingredientes:sin_articulos_vinculados')}</p>
       ) : (
         <table className="w-full text-sm mb-2">
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {ingrediente.articulo_ingrediente.map((ai) => (
-              <tr key={ai.articulo_id} className="hover:bg-blue-50/40">
+              <tr key={ai.articulo_id} className="hover:bg-primary-50/40">
                 <td className="py-1.5">{ai.articulos_compra?.nombre}</td>
-                <td className="py-1.5 text-gray-400">{ai.articulos_compra?.unidad}</td>
+                <td className="py-1.5 text-ink-faint">{ai.articulos_compra?.unidad}</td>
                 <td className="py-1.5 text-right">
                   <LinkAction tone="red" onClick={() => handleDesvincular(ai.articulo_id)} className="text-xs">{t('ingredientes:desvincular')}</LinkAction>
                 </td>

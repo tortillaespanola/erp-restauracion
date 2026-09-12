@@ -72,7 +72,7 @@ function FacturasVenta() {
   }
 
   function iconoOrden(columna) {
-    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-gray-300" />
+    if (orden.columna !== columna) return <IconArrowsSort size={12} className="text-ink-faint" />
     return orden.direccion === 'asc' ? <IconArrowUp size={12} /> : <IconArrowDown size={12} />
   }
 
@@ -273,7 +273,7 @@ function FacturasVenta() {
 
       {/* BLOQUE 3 (CONTRATO_FILTROS_VENTA.md): barra de filtros server-side -- Cliente, Estado
           (contra facturas_venta_con_saldo, ver cargarDatos), rango de fechas. */}
-      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-white border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-end gap-3 mb-4 p-3 bg-surface border border-border rounded-card">
         <Field label={t('facturas_venta:filtros.cliente')} className="w-48">
           <Select value={filtroClienteId} onChange={(e) => cambiarFiltroCliente(e.target.value)}>
             <option value="">{t('common:actions.all')}</option>
@@ -308,11 +308,11 @@ function FacturasVenta() {
         <Card className="overflow-hidden">
           <div className="overflow-y-auto max-h-[70vh]">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50">
-                <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-surface-sunken">
+                <tr className="text-left text-overline text-ink-subtle border-b border-border">
                   <th className="w-8 px-3 py-2.5"></th>
                   <th className="px-3 py-2.5 font-medium">
-                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-gray-600">
+                    <button type="button" onClick={() => cambiarOrden('fecha')} className="flex items-center gap-1 hover:text-ink-body">
                       {t('facturas_venta:tabla.fecha')} {iconoOrden('fecha')}
                     </button>
                   </th>
@@ -336,15 +336,15 @@ function FacturasVenta() {
                     <Fragment key={f.id}>
                       <tr
                         ref={(el) => { if (el) filaRefs.current.set(f.id, el); else filaRefs.current.delete(f.id) }}
-                        className={`border-b border-gray-100 hover:bg-blue-50/40 cursor-pointer ${f.anulada ? 'opacity-60 bg-gray-50' : ''}`}
+                        className={`border-b border-border-subtle hover:bg-primary-50/40 cursor-pointer ${f.anulada ? 'opacity-60 bg-surface-sunken' : ''}`}
                         onClick={() => toggleExpandido(f.id)}
                       >
                         <td className="px-3 py-3">
-                          <button type="button" className="text-gray-400 hover:text-gray-600">
+                          <button type="button" className="text-ink-faint hover:text-ink-body">
                             {expandido ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                           </button>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{formatFecha(f.fecha)}</td>
+                        <td className="px-3 py-3 whitespace-nowrap text-ink-body">{formatFecha(f.fecha)}</td>
                         <td className={`px-3 py-3 whitespace-nowrap text-ink ${f.anulada ? 'line-through' : ''}`}>
                           {f.numero_factura || t('common:sin_numero')}
                         </td>
@@ -355,28 +355,28 @@ function FacturasVenta() {
                             {estado && <Badge color={ESTADO_PAGO_BADGE[estado]}>{t(`enums:estado_pago.${estado}`)}</Badge>}
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap text-gray-600">
+                        <td className="px-3 py-3 text-right whitespace-nowrap text-ink-body">
                           {f.total != null ? formatMoneda(f.total, negocio?.moneda) : '—'}
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                            <button type="button" title={t('common:actions.print')} onClick={async () => imprimirFacturaVentaPdf(await prepararDocumento(f))} className="text-gray-400 hover:text-gray-600">
+                            <button type="button" title={t('common:actions.print')} onClick={async () => imprimirFacturaVentaPdf(await prepararDocumento(f))} className="text-ink-faint hover:text-ink-body">
                               <IconPrinter size={16} />
                             </button>
-                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarFacturaVentaPdf(await prepararDocumento(f))} className="text-gray-400 hover:text-primary-600">
+                            <button type="button" title={t('common:actions.download_pdf')} onClick={async () => descargarFacturaVentaPdf(await prepararDocumento(f))} className="text-ink-faint hover:text-primary-600">
                               <IconDownload size={16} />
                             </button>
                             {tieneSaldoPendiente && (
                               <button
                                 type="button" title={t('ventas_comun:tooltip_registrar_cobro')}
                                 onClick={() => setPagoDrawer({ clienteId: f.cliente_id, clienteNombre: f.clientes?.nombre, documento: { tipo: 'factura', id: f.id, saldo } })}
-                                className="text-gray-400 hover:text-green-700"
+                                className="text-ink-faint hover:text-success-700"
                               >
                                 <IconCoin size={16} />
                               </button>
                             )}
                             {!f.anulada && (
-                              <button type="button" title={t('facturas_venta:anular')} onClick={() => handleAnular(f.id)} className="text-gray-400 hover:text-red-600">
+                              <button type="button" title={t('facturas_venta:anular')} onClick={() => handleAnular(f.id)} className="text-ink-faint hover:text-danger-600">
                                 <IconBan size={16} />
                               </button>
                             )}
@@ -389,7 +389,7 @@ function FacturasVenta() {
                               mismo patrón que Pedidos/Albaranes -- en vez de montar/desmontar la fila. */}
                           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expandido ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                             <div className="overflow-hidden">
-                              <div className="bg-gray-50/60 px-3 py-3 text-sm text-gray-600">
+                              <div className="bg-canvas/60 px-3 py-3 text-sm text-ink-body">
                                 <span className="font-medium">{t('facturas_venta:albaranes_incluidos')}</span>
                                 {f.factura_venta_albaran.length === 0
                                   ? '—'
@@ -412,7 +412,7 @@ function FacturasVenta() {
 
       {!cargando && totalFacturas > 0 && (
         <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-faint">
             {t('facturas_venta:factura_pagina_count', { count: totalFacturas, pagina, total: totalPaginas })}
           </p>
           <div className="flex items-center gap-1">
@@ -428,7 +428,7 @@ function FacturasVenta() {
                 key={n}
                 type="button"
                 onClick={() => setPagina(n)}
-                className={`w-7 h-7 text-xs rounded-md ${n === pagina ? 'bg-primary-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-7 h-7 text-xs rounded-control ${n === pagina ? 'bg-primary-600 text-white' : 'text-ink-muted hover:bg-surface-hover'}`}
               >
                 {n}
               </button>
