@@ -3,5 +3,12 @@
   "email": "Email",
   "contrasena": "Password",
   "entrar": "Sign in",
-  "credenciales_incorrectas": "Incorrect email or password"
+  "credenciales_incorrectas": "Incorrect email or password",
+  "crear_contrasena_titulo": "Create your password",
+  "crear_contrasena_subtitulo": "This is the last time you'll need this link. Choose a password to sign in from now on.",
+  "nueva_contrasena": "New password",
+  "confirmar_contrasena": "Confirm password",
+  "guardar_contrasena": "Save and continue",
+  "contrasenas_no_coinciden": "Passwords don't match.",
+  "contrasena_muy_corta": "Password must be at least 6 characters long."
 }

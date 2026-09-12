@@ -3,5 +3,12 @@
   "email": "E-Mail",
   "contrasena": "Passwort",
   "entrar": "Anmelden",
-  "credenciales_incorrectas": "E-Mail oder Passwort falsch"
+  "credenciales_incorrectas": "E-Mail oder Passwort falsch",
+  "crear_contrasena_titulo": "Erstelle dein Passwort",
+  "crear_contrasena_subtitulo": "Das ist das letzte Mal, dass du diesen Link brauchst. Wähle ein Passwort für den zukünftigen Zugang.",
+  "nueva_contrasena": "Neues Passwort",
+  "confirmar_contrasena": "Passwort bestätigen",
+  "guardar_contrasena": "Speichern und fortfahren",
+  "contrasenas_no_coinciden": "Die Passwörter stimmen nicht überein.",
+  "contrasena_muy_corta": "Das Passwort muss mindestens 6 Zeichen lang sein."
 }

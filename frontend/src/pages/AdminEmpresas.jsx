@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import {
   PageHeader, Card, CardHeader, CardBody, CardFooter, Button, Field, Input,
@@ -47,14 +48,28 @@ function AdminEmpresas() {
     }
 
     setCreando(true)
-    const { error } = await supabase.functions.invoke('create-company', { body: form })
+    // redirect_to: el link de invitación por email debe volver al mismo origen desde el que se
+    // está creando la empresa (local con el puerto de turno, o el dominio real en producción) --
+    // nunca una URL fija, o se rompe en cuanto cambia el puerto o el entorno.
+    const { error } = await supabase.functions.invoke('create-company', {
+      body: { ...form, redirect_to: window.location.origin },
+    })
     setCreando(false)
 
     if (error) {
-      // supabase-js no expone el body de un error no-2xx en `error.message` de forma legible --
-      // el propio SDK ya intenta parsear el JSON de la Edge Function en `error.context`, pero el
-      // mensaje llano basta aquí: la función siempre responde { error: '<texto ya traducible>' }.
-      toast.error(t('admin_empresas:error', { mensaje: error.message }))
+      // `error.message` de supabase-js es siempre el texto genérico "Edge Function returned a
+      // non-2xx status code" -- nunca el body real. El body ({ error: '<texto>' }) solo está en
+      // `error.context`, que es la Response cruda y hay que leerla de forma asíncrona.
+      let mensaje = error.message
+      if (error instanceof FunctionsHttpError) {
+        try {
+          const body = await error.context.json()
+          if (body?.error) mensaje = body.error
+        } catch {
+          // body no era JSON parseable -- nos quedamos con el mensaje genérico
+        }
+      }
+      toast.error(t('admin_empresas:error', { mensaje }))
       return
     }
 

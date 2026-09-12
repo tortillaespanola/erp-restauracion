@@ -3,5 +3,12 @@
   "email": "Email",
   "contrasena": "Contraseña",
   "entrar": "Entrar",
-  "credenciales_incorrectas": "Email o contraseña incorrectos"
+  "credenciales_incorrectas": "Email o contraseña incorrectos",
+  "crear_contrasena_titulo": "Crea tu contraseña",
+  "crear_contrasena_subtitulo": "Es la última vez que necesitarás este enlace. Elige una contraseña para acceder a partir de ahora.",
+  "nueva_contrasena": "Nueva contraseña",
+  "confirmar_contrasena": "Confirma la contraseña",
+  "guardar_contrasena": "Guardar y entrar",
+  "contrasenas_no_coinciden": "Las contraseñas no coinciden.",
+  "contrasena_muy_corta": "La contraseña debe tener al menos 6 caracteres."
 }

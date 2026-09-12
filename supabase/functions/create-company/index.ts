@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
 
   const deps = {
     esSuperAdmin: async (usuarioId) => {
-      const { data } = await adminClient.from('super_admins').select('usuario_id').eq('usuario_id', usuarioId).maybeSingle()
+      const { data, error } = await adminClient.from('super_admins').select('usuario_id').eq('usuario_id', usuarioId).maybeSingle()
+      if (error) throw error
       return !!data
     },
     crearNegocio: async ({ id, nombre, codigo_corto }) => {
@@ -74,8 +75,8 @@ Deno.serve(async (req) => {
     borrarNegocio: async (id) => {
       await adminClient.from('negocios').delete().eq('id', id)
     },
-    invitarUsuario: async (email) => {
-      const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email)
+    invitarUsuario: async (email, redirectTo) => {
+      const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo })
       if (error) throw error
       return { id: data.user.id }
     },

@@ -25,8 +25,8 @@ function depsFalsos(overrides = {}) {
       llamadas.push(['borrarNegocio', id])
       negocios.delete(id)
     },
-    invitarUsuario: async (email) => {
-      llamadas.push(['invitarUsuario', email])
+    invitarUsuario: async (email, redirectTo) => {
+      llamadas.push(['invitarUsuario', email, redirectTo])
       const id = 'usuario-invitado-' + email
       usuarios.add(id)
       return { id }
@@ -52,7 +52,12 @@ function depsFalsos(overrides = {}) {
   return { deps: base, llamadas, negocios, usuarios, pertenencias, empresaConfig }
 }
 
-const ENTRADA_VALIDA = { nombre_negocio: 'Empresa Nueva SA', codigo_corto: 'ENS', email_admin: 'admin@nueva.example' }
+const ENTRADA_VALIDA = {
+  nombre_negocio: 'Empresa Nueva SA',
+  codigo_corto: 'ENS',
+  email_admin: 'admin@nueva.example',
+  redirect_to: 'http://localhost:5183',
+}
 
 test('rechaza con 403 si el usuario no es super_admin, sin crear nada', async () => {
   const { deps, llamadas, negocios } = depsFalsos()
@@ -94,6 +99,14 @@ test('valida el formato de codigo_corto (2-4 alfanuméricos en mayúscula)', asy
   const { deps } = depsFalsos()
   await assert.rejects(
     () => crearEmpresa(deps, 'super-admin-id', { ...ENTRADA_VALIDA, codigo_corto: 'demasiadolargo' }),
+    (e) => e instanceof ErrorHttp && e.status === 400
+  )
+})
+
+test('exige redirect_to (el link de invitación no puede usar una URL fija por defecto)', async () => {
+  const { deps } = depsFalsos()
+  await assert.rejects(
+    () => crearEmpresa(deps, 'super-admin-id', { ...ENTRADA_VALIDA, redirect_to: undefined }),
     (e) => e instanceof ErrorHttp && e.status === 400
   )
 })
