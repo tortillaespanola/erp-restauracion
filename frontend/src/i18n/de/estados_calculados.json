@@ -15,9 +15,14 @@
     "completo": "Vollständig",
     "parcial": "Teilweise — {{pct}}%"
   },
+  "asignacion": {
+    "sin_asignar": "Nicht zugewiesen",
+    "asignado": "Zugewiesen",
+    "parcial": "Teilweise zugewiesen — {{pct}}%"
+  },
   "despacho": {
     "no_despachado": "Nicht versendet",
     "despachado": "Versendet",
-    "parcial": "Teilweise — {{pct}}%"
+    "parcial": "Teilweise versendet — {{pct}}%"
   }
 }

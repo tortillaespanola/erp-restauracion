@@ -12,23 +12,38 @@ import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Fiel
 const PAGINA_TAMANO = 20
 const EPS = 0.0005
 
-// Punto 2.4: estado de despacho de una tanda de producto final -- basado en
-// previsiones_distribucion_pf (previsto/repartido a pedido), NO en lineas_albaran_venta (facturado
-// real), decisión ya cerrada en el contrato. Mismos 3 colores/umbrales que estadoConsumo en
-// Producciones.jsx, con etiquetas propias de despacho -- se mantiene como copia aparte (no una
-// función compartida) porque son dos conceptos de negocio distintos que hoy comparten forma por
-// coincidencia, no por relación. Corrección preventiva (mismo hueco detectado en Semielaborados,
-// punto 1.5): `previsto` ya llega con ajustes_producto_final restados (ver cargarHistorial) -- puede
-// superar `cantidadProducida` o quedar por debajo de 0, por eso el % se acota explícitamente entre 0
-// y 100 antes de decidir el badge, mismo criterio que estadoConsumo.
+// CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 1: renombrado de "estado de despacho" (nombre incorrecto,
+// mide asignación a pedido vía previsiones_distribucion_pf, no despacho real) a "estado de
+// asignación". Mismos 3 colores/umbrales que estadoConsumo en Producciones.jsx, con etiquetas
+// propias -- se mantiene como copia aparte (no una función compartida) porque son dos conceptos de
+// negocio distintos que hoy comparten forma por coincidencia, no por relación. Corrección preventiva
+// (mismo hueco detectado en Semielaborados, punto 1.5): `previsto` ya llega con
+// ajustes_producto_final restados (ver cargarHistorial) -- puede superar `cantidadProducida` o quedar
+// por debajo de 0, por eso el % se acota explícitamente entre 0 y 100 antes de decidir el badge,
+// mismo criterio que estadoConsumo.
 //
 // CONTRATO_I18N.md, Fase 1: `t` como parámetro (función pura) -- etiquetas en estados_calculados.json,
 // nunca en enums.json (estado calculado en cliente, no un valor crudo de un CHECK de BD).
-function estadoDespacho(cantidadProducida, previsto, t) {
+function estadoAsignacion(cantidadProducida, previsto, t) {
   const cantidad = Number(cantidadProducida) || 0
   const prev = Number(previsto) || 0
-  if (prev <= EPS) return { color: 'gray', texto: t('estados_calculados:despacho.no_despachado') }
+  if (prev <= EPS) return { color: 'gray', texto: t('estados_calculados:asignacion.sin_asignar') }
   const pctBruto = cantidad > 0 ? (prev / cantidad) * 100 : 100
+  const pct = Math.max(0, Math.min(100, pctBruto))
+  if (pct >= 100 - EPS) return { color: 'green', texto: t('estados_calculados:asignacion.asignado') }
+  return { color: 'amber', texto: t('estados_calculados:asignacion.parcial', { pct: pct.toFixed(0) }) }
+}
+
+// CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: estado de despacho REAL de una tanda -- basado en
+// lineas_albaran_venta.produccion_pf_id (FK directa, entrega real), no en previsiones_distribucion_pf.
+// A diferencia de estadoAsignacion, `real` es siempre >= 0 (una suma de cantidades ya entregadas, sin
+// resta de ajustes), pero igualmente se acota a 100 por si una edición manual del albarán superase la
+// cantidad producida.
+function estadoDespachoReal(cantidadProducida, real, t) {
+  const cantidad = Number(cantidadProducida) || 0
+  const r = Number(real) || 0
+  if (r <= EPS) return { color: 'gray', texto: t('estados_calculados:despacho.no_despachado') }
+  const pctBruto = cantidad > 0 ? (r / cantidad) * 100 : 100
   const pct = Math.max(0, Math.min(100, pctBruto))
   if (pct >= 100 - EPS) return { color: 'green', texto: t('estados_calculados:despacho.despachado') }
   return { color: 'amber', texto: t('estados_calculados:despacho.parcial', { pct: pct.toFixed(0) }) }
@@ -234,10 +249,14 @@ function ProduccionProductosFinales() {
   const [historialPagina, setHistorialPagina] = useState(1)
   const [totalHistorial, setTotalHistorial] = useState(0)
   const totalPaginasHistorial = Math.max(1, Math.ceil(totalHistorial / PAGINA_TAMANO))
-  // Punto 2.4/2.5: previsto (para el badge) + detalle de reparto a pedidos de cada tanda VISIBLE en
-  // la página actual -- Map id -> { previsto, detalle: [{linea_pedido_id, cantidad_prevista, cliente,
-  // codigoPedido, fechaEntrega}] }, recalculado en cada carga de página.
-  const [despachoPorTanda, setDespachoPorTanda] = useState(new Map())
+  // Punto 2.4/2.5: previsto (para el badge de asignación) + detalle de reparto a pedidos de cada
+  // tanda VISIBLE en la página actual -- Map id -> { previsto, detalle: [{linea_pedido_id,
+  // cantidad_prevista, cliente, codigoPedido, fechaEntrega}] }, recalculado en cada carga de página.
+  const [asignacionPorTanda, setAsignacionPorTanda] = useState(new Map())
+  // CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: cantidad realmente despachada (lineas_albaran_venta)
+  // de cada tanda VISIBLE en la página actual -- Map id -> { real, detalle: [{albaranVentaId,
+  // numeroAlbaran, cantidad, codigoPedido, esVentaDirecta}] }.
+  const [despachoRealPorTanda, setDespachoRealPorTanda] = useState(new Map())
   // Punto 2.3 (mismo criterio que 1.3): un único id expandido a la vez.
   const [filaExpandidaId, setFilaExpandidaId] = useState(null)
 
@@ -335,7 +354,8 @@ function ProduccionProductosFinales() {
       console.error('Error cargando el historial de producciones:', errorHistorial)
       setHistorial([])
       setTotalHistorial(0)
-      setDespachoPorTanda(new Map())
+      setAsignacionPorTanda(new Map())
+      setDespachoRealPorTanda(new Map())
       setCargandoHistorial(false)
       return
     }
@@ -351,10 +371,17 @@ function ProduccionProductosFinales() {
     // Producciones.jsx. Corrección preventiva (mismo hueco detectado en Semielaborados, punto 1.5):
     // se resta también ajustes_producto_final -- hoy siempre 0 filas en el sistema, pero el cálculo
     // queda listo desde el diseño inicial, sin esperar a que se registre el primero con datos reales.
+    //
+    // CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: en paralelo, cantidad REALMENTE despachada de cada
+    // tanda a partir de lineas_albaran_venta.produccion_pf_id (FK directa, entrega real) -- sin pasar
+    // por previsiones_distribucion_pf, que es solo un reparto provisional y puede saltarse (venta
+    // directa, o fila manual sobre un pedido con previsión ya existente). linea_pedido_id es nullable
+    // en lineas_albaran_venta (línea sin pedido de origen = venta directa).
     const idsVisibles = (dataHistorial || []).map((p) => p.id)
-    const mapaDespacho = new Map()
+    const mapaAsignacion = new Map()
+    const mapaDespachoReal = new Map()
     if (idsVisibles.length > 0) {
-      const [resPrevisiones, resAjustes] = await Promise.all([
+      const [resPrevisiones, resAjustes, resAlbaranes] = await Promise.all([
         supabase
           .from('previsiones_distribucion_pf')
           .select(
@@ -365,16 +392,23 @@ function ProduccionProductosFinales() {
           .from('ajustes_producto_final')
           .select('produccion_pf_id, cantidad, motivo_categoria, motivo_detalle, fecha')
           .in('produccion_pf_id', idsVisibles),
+        supabase
+          .from('lineas_albaran_venta')
+          .select(
+            'produccion_pf_id, cantidad, albaran_venta_id, linea_pedido_id, albaranes_venta(numero_albaran), lineas_pedido_venta(pedidos_venta(codigo_pedido))'
+          )
+          .in('produccion_pf_id', idsVisibles),
       ])
 
       if (resPrevisiones.error) console.error('Error cargando previsiones de distribución:', resPrevisiones.error)
       if (resAjustes.error) console.error('Error cargando ajustes de stock:', resAjustes.error)
+      if (resAlbaranes.error) console.error('Error cargando líneas de albarán despachadas:', resAlbaranes.error)
 
       const obtener = (id) => {
-        let entrada = mapaDespacho.get(id)
+        let entrada = mapaAsignacion.get(id)
         if (!entrada) {
           entrada = { previsto: 0, detalle: [], ajustesTotal: 0, ajustesDetalle: [] }
-          mapaDespacho.set(id, entrada)
+          mapaAsignacion.set(id, entrada)
         }
         return entrada
       }
@@ -402,8 +436,28 @@ function ProduccionProductosFinales() {
           fecha: a.fecha,
         })
       }
+
+      const obtenerDespacho = (id) => {
+        let entrada = mapaDespachoReal.get(id)
+        if (!entrada) {
+          entrada = { real: 0, detalle: [] }
+          mapaDespachoReal.set(id, entrada)
+        }
+        return entrada
+      }
+      for (const l of resAlbaranes.data || []) {
+        const entrada = obtenerDespacho(l.produccion_pf_id)
+        entrada.real += Number(l.cantidad)
+        entrada.detalle.push({
+          albaranVentaId: l.albaran_venta_id,
+          numeroAlbaran: l.albaranes_venta?.numero_albaran,
+          cantidad: Number(l.cantidad),
+          codigoPedido: l.lineas_pedido_venta?.pedidos_venta?.codigo_pedido,
+        })
+      }
     }
-    setDespachoPorTanda(mapaDespacho)
+    setAsignacionPorTanda(mapaAsignacion)
+    setDespachoRealPorTanda(mapaDespachoReal)
 
     setCargandoHistorial(false)
   }
@@ -568,6 +622,7 @@ function ProduccionProductosFinales() {
                   <th className="px-3 py-2.5 font-medium">{t('produccion_productos_finales:tabla_historial.producto')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('produccion_comun:tabla.cantidad_producida')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('produccion_comun:tabla.notas')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('produccion_productos_finales:tabla_historial.estado_asignacion')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('produccion_productos_finales:tabla_historial.estado_despacho')}</th>
                   <th className="px-3 py-2.5 font-medium text-right">{t('produccion_comun:tabla.acciones')}</th>
                 </tr>
@@ -579,7 +634,8 @@ function ProduccionProductosFinales() {
                     produccion={p}
                     expandido={filaExpandidaId === p.id}
                     onToggleExpandir={() => toggleExpandido(p.id)}
-                    despachoInfo={despachoPorTanda.get(p.id)}
+                    asignacionInfo={asignacionPorTanda.get(p.id)}
+                    despachoRealInfo={despachoRealPorTanda.get(p.id)}
                     onCambio={cargarHistorial}
                     onBorrar={() => handleBorrarCerrada(p.id)}
                   />
@@ -1105,17 +1161,23 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
 // ProduccionCerrada en Producciones.jsx / AlbaranesVenta.jsx BLOQUE 4) en vez de la <Card> apilada
 // anterior. `expandido`/`onToggleExpandir` vienen del padre; `editando` sigue siendo estado LOCAL de
 // esta fila, igual que en Producciones.jsx.
-function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoInfo, onCambio, onBorrar }) {
+function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacionInfo, despachoRealInfo, onCambio, onBorrar }) {
   const { t } = useTranslation(['common', 'produccion_comun', 'produccion_productos_finales'])
   const [editando, setEditando] = useState(false)
   const abierto = expandido || editando
 
-  // Punto 2.4: badge de estado de despacho -- despachoInfo llega del padre (cargarHistorial), ya
+  // Punto 2.4: badge de estado de asignación -- asignacionInfo llega del padre (cargarHistorial), ya
   // agregado por produccion_pf_id a partir de previsiones_distribucion_pf.
-  const previsto = despachoInfo?.previsto || 0
-  const { color, texto } = estadoDespacho(produccion.cantidad_producida, previsto, t)
-  const detalleReparto = despachoInfo?.detalle || []
-  const detalleAjustes = despachoInfo?.ajustesDetalle || []
+  const previsto = asignacionInfo?.previsto || 0
+  const { color, texto } = estadoAsignacion(produccion.cantidad_producida, previsto, t)
+  const detalleReparto = asignacionInfo?.detalle || []
+  const detalleAjustes = asignacionInfo?.ajustesDetalle || []
+
+  // CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: badge de estado de despacho REAL -- despachoRealInfo
+  // llega del padre, agregado por produccion_pf_id a partir de lineas_albaran_venta.
+  const real = despachoRealInfo?.real || 0
+  const { color: colorDespacho, texto: textoDespacho } = estadoDespachoReal(produccion.cantidad_producida, real, t)
+  const detalleDespacho = despachoRealInfo?.detalle || []
 
   function iniciarEdicion() {
     setEditando(true)
@@ -1139,6 +1201,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
         <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} {t('produccion_productos_finales:unidad_corta')}</td>
         <td className="px-3 py-3 text-gray-500 italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
+        <td className="px-3 py-3"><Badge color={colorDespacho}>{textoDespacho}</Badge></td>
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
             <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
@@ -1147,7 +1210,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
         </td>
       </tr>
       <tr>
-        <td colSpan={7} className="p-0">
+        <td colSpan={8} className="p-0">
           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
             <div className="overflow-hidden">
               <div className="bg-gray-50/60 px-3 py-3">
@@ -1182,7 +1245,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
                       </table>
                     )}
 
-                    {/* Punto 2.5: repartido a pedidos -- nuevo, a partir de despachoInfo. */}
+                    {/* Punto 2.5: repartido a pedidos -- nuevo, a partir de asignacionInfo. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('produccion_productos_finales:repartido_pedidos_titulo')}</p>
                     {detalleReparto.length === 0 ? (
                       <p className="text-sm text-gray-400 mb-3">{t('produccion_productos_finales:sin_reparto_previsto')}</p>
@@ -1203,6 +1266,33 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, despachoIn
                               <td className="py-1.5 text-gray-500 font-mono text-xs">{d.codigoPedido ?? `#${d.linea_pedido_id}`}</td>
                               <td className="py-1.5 text-gray-500">{d.fechaEntrega ? formatFecha(d.fechaEntrega) : t('produccion_productos_finales:sin_fecha')}</td>
                               <td className="py-1.5">{d.cantidad_prevista.toFixed(3)} {t('produccion_productos_finales:unidad_corta')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+
+                    {/* CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: despachado en albaranes -- a partir
+                        de despachoRealInfo (lineas_albaran_venta.produccion_pf_id), independiente de si
+                        hubo o no reparto previo en previsiones_distribucion_pf (venta directa incluida). */}
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{t('produccion_productos_finales:despachado_albaranes_titulo')}</p>
+                    {detalleDespacho.length === 0 ? (
+                      <p className="text-sm text-gray-400 mb-3">{t('produccion_productos_finales:sin_despacho_registrado')}</p>
+                    ) : (
+                      <table className="w-full text-sm mb-3">
+                        <thead>
+                          <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-200">
+                            <th className="py-1.5 font-medium">{t('produccion_productos_finales:tabla_despacho.pedido')}</th>
+                            <th className="py-1.5 font-medium">{t('produccion_productos_finales:tabla_despacho.albaran')}</th>
+                            <th className="py-1.5 font-medium">{t('produccion_productos_finales:tabla_despacho.cantidad')}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {detalleDespacho.map((d, i) => (
+                            <tr key={i}>
+                              <td className="py-1.5 text-gray-500 font-mono text-xs">{d.codigoPedido ?? t('produccion_productos_finales:venta_directa')}</td>
+                              <td className="py-1.5 text-gray-500 font-mono text-xs">{d.numeroAlbaran ?? `#${d.albaranVentaId}`}</td>
+                              <td className="py-1.5">{d.cantidad.toFixed(3)} {t('produccion_productos_finales:unidad_corta')}</td>
                             </tr>
                           ))}
                         </tbody>

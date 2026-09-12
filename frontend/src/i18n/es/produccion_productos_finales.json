@@ -18,6 +18,7 @@
   "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas de este producto.",
   "tabla_historial": {
     "producto": "Producto",
+    "estado_asignacion": "Estado de asignación",
     "estado_despacho": "Estado de despacho"
   },
   "pedido_codigo": "Pedido {{codigo}}",
@@ -29,6 +30,14 @@
     "entrega_prevista": "Entrega prevista",
     "previsto": "Previsto"
   },
+  "despachado_albaranes_titulo": "Despachado en albaranes",
+  "sin_despacho_registrado": "Sin despachos registrados todavía.",
+  "tabla_despacho": {
+    "pedido": "Pedido",
+    "albaran": "Albarán",
+    "cantidad": "Cantidad"
+  },
+  "venta_directa": "Venta directa",
   "sin_fecha": "sin fecha",
   "confirmar_cancelar": "¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados.",
   "confirmar_borrar": "¿Seguro que quieres borrar esta producción? Se revertirán sus consumos y su stock.",

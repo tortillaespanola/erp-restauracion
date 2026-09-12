@@ -15,9 +15,14 @@
     "completo": "Complete",
     "parcial": "Partial — {{pct}}%"
   },
+  "asignacion": {
+    "sin_asignar": "Not assigned",
+    "asignado": "Assigned",
+    "parcial": "Partially assigned — {{pct}}%"
+  },
   "despacho": {
     "no_despachado": "Not dispatched",
     "despachado": "Dispatched",
-    "parcial": "Partial — {{pct}}%"
+    "parcial": "Partially dispatched — {{pct}}%"
   }
 }

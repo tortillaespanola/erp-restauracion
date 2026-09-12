@@ -18,6 +18,7 @@
   "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen Produktionen dieses Produkts.",
   "tabla_historial": {
     "producto": "Produkt",
+    "estado_asignacion": "Zuweisungsstatus",
     "estado_despacho": "Versandstatus"
   },
   "pedido_codigo": "Bestellung {{codigo}}",
@@ -29,6 +30,14 @@
     "entrega_prevista": "Voraussichtliche Lieferung",
     "previsto": "Geplant"
   },
+  "despachado_albaranes_titulo": "In Lieferscheinen versendet",
+  "sin_despacho_registrado": "Noch keine Versendungen erfasst.",
+  "tabla_despacho": {
+    "pedido": "Bestellung",
+    "albaran": "Lieferschein",
+    "cantidad": "Menge"
+  },
+  "venta_directa": "Direktverkauf",
   "sin_fecha": "kein Datum",
   "confirmar_cancelar": "Diese laufende Produktion abbrechen? Bereits erfasste Verbräuche werden rückgängig gemacht.",
   "confirmar_borrar": "Möchtest du diese Produktion wirklich löschen? Ihr Verbrauch und Bestand werden rückgängig gemacht.",
