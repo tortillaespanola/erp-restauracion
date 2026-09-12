@@ -3,9 +3,11 @@
     "sections": {
       "compras": "Einkauf",
       "produccion": "Produktion",
-      "ventas": "Verkauf"
+      "ventas": "Verkauf",
+      "administracion": "Verwaltung"
     },
     "items": {
+      "admin_empresas": "Unternehmen",
       "pedidos_compra": "Bestellungen",
       "proveedores": "Lieferanten",
       "articulos": "Artikel",
@@ -48,7 +50,8 @@
     "albaranes_venta": { "title": "Lieferscheine Verkauf", "breadcrumb": "Verkauf · Lieferscheine Verkauf" },
     "facturas_venta": { "title": "Rechnungen Verkauf", "breadcrumb": "Verkauf · Rechnungen Verkauf" },
     "pagos": { "title": "Verkaufszahlungen", "breadcrumb": "Verkauf · Zahlungen" },
-    "configuracion": { "title": "Einstellungen", "breadcrumb": "Firmeneinstellungen" }
+    "configuracion": { "title": "Einstellungen", "breadcrumb": "Firmeneinstellungen" },
+    "admin_empresas": { "title": "Unternehmensverwaltung", "breadcrumb": "Verwaltung · Unternehmen" }
   },
   "actions": {
     "save": "Speichern",

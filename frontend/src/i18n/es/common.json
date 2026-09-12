@@ -3,9 +3,11 @@
     "sections": {
       "compras": "Compras",
       "produccion": "Producción",
-      "ventas": "Ventas"
+      "ventas": "Ventas",
+      "administracion": "Administración"
     },
     "items": {
+      "admin_empresas": "Empresas",
       "pedidos_compra": "Pedidos de compra",
       "proveedores": "Proveedores",
       "articulos": "Artículos",
@@ -48,7 +50,8 @@
     "albaranes_venta": { "title": "Albaranes de venta", "breadcrumb": "Ventas · Albaranes venta" },
     "facturas_venta": { "title": "Facturas de venta", "breadcrumb": "Ventas · Facturas venta" },
     "pagos": { "title": "Pagos de venta", "breadcrumb": "Ventas · Pagos" },
-    "configuracion": { "title": "Configuración", "breadcrumb": "Configuración de empresa" }
+    "configuracion": { "title": "Configuración", "breadcrumb": "Configuración de empresa" },
+    "admin_empresas": { "title": "Administración de empresas", "breadcrumb": "Administración · Empresas" }
   },
   "actions": {
     "save": "Guardar",

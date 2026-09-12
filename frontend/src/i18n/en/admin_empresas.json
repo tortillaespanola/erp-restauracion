@@ -1,0 +1,22 @@
+{
+  "titulo": "Company administration",
+  "card_nuevo_titulo": "Create new company",
+  "campos": {
+    "nombre_negocio": "Company name",
+    "codigo_corto": "Short code",
+    "codigo_corto_ayuda": "2 to 4 uppercase letters/digits (e.g. ENS) — visibly identifies this company's invoices.",
+    "email_admin": "Initial admin's email"
+  },
+  "crear": "Create company",
+  "creando": "Creating…",
+  "exito": "Company created. An invitation has been sent to {{email}}.",
+  "error": "Could not create the company: {{mensaje}}",
+  "tabla": {
+    "nombre": "Name",
+    "codigo_corto": "Code",
+    "creado": "Created"
+  },
+  "listado_titulo": "Existing companies",
+  "sin_empresas": "There are no companies yet.",
+  "acceso_denegado": "You don't have access to this screen."
+}

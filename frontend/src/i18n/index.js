@@ -37,6 +37,7 @@ import authGateEs from './es/auth_gate.json'
 import cierreTandaEs from './es/cierre_tanda.json'
 import albaranVentaFormEs from './es/albaran_venta_form.json'
 import facturaVentaFormEs from './es/factura_venta_form.json'
+import adminEmpresasEs from './es/admin_empresas.json'
 
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
@@ -74,6 +75,7 @@ import authGateEn from './en/auth_gate.json'
 import cierreTandaEn from './en/cierre_tanda.json'
 import albaranVentaFormEn from './en/albaran_venta_form.json'
 import facturaVentaFormEn from './en/factura_venta_form.json'
+import adminEmpresasEn from './en/admin_empresas.json'
 
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
@@ -111,6 +113,7 @@ import authGateDe from './de/auth_gate.json'
 import cierreTandaDe from './de/cierre_tanda.json'
 import albaranVentaFormDe from './de/albaran_venta_form.json'
 import facturaVentaFormDe from './de/factura_venta_form.json'
+import adminEmpresasDe from './de/admin_empresas.json'
 
 // CONTRATO_I18N.md, Fase 0. El idioma real por usuario vive en usuarios_negocios.idioma (con
 // fallback a empresa_config.idioma) -- NegocioProvider sincroniza ese valor aquí en cuanto carga
@@ -154,6 +157,7 @@ i18n.use(initReactI18next).init({
       semielaborados: semielaboradosEs, productos_finales: productosFinalesEs,
       auth_gate: authGateEs, cierre_tanda: cierreTandaEs,
       albaran_venta_form: albaranVentaFormEs, factura_venta_form: facturaVentaFormEs,
+      admin_empresas: adminEmpresasEs,
     },
     en: {
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
@@ -173,6 +177,7 @@ i18n.use(initReactI18next).init({
       semielaborados: semielaboradosEn, productos_finales: productosFinalesEn,
       auth_gate: authGateEn, cierre_tanda: cierreTandaEn,
       albaran_venta_form: albaranVentaFormEn, factura_venta_form: facturaVentaFormEn,
+      admin_empresas: adminEmpresasEn,
     },
     de: {
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
@@ -192,6 +197,7 @@ i18n.use(initReactI18next).init({
       semielaborados: semielaboradosDe, productos_finales: productosFinalesDe,
       auth_gate: authGateDe, cierre_tanda: cierreTandaDe,
       albaran_venta_form: albaranVentaFormDe, factura_venta_form: facturaVentaFormDe,
+      admin_empresas: adminEmpresasDe,
     },
   },
   lng: idiomaInicial(),
@@ -205,7 +211,7 @@ i18n.use(initReactI18next).init({
     'articulos', 'inventario', 'ajustes_stock', 'ajuste_stock_form', 'configuracion',
     'contactos_comun', 'proveedores', 'clientes', 'ingredientes', 'recetas_comun',
     'semielaborados', 'productos_finales', 'auth_gate', 'cierre_tanda',
-    'albaran_venta_form', 'factura_venta_form',
+    'albaran_venta_form', 'factura_venta_form', 'admin_empresas',
   ],
   defaultNS: 'common',
   interpolation: { escapeValue: false },

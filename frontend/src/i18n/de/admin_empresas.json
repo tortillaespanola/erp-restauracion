@@ -1,0 +1,22 @@
+{
+  "titulo": "Unternehmensverwaltung",
+  "card_nuevo_titulo": "Neues Unternehmen erstellen",
+  "campos": {
+    "nombre_negocio": "Firmenname",
+    "codigo_corto": "Kurzcode",
+    "codigo_corto_ayuda": "2 bis 4 Großbuchstaben/Ziffern (z. B. ENS) — kennzeichnet sichtbar die Rechnungen dieses Unternehmens.",
+    "email_admin": "E-Mail des ersten Administrators"
+  },
+  "crear": "Unternehmen erstellen",
+  "creando": "Wird erstellt…",
+  "exito": "Unternehmen erstellt. Eine Einladung wurde an {{email}} gesendet.",
+  "error": "Unternehmen konnte nicht erstellt werden: {{mensaje}}",
+  "tabla": {
+    "nombre": "Name",
+    "codigo_corto": "Code",
+    "creado": "Erstellt"
+  },
+  "listado_titulo": "Bestehende Unternehmen",
+  "sin_empresas": "Es gibt noch keine Unternehmen.",
+  "acceso_denegado": "Du hast keinen Zugriff auf diesen Bildschirm."
+}

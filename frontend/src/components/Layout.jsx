@@ -5,9 +5,10 @@ import {
   IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconComponents, IconStack3, IconTools, IconSquareCheck, IconRoute,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
-  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2,
+  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2, IconBuildingSkyscraper,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
+import { useNegocio } from '../context/useNegocio'
 import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
 
 // CONTRATO_I18N.md, Fase 0: las claves (compras/proveedores/...) son estables e independientes
@@ -74,6 +75,16 @@ const RUTA_A_CLAVE = {
   '/facturas-venta': 'facturas_venta',
   '/pagos': 'pagos',
   '/configuracion': 'configuracion',
+  '/admin/empresas': 'admin_empresas',
+}
+
+// CONTRATO_SUPERADMIN_EMPRESAS.md, Fase 4: sección aparte, añadida condicionalmente solo si
+// esSuperAdmin -- nunca visible para un usuario normal, ni siquiera en el DOM (no es solo
+// display:none). La protección real está en la ruta (App.jsx); esto es la otra mitad de "oculta
+// del menú" que pide el contrato.
+const SECCION_ADMIN = {
+  clave: 'administracion',
+  items: [{ to: '/admin/empresas', clave: 'admin_empresas', icon: IconBuildingSkyscraper }],
 }
 
 const NOMBRE_IDIOMA = { es: 'ES', en: 'EN', de: 'DE' }
@@ -86,10 +97,12 @@ function iniciales(email) {
 function Layout({ children, session, onLogout }) {
   const location = useLocation()
   const { t, i18n } = useTranslation('common')
+  const { esSuperAdmin } = useNegocio()
   const [sidebarAbierto, setSidebarAbierto] = useState(false)
   const claveRuta = RUTA_A_CLAVE[location.pathname]
   const titulo = claveRuta ? t(`titles.${claveRuta}.title`) : 'FlowBase'
   const breadcrumb = claveRuta ? t(`titles.${claveRuta}.breadcrumb`) : ''
+  const secciones = esSuperAdmin ? [...NAV_SECTIONS, SECCION_ADMIN] : NAV_SECTIONS
 
   function cerrarSidebar() {
     setSidebarAbierto(false)
@@ -118,7 +131,7 @@ function Layout({ children, session, onLogout }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2.5 px-2.5 flex flex-col gap-3.5">
-          {NAV_SECTIONS.map((seccion) => (
+          {secciones.map((seccion) => (
             <div key={seccion.clave} className="flex flex-col gap-px">
               <p className="px-2 pt-1.5 pb-1 text-overline text-ink-faint">
                 {t(`nav.sections.${seccion.clave}`)}

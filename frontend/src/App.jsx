@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
 import Layout from './components/Layout'
+import { useNegocio } from './context/useNegocio'
 import Articulos from './pages/Articulos'
 import Ingredientes from './pages/Ingredientes'
 import Inventario from './pages/Inventario'
@@ -23,6 +24,7 @@ import AlbaranesVenta from './pages/AlbaranesVenta'
 import FacturasVenta from './pages/FacturasVenta'
 import Pagos from './pages/Pagos'
 import Configuracion from './pages/Configuracion'
+import AdminEmpresas from './pages/AdminEmpresas'
 
 // Ajuste visual del toast (react-hot-toast): estilo inline para forzar que gane sobre las reglas
 // por defecto de la librería (inyectadas en runtime por goober, con orden en el <head>
@@ -42,6 +44,52 @@ const TOAST_STYLE = {
   maxWidth: '420px',
 }
 
+// CONTRATO_SUPERADMIN_EMPRESAS.md, Fase 4: la ruta /admin/empresas está protegida a nivel de
+// ruta (no solo oculta del menú, ver Layout.jsx) -- un usuario sin esSuperAdmin que teclee la
+// URL directamente es redirigido, nunca ve el componente. En sentido inverso, un super_admin
+// puro (sin negocio, ver NegocioContext.jsx) es redirigido DESDE cualquier otra ruta hacia
+// /admin/empresas -- el resto de pantallas del ERP consultan tablas particionadas por
+// negocio_id y no tienen ningún sentido (ni funcionan: negocio_actual() lanzaría excepción bajo
+// RLS) para un usuario que no pertenece a ningún negocio.
+function Enrutado() {
+  const { negocio, esSuperAdmin } = useNegocio()
+  const location = useLocation()
+
+  const superAdminSinNegocio = esSuperAdmin && !negocio
+  if (superAdminSinNegocio && location.pathname !== '/admin/empresas') {
+    return <Navigate to="/admin/empresas" replace />
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Articulos />} />
+      <Route path="/articulos" element={<Articulos />} />
+
+      <Route path="/ingredientes" element={<Ingredientes />} />
+      <Route path="/inventario" element={<Inventario />} />
+      <Route path="/semielaborados" element={<Semielaborados />} />
+      <Route path="/pedidos-del-dia" element={<PedidosDelDia />} />
+      <Route path="/cierre-tanda" element={<CierreTanda />} />
+      <Route path="/producciones" element={<Producciones />} />
+      <Route path="/ajustes-stock" element={<AjustesStock />} />
+      <Route path="/productos" element={<ProductosFinales />} />
+      <Route path="/produccion-productos" element={<ProduccionProductosFinales />} />
+      <Route path="/proveedores" element={<Proveedores />} />
+      <Route path="/pedidos-compra" element={<PedidosCompra />} />
+      <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
+      <Route path="/facturas-compra" element={<FacturasCompra />} />
+      <Route path="/pagos-compra" element={<PagosCompra />} />
+      <Route path="/pedidos" element={<Pedidos />} />
+      <Route path="/clientes" element={<Clientes />} />
+      <Route path="/albaranes-venta" element={<AlbaranesVenta />} />
+      <Route path="/facturas-venta" element={<FacturasVenta />} />
+      <Route path="/pagos" element={<Pagos />} />
+      <Route path="/configuracion" element={<Configuracion />} />
+      <Route path="/admin/empresas" element={esSuperAdmin ? <AdminEmpresas /> : <Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 function App({ session, onLogout }) {
   return (
     <BrowserRouter>
@@ -54,31 +102,7 @@ function App({ session, onLogout }) {
         }}
       />
       <Layout session={session} onLogout={onLogout}>
-        <Routes>
-          <Route path="/" element={<Articulos />} />
-          <Route path="/articulos" element={<Articulos />} />
-
-          <Route path="/ingredientes" element={<Ingredientes />} />
-          <Route path="/inventario" element={<Inventario />} />
-          <Route path="/semielaborados" element={<Semielaborados />} />
-          <Route path="/pedidos-del-dia" element={<PedidosDelDia />} />
-          <Route path="/cierre-tanda" element={<CierreTanda />} />
-          <Route path="/producciones" element={<Producciones />} />
-          <Route path="/ajustes-stock" element={<AjustesStock />} />
-          <Route path="/productos" element={<ProductosFinales />} />
-          <Route path="/produccion-productos" element={<ProduccionProductosFinales />} />
-          <Route path="/proveedores" element={<Proveedores />} />
-          <Route path="/pedidos-compra" element={<PedidosCompra />} />
-          <Route path="/albaranes-compra" element={<AlbaranesCompra />} />
-          <Route path="/facturas-compra" element={<FacturasCompra />} />
-          <Route path="/pagos-compra" element={<PagosCompra />} />
-          <Route path="/pedidos" element={<Pedidos />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/albaranes-venta" element={<AlbaranesVenta />} />
-          <Route path="/facturas-venta" element={<FacturasVenta />} />
-          <Route path="/pagos" element={<Pagos />} />
-          <Route path="/configuracion" element={<Configuracion />} />
-        </Routes>
+        <Enrutado />
       </Layout>
     </BrowserRouter>
   )

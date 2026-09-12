@@ -1,0 +1,22 @@
+{
+  "titulo": "Administración de empresas",
+  "card_nuevo_titulo": "Crear empresa nueva",
+  "campos": {
+    "nombre_negocio": "Nombre de la empresa",
+    "codigo_corto": "Código corto",
+    "codigo_corto_ayuda": "2 a 4 letras/dígitos en mayúscula (p. ej. ENS) — identifica visiblemente las facturas de este negocio.",
+    "email_admin": "Email del administrador inicial"
+  },
+  "crear": "Crear empresa",
+  "creando": "Creando…",
+  "exito": "Empresa creada. Se ha enviado una invitación a {{email}}.",
+  "error": "No se pudo crear la empresa: {{mensaje}}",
+  "tabla": {
+    "nombre": "Nombre",
+    "codigo_corto": "Código",
+    "creado": "Creado"
+  },
+  "listado_titulo": "Empresas existentes",
+  "sin_empresas": "Todavía no hay ninguna empresa.",
+  "acceso_denegado": "No tienes acceso a esta pantalla."
+}

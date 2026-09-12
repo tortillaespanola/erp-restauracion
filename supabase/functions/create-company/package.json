@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Marca logic.js/logic.test.js como ESM para node --test. No es un paquete npm real -- la Edge Function (index.ts) corre en Deno y no usa este archivo."
+}

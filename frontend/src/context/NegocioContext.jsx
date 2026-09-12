@@ -15,8 +15,17 @@ import logoIcon from '../assets/logos/flowbase-icon.svg'
 // PostgREST propaga cuando negocio_actual() lanza su excepcion tiene code 'P0001' y el mensaje
 // empieza por "negocio_actual():" -- ese code es el que se usa para distinguir el caso "sin
 // negocio asignado" de cualquier otro fallo inesperado (red, etc.).
+//
+// CONTRATO_SUPERADMIN_EMPRESAS.md, Fase 4: un super_admin, por diseño (ver migración
+// 20261009_super_admin_empresas.sql), puede no tener NINGUNA fila en usuarios_negocios -- para
+// él, el error P0001 de arriba es el caso normal, no una anomalía. Sin este chequeo adicional,
+// un super_admin puro quedaría atrapado para siempre en la pantalla de "sin negocio asignado" y
+// jamás podría llegar a /admin/empresas. Se consulta super_admins en paralelo con empresa_config
+// (no en cascada) para no penalizar con un round-trip extra al caso normal (usuario de negocio,
+// sin super_admin) que es el 100% del tráfico real hoy.
 function NegocioProvider({ children }) {
   const [negocio, setNegocio] = useState(null)
+  const [esSuperAdmin, setEsSuperAdmin] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
@@ -24,10 +33,22 @@ function NegocioProvider({ children }) {
     let cancelado = false
 
     async function cargar() {
-      const { data, error } = await supabase.from('empresa_config').select('*').single()
+      const [resultadoNegocio, resultadoSuperAdmin] = await Promise.all([
+        supabase.from('empresa_config').select('*').single(),
+        supabase.from('super_admins').select('usuario_id').maybeSingle(),
+      ])
       if (cancelado) return
-      if (error) setError(error)
-      else setNegocio(data)
+
+      const superAdmin = !resultadoSuperAdmin.error && !!resultadoSuperAdmin.data
+      setEsSuperAdmin(superAdmin)
+
+      if (resultadoNegocio.error) {
+        const sinNegocioAsignado = resultadoNegocio.error.code === 'P0001'
+        // Un super_admin sin negocio no es un error a mostrar -- ver nota arriba.
+        if (!(sinNegocioAsignado && superAdmin)) setError(resultadoNegocio.error)
+      } else {
+        setNegocio(resultadoNegocio.data)
+      }
       setCargando(false)
     }
 
@@ -64,7 +85,7 @@ function NegocioProvider({ children }) {
     )
   }
 
-  return <NegocioContext.Provider value={{ negocio }}>{children}</NegocioContext.Provider>
+  return <NegocioContext.Provider value={{ negocio, esSuperAdmin }}>{children}</NegocioContext.Provider>
 }
 
 export default NegocioProvider

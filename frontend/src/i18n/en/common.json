@@ -3,9 +3,11 @@
     "sections": {
       "compras": "Purchasing",
       "produccion": "Production",
-      "ventas": "Sales"
+      "ventas": "Sales",
+      "administracion": "Administration"
     },
     "items": {
+      "admin_empresas": "Companies",
       "pedidos_compra": "Purchase orders",
       "proveedores": "Suppliers",
       "articulos": "Articles",
@@ -48,7 +50,8 @@
     "albaranes_venta": { "title": "Sales delivery notes", "breadcrumb": "Sales · Sales delivery notes" },
     "facturas_venta": { "title": "Sales invoices", "breadcrumb": "Sales · Sales invoices" },
     "pagos": { "title": "Sales payments", "breadcrumb": "Sales · Payments" },
-    "configuracion": { "title": "Settings", "breadcrumb": "Company settings" }
+    "configuracion": { "title": "Settings", "breadcrumb": "Company settings" },
+    "admin_empresas": { "title": "Company administration", "breadcrumb": "Administration · Companies" }
   },
   "actions": {
     "save": "Save",
