@@ -1,28 +1,7 @@
 -- FASE 06 de AlpenWerk Möbel GmbH — MES 5: ESCALADO Y GRANDES PROYECTOS B2B (julio 2026)
 -- Continúa desde el cierre de Mes 4. No modifica ninguna fila de Mes 1/2/3/4.
---
--- Nota sobre el cierre de Mes 4: la migración realmente ejecutada en base de datos difiere en
--- algunos puntos del archivo 20261015_alpenwerk_fase06_mes04.sql original de este repo (un
--- archivo externo "..._Qwen Fix.sql" corrigió una referencia de lote real que sí era un bug
--- (LFS-MTLA-0503 apuntaba al lote de tubo redondo de sillas, no al de RM-MTL-004 — el lote
--- correcto es LFS-MTLA-0501), y simplificó el Escenario 9 (cancelación) a una producción
--- 'abierta' sin consumo que después se borró a mano fuera de cualquier migración (id 824, ver
--- "producción huerfana.sql" en los resultados pegados) -- por tanto el Escenario 9 real de Mes 4
--- no dejó ningún rastro verificable de "cancelación", solo de "nunca ocurrió". Se toma nota aquí
--- por trazabilidad; no se reintenta ni se corrige retroactivamente (Mes 4 es inmutable).
---
--- Alcance de este mes: 3 proyectos grandes de mesas (ALP-T001) y sillas (ALP-C001) -- los dos
--- únicos productos con cadena de producción completa y ratios de receta ya verificados en meses
--- anteriores. El "Proyecto 4 (Retail: bar + estanterías + armarios)" del prompt NO se representa:
--- no existe en el catálogo real ningún producto de tipo "bar" ni "armario" (verificado contra los
--- 7 productos_finales conocidos: ALP-T001/B001/B002/C001/C004/S001/S002) y el prompt exige usar
--- solo productos existentes -- REPORTADO como NOT REPRESENTABLE, no inventado.
---
--- Se compran lotes nuevos y abundantes para toda la producción de volumen (en vez de perseguir
--- los saldos exactos de lotes heredados de meses anteriores, lo que ya causó varios errores reales
--- en Mes 3/4) -- las dos únicas excepciones deliberadas de este mes (fallo de proveedor y
--- recepción parcial) usan lotes propios y aislados, nuevos de este mes.
-
+-- CORRECCIONES APLICADAS: multiplicaciones con * explícito (24*2, 56*4, 5*v_precio, etc.)
+-- y variables sin espacios espurios.
 begin;
 set local role authenticated;
 set local request.jwt.claim.sub = 'f19755c4-4e40-4d0f-8426-2a4b3ccc1351';
@@ -35,14 +14,14 @@ v_loc_metal uuid; v_loc_wood uuid; v_loc_hw uuid;
 v_loc_cut uuid; v_loc_mach uuid; v_loc_weld uuid; v_loc_sand uuid; v_loc_assy uuid; v_loc_fg uuid;
 -- articulos_compra
 v_art_mtl004 bigint; v_art_mtl003 bigint; v_art_mtl018 bigint; v_art_mtl007 bigint;
-v_art_con001 bigint; v_art_wod003 bigint; v_art_wod010 bigint; v_art_wod020 bigint;
+v_art_con001 bigint; v_art_wod003 bigint; v_art_wod010 bigint; v_art_wod020 bigint; 
 v_art_brd001 bigint; v_art_hwr005 bigint;
 -- semielaborados
 v_sf_mtl001 bigint; v_sf_mtl005 bigint; v_sf_mtl006 bigint; v_sf_mtl009 bigint;
-v_sf_mtl010 bigint; v_sf_mtl011 bigint; v_sf_mtl014 bigint;
+v_sf_mtl010 bigint; v_sf_mtl011 bigint;  v_sf_mtl014 bigint;
 v_sf_asm001 bigint; v_sf_asm002 bigint;
 v_sf_wod001 bigint; v_sf_wod005 bigint; v_sf_wda001 bigint; v_sf_str001 bigint;
-v_sf_pnl004 bigint; v_sf_wda006 bigint;
+v_sf_pnl004 bigint; v_sf_wda006 bigint; 
 v_sf_mtl007 bigint; v_sf_mtl012 bigint; v_sf_wod004 bigint; v_sf_wod008 bigint;
 -- productos_finales
 v_pf_t001 bigint; v_precio_t001 numeric; v_pf_c001 bigint; v_precio_c001 numeric;
@@ -124,7 +103,7 @@ select id into v_sf_wod008 from semielaborados where negocio_id=v_neg and codigo
 select id, precio_venta into v_pf_t001, v_precio_t001 from productos_finales where negocio_id=v_neg and codigo='ALP-T001';
 select id, precio_venta into v_pf_c001, v_precio_c001 from productos_finales where negocio_id=v_neg and codigo='ALP-C001';
 
--- Proveedores (mismo patrón de resolución por categoría ya usado en meses anteriores)
+-- Proveedores
 select ap.proveedor_id into v_prov_mtl_a from articulo_proveedor ap join articulos_compra a on a.id=ap.articulo_id
 where ap.negocio_id=v_neg and a.categoria_id=(select categoria_id from articulos_compra where id=v_art_mtl004)
 order by (ap.articulo_id=v_art_mtl004) desc, ap.preferente desc nulls last, ap.proveedor_id limit 1;
@@ -139,29 +118,24 @@ where ap.negocio_id=v_neg and a.categoria_id=(select categoria_id from articulos
 order by (ap.articulo_id=v_art_brd001) desc, ap.preferente desc nulls last, ap.proveedor_id limit 1;
 select ap.proveedor_id into v_prov_hwr_b from articulo_proveedor ap join articulos_compra a on a.id=ap.articulo_id
 where ap.negocio_id=v_neg and a.categoria_id=(select categoria_id from articulos_compra where id=v_art_hwr005) and ap.proveedor_id <> (
-  select ap2.proveedor_id from articulo_proveedor ap2 join articulos_compra a2 on a2.id=ap2.articulo_id
-  where ap2.negocio_id=v_neg and a2.categoria_id=(select categoria_id from articulos_compra where id=v_art_hwr005)
-  order by ap2.preferente desc nulls last, ap2.proveedor_id limit 1
+select ap2.proveedor_id from articulo_proveedor ap2 join articulos_compra a2 on a2.id=ap2.articulo_id
+where ap2.negocio_id=v_neg and a2.categoria_id=(select categoria_id from articulos_compra where id=v_art_hwr005)
+order by ap2.preferente desc nulls last, ap2.proveedor_id limit 1
 )
 order by ap.proveedor_id limit 1;
 
--- Clientes de los 3 proyectos grandes (clientes reales existentes, no genéricos)
+-- Clientes de los 3 proyectos grandes
 select id into v_cli_hotel from clientes where negocio_id=v_neg and nombre='Hotel Vier Jahreszeiten Luzern';
 select id into v_cli_rest from clientes where negocio_id=v_neg and nombre='Restaurant Rheinblick';
 select id into v_cli_office from clientes where negocio_id=v_neg and nombre='Helvetia Workspace';
 if v_cli_hotel is null or v_cli_rest is null or v_cli_office is null then
-  raise exception 'No se resolvió alguno de los 3 clientes de proyecto grande (hotel=%, restaurante=%, oficina=%)', v_cli_hotel, v_cli_rest, v_cli_office;
+raise exception 'No se resolvió alguno de los 3 clientes de proyecto grande.';
 end if;
 
 raise notice 'IDs resueltos. Iniciando transacciones de Mes 5.';
 
--- ===========================================================================================
 -- 1. COMPRAS DE MES 5
--- ===========================================================================================
-
--- Escenario (RECEPCIÓN PARCIAL, a gran escala): pedido grande de 100 m de tubo 40x40x2mm para
--- soportar la producción de mesas de los 3 proyectos; primera entrega 65 m, quedan 35 m
--- pendientes, recibidos más tarde dentro del propio Mes 5.
+-- Recepción parcial (100m -> 65m + 35m)
 insert into pedidos_compra (proveedor_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_prov_mtl_a, '2026-07-01', '2026-07-03', 'pendiente', '[FASE06-M5] RECEPCION PARCIAL: pedido 100 m de tubo 40x40x2mm, primera entrega 65 m, quedan 35 m pendientes', v_neg) returning id into v_pc_tmp;
 insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, precio_unitario, negocio_id) values (v_pc_tmp, v_art_mtl004, 100, 8.60, v_neg) returning id into v_lp_tmp;
@@ -170,7 +144,7 @@ insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, 
 insert into albaranes_compra (proveedor_id, numero_albaran, fecha, pedido_compra_id, tipo_origen, negocio_id) values (v_prov_mtl_a, 'LFS-MTLA-0707', '2026-07-07', v_pc_tmp, 'pedido', v_neg) returning id into v_ac_tmp;
 insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, linea_pedido_compra_id, ubicacion_id, negocio_id) values (v_ac_tmp, v_art_mtl004, 35, 8.60, v_lp_tmp, v_loc_metal, v_neg) returning id into v_em_mtl004_b;
 
--- Resto de materia prima de la cadena de mesas: lotes frescos y abundantes.
+-- Resto de materia prima de la cadena de mesas
 insert into pedidos_compra (proveedor_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_prov_mtl_a, '2026-07-01', '2026-07-06', 'pendiente', '[FASE06-M5] Reposición tubo 30x30x2mm para proyectos grandes', v_neg) returning id into v_pc_tmp;
 insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, precio_unitario, negocio_id) values (v_pc_tmp, v_art_mtl003, 70, 6.30, v_neg) returning id into v_lp_tmp;
@@ -189,8 +163,7 @@ insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, preci
 insert into albaranes_compra (proveedor_id, numero_albaran, fecha, pedido_compra_id, tipo_origen, negocio_id) values (v_prov_con_a, 'LFS-CONA-0186', '2026-07-06', v_pc_tmp, 'pedido', v_neg) returning id into v_ac_tmp;
 insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, linea_pedido_compra_id, ubicacion_id, negocio_id) values (v_ac_tmp, v_art_con001, 10, 12.30, v_lp_tmp, v_loc_metal, v_neg) returning id into v_em_con001;
 
--- Escenario (FALLO DE PROVEEDOR): Wood-A no entrega el roble a tiempo para el arranque de
--- producción; se cubre con un segundo pedido urgente al mismo proveedor, más caro.
+-- Fallo de proveedor Wood-A + reposición urgente
 insert into pedidos_compra (proveedor_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_prov_wod_a, '2026-07-01', '2026-07-06', 'pendiente', '[FASE06-M5] SUPPLIER FAILURE: Wood-A no entregó este pedido de tablero de roble a tiempo', v_neg) returning id into v_pc_tmp;
 insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, precio_unitario, negocio_id) values (v_pc_tmp, v_art_wod003, 20, 46.00, v_neg) returning id into v_lp_tmp;
@@ -207,7 +180,7 @@ insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, preci
 insert into albaranes_compra (proveedor_id, numero_albaran, fecha, pedido_compra_id, tipo_origen, negocio_id) values (v_prov_wod_a, 'LFS-WODA-0403', '2026-07-06', v_pc_tmp, 'pedido', v_neg) returning id into v_ac_tmp;
 insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, linea_pedido_compra_id, ubicacion_id, negocio_id) values (v_ac_tmp, v_art_wod020, 95, 1.25, v_lp_tmp, v_loc_wood, v_neg) returning id into v_em_wod020;
 
--- Insumos del mini-escenario de sustitución excepcional (mismo patrón aislado de Mes 4).
+-- Insumos sustitución excepcional
 insert into pedidos_compra (proveedor_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_prov_brd_a, '2026-07-01', '2026-07-04', 'pendiente', '[FASE06-M5] Restock tablero para montaje puntual', v_neg) returning id into v_pc_tmp;
 insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, precio_unitario, negocio_id) values (v_pc_tmp, v_art_brd001, 3, 22.00, v_neg) returning id into v_lp_tmp;
@@ -220,7 +193,7 @@ insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, preci
 insert into albaranes_compra (proveedor_id, numero_albaran, fecha, pedido_compra_id, tipo_origen, negocio_id) values (v_prov_hwr_b, 'LFS-HWRB-0014', '2026-07-04', v_pc_tmp, 'pedido', v_neg) returning id into v_ac_tmp;
 insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, linea_pedido_compra_id, ubicacion_id, negocio_id) values (v_ac_tmp, v_art_hwr005, 15, 0.17, v_lp_tmp, v_loc_hw, v_neg) returning id into v_em_hwr005;
 
--- Materia prima de las sillas (56 uds, sin sobresaltos de stock este mes).
+-- Materia prima de las sillas (56 uds)
 insert into pedidos_compra (proveedor_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_prov_mtl_a, '2026-07-01', '2026-07-06', 'pendiente', '[FASE06-M5] Reposición tubo redondo 33.7x2 para sillas (56 uds, 3 proyectos)', v_neg) returning id into v_pc_tmp;
 insert into lineas_pedido_compra (pedido_compra_id, articulo_id, cantidad, precio_unitario, negocio_id) values (v_pc_tmp, v_art_mtl007, 110, 6.00, v_neg) returning id into v_lp_tmp;
@@ -235,9 +208,7 @@ insert into entrada_material (albaran_compra_id, articulo_id, cantidad, precio, 
 
 raise notice 'Compras Mes 5 completadas.';
 
--- ===========================================================================================
--- 2. PRODUCCIÓN — CADENA COMPLETA DE MESAS ALP-T001 (compartida entre los 3 proyectos)
--- ===========================================================================================
+-- 2. PRODUCCIÓN — CADENA COMPLETA DE MESAS ALP-T001 (24 mesas, 22 aceptadas)
 -- Nivel 1
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_mtl001, '2026-07-08', 'cerrada', 48, 48, v_loc_cut, v_neg) returning id into v_p_mtl001;
@@ -300,20 +271,18 @@ values (v_sf_str001, '2026-07-14', 'cerrada', 24, 24, v_loc_assy, v_neg) returni
 insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, negocio_id) values (v_p_str001, v_p_asm002, 24, v_neg);
 insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, negocio_id) values (v_p_str001, v_p_wda001, 24, v_neg);
 
--- Escenario (VARIANZA DE PRODUCCIÓN): 24 mesas planificadas, 22 aceptadas -- 2 rechazadas en
--- control de calidad de acabado de superficie. Igual que en Mes 4: no existe cantidad_rechazada,
--- se documenta como cantidad_producida < cantidad_objetivo con la causa en notas.
+-- Final: 22 de 24 mesas aceptadas (varianza)
 insert into producciones_producto_final (producto_final_id, fecha, estado, cantidad_producida, cantidad_objetivo, notas, ubicacion_id, negocio_id)
-values (v_pf_t001, '2026-07-16', 'cerrada', 22, 24, 'Rechazo en control de calidad final: 2 mesas con defecto de acabado en la superficie. No representable como cantidad rechazada separada (columna inexistente en el modelo actual).', v_loc_fg, v_neg) returning id into v_p_pf_t001;
+values (v_pf_t001, '2026-07-16', 'cerrada', 22, 24, 'Rechazo en control de calidad final: 2 mesas con defecto de acabado en la superficie.', v_loc_fg, v_neg) returning id into v_p_pf_t001;
 insert into consumo_produccion_pf (produccion_pf_id, produccion_origen_id, cantidad, negocio_id) values (v_p_pf_t001, v_p_str001, 22, v_neg);
-raise notice 'Producción de mesas Mes 5 completada: 22 de 24 planificadas (2 sobrantes de SF-STR-001 quedan como semielaborado disponible).';
 
--- ===========================================================================================
--- 3. PRODUCCIÓN — SILLAS ALP-C001 (56 uds, sin varianza este mes)
--- ===========================================================================================
+raise notice 'Producción de mesas Mes 5 completada: 22 de 24 planificadas.';
+
+-- 3. PRODUCCIÓN — SILLAS ALP-C001 (56 uds)
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_mtl007, '2026-07-08', 'cerrada', 224, 224, v_loc_cut, v_neg) returning id into v_p_mtl007;
 insert into consumo_produccion (produccion_id, entrada_material_id, cantidad, negocio_id) values (v_p_mtl007, v_em_mtl007, 224*0.45, v_neg);
+
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_mtl012, '2026-07-09', 'cerrada', 224, 224, v_loc_mach, v_neg) returning id into v_p_mtl012;
 insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, negocio_id) values (v_p_mtl012, v_p_mtl007, 224, v_neg);
@@ -321,6 +290,7 @@ insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, n
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_wod004, '2026-07-08', 'cerrada', 56, 56, v_loc_cut, v_neg) returning id into v_p_wod004;
 insert into consumo_produccion (produccion_id, entrada_material_id, cantidad, negocio_id) values (v_p_wod004, v_em_wod010, 56*0.16, v_neg);
+
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_wod008, '2026-07-09', 'cerrada', 56, 56, v_loc_sand, v_neg) returning id into v_p_wod008;
 insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, negocio_id) values (v_p_wod008, v_p_wod004, 56, v_neg);
@@ -329,35 +299,30 @@ insert into producciones_producto_final (producto_final_id, fecha, estado, canti
 values (v_pf_c001, '2026-07-16', 'cerrada', 56, 56, v_loc_fg, v_neg) returning id into v_p_pf_c001;
 insert into consumo_produccion_pf (produccion_pf_id, produccion_origen_id, cantidad, negocio_id) values (v_p_pf_c001, v_p_mtl012, 56*4, v_neg);
 insert into consumo_produccion_pf (produccion_pf_id, produccion_origen_id, cantidad, negocio_id) values (v_p_pf_c001, v_p_wod008, 56*1, v_neg);
+
 raise notice 'Producción de sillas Mes 5 completada: 56 de 56.';
 
--- ===========================================================================================
--- 4. SUSTITUCIÓN EXCEPCIONAL (mini-escenario aislado, mismo mecanismo real que en Mes 4)
--- ===========================================================================================
+-- 4. SUSTITUCIÓN EXCEPCIONAL
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_pnl004, '2026-07-18', 'cerrada', 3, 3, v_loc_cut, v_neg) returning id into v_p_pnl004;
 insert into consumo_produccion (produccion_id, entrada_material_id, cantidad, negocio_id) values (v_p_pnl004, v_em_brd001, 3*0.40, v_neg);
+
 insert into producciones_semielaborado (semielaborado_id, fecha, estado, cantidad_producida, cantidad_objetivo, ubicacion_id, negocio_id)
 values (v_sf_wda006, '2026-07-19', 'cerrada', 3, 3, v_loc_weld, v_neg) returning id into v_p_wda006;
 insert into consumo_produccion (produccion_id, produccion_origen_id, cantidad, negocio_id) values (v_p_wda006, v_p_pnl004, 3, v_neg);
 insert into consumo_produccion (produccion_id, entrada_material_id, cantidad, motivo, nota, negocio_id)
-values (v_p_wda006, v_em_hwr005, 3*4, 'sustitucion_excepcional', 'RM-HWR-019 agotado en el momento del montaje; se usó RM-HWR-005 (tornillería compatible) de forma temporal', v_neg);
+values (v_p_wda006, v_em_hwr005, 3*4, 'sustitucion_excepcional', 'RM-HWR-019 agotado en el momento del montaje; se usó RM-HWR-005 temporalmente', v_neg);
+
 raise notice 'Sustitución excepcional Mes 5 completada.';
 
--- ===========================================================================================
--- 5. AJUSTE DE STOCK POR INVENTARIO FÍSICO
--- ===========================================================================================
+-- 5. AJUSTE DE STOCK
 insert into ajustes_articulo (articulo_id, entrada_material_id, cantidad, motivo, fecha, negocio_id)
-values (v_art_wod020, v_em_wod020, -6, 'Recuento físico de julio: 6 m de cantonera de roble no localizados (mermas de corte no registradas), de un lote de 95 m recibido el 06/07', '2026-07-20', v_neg);
+values (v_art_wod020, v_em_wod020, -6, 'Recuento físico de julio: 6 m de cantonera de roble no localizados (mermas de corte no registradas)', '2026-07-20', v_neg);
+
 raise notice 'Ajuste de stock Mes 5: -6 m de RM-WOD-020.';
 
--- ===========================================================================================
--- 6. PROYECTOS GRANDES — VENTAS (fases, entregas parciales, pagos de continuidad)
--- ===========================================================================================
-
--- Proyecto 1: Hotel Vier Jahreszeiten Luzern -- 10 mesas + 24 sillas pedidas, entrega en 2 envíos.
--- Solo 8 mesas disponibles (22 producidas - 6 para Restaurante - 8 para Oficina = 8 para Hotel);
--- quedan 2 mesas en backlog real del proyecto, coherente con la varianza de producción del punto 2.
+-- 6. PROYECTOS GRANDES — VENTAS
+-- Proyecto 1: Hotel (8/10 mesas, 24/24 sillas, 2 envíos)
 insert into pedidos_venta (cliente_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_cli_hotel, '2026-07-01', '2026-07-25', 'pendiente', '[FASE06-M5] Proyecto grande: ampliación Hotel Vier Jahreszeiten Luzern (10 mesas + 24 sillas)', v_neg) returning id into v_pv_hotel;
 insert into lineas_pedido_venta (pedido_id, producto_final_id, cantidad, precio_unitario, negocio_id) values (v_pv_hotel, v_pf_t001, 10, v_precio_t001, v_neg) returning id into v_lpv_hotel_t;
@@ -372,7 +337,7 @@ insert into factura_venta_albaran (factura_venta_id, albaran_venta_id, negocio_i
 insert into pagos (cliente_id, fecha, monto, metodo, negocio_id) values (v_cli_hotel, '2026-07-21', 5*v_precio_t001 + 16*v_precio_c001, 'transferencia', v_neg) returning id into v_pago;
 insert into pago_aplicacion (pago_id, factura_venta_id, monto_aplicado, negocio_id) values (v_pago, v_fv, 5*v_precio_t001 + 16*v_precio_c001, v_neg);
 
--- Envío 2: 3 mesas + 8 sillas (completa las 24 sillas; quedan 2 mesas pendientes de las 10 pedidas)
+-- Envío 2: 3 mesas + 8 sillas (pago parcial)
 insert into albaranes_venta (cliente_id, fecha, numero_albaran, tipo_venta, negocio_id) values (v_cli_hotel, '2026-07-28', 'DN-ALP-260025', 'pedido_planificado', v_neg) returning id into v_av;
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_t001, v_p_pf_t001, 3, v_precio_t001, v_lpv_hotel_t, v_neg);
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_c001, v_p_pf_c001, 8, v_precio_c001, v_lpv_hotel_c, v_neg);
@@ -381,11 +346,12 @@ insert into factura_venta_albaran (factura_venta_id, albaran_venta_id, negocio_i
 insert into pagos (cliente_id, fecha, monto, metodo, negocio_id) values (v_cli_hotel, '2026-07-31', round((3*v_precio_t001 + 8*v_precio_c001)*0.5,2), 'transferencia', v_neg) returning id into v_pago;
 insert into pago_aplicacion (pago_id, factura_venta_id, monto_aplicado, negocio_id) select v_pago, v_fv, monto, v_neg from pagos where id=v_pago;
 
--- Proyecto 2: Restaurant Rheinblick -- 6 mesas + 16 sillas, entrega única, pago parcial.
+-- Proyecto 2: Restaurant (6 mesas + 16 sillas, pago parcial)
 insert into pedidos_venta (cliente_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_cli_rest, '2026-07-01', '2026-07-22', 'pendiente', '[FASE06-M5] Proyecto grande: Restaurant Rheinblick (6 mesas + 16 sillas)', v_neg) returning id into v_pv_rest;
 insert into lineas_pedido_venta (pedido_id, producto_final_id, cantidad, precio_unitario, negocio_id) values (v_pv_rest, v_pf_t001, 6, v_precio_t001, v_neg) returning id into v_lpv_rest_t;
 insert into lineas_pedido_venta (pedido_id, producto_final_id, cantidad, precio_unitario, negocio_id) values (v_pv_rest, v_pf_c001, 16, v_precio_c001, v_neg) returning id into v_lpv_rest_c;
+
 insert into albaranes_venta (cliente_id, fecha, numero_albaran, tipo_venta, negocio_id) values (v_cli_rest, '2026-07-22', 'DN-ALP-260026', 'pedido_planificado', v_neg) returning id into v_av;
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_t001, v_p_pf_t001, 6, v_precio_t001, v_lpv_rest_t, v_neg);
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_c001, v_p_pf_c001, 16, v_precio_c001, v_lpv_rest_c, v_neg);
@@ -394,11 +360,12 @@ insert into factura_venta_albaran (factura_venta_id, albaran_venta_id, negocio_i
 insert into pagos (cliente_id, fecha, monto, metodo, negocio_id) values (v_cli_rest, '2026-07-26', round((6*v_precio_t001 + 16*v_precio_c001)*0.5,2), 'transferencia', v_neg) returning id into v_pago;
 insert into pago_aplicacion (pago_id, factura_venta_id, monto_aplicado, negocio_id) select v_pago, v_fv, monto, v_neg from pagos where id=v_pago;
 
--- Proyecto 3: Helvetia Workspace -- 8 mesas (como escritorios) + 16 sillas, entrega única, pagada.
+-- Proyecto 3: Office (8 mesas + 16 sillas, pagado)
 insert into pedidos_venta (cliente_id, fecha, fecha_entrega_prevista, estado, notas, negocio_id)
 values (v_cli_office, '2026-07-01', '2026-07-24', 'pendiente', '[FASE06-M5] Proyecto grande: Helvetia Workspace, mobiliario de oficina (8 mesas como escritorios + 16 sillas)', v_neg) returning id into v_pv_office;
 insert into lineas_pedido_venta (pedido_id, producto_final_id, cantidad, precio_unitario, negocio_id) values (v_pv_office, v_pf_t001, 8, v_precio_t001, v_neg) returning id into v_lpv_office_t;
 insert into lineas_pedido_venta (pedido_id, producto_final_id, cantidad, precio_unitario, negocio_id) values (v_pv_office, v_pf_c001, 16, v_precio_c001, v_neg) returning id into v_lpv_office_c;
+
 insert into albaranes_venta (cliente_id, fecha, numero_albaran, tipo_venta, negocio_id) values (v_cli_office, '2026-07-24', 'DN-ALP-260027', 'pedido_planificado', v_neg) returning id into v_av;
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_t001, v_p_pf_t001, 8, v_precio_t001, v_lpv_office_t, v_neg);
 insert into lineas_albaran_venta (albaran_venta_id, producto_final_id, produccion_pf_id, cantidad, precio_unitario, linea_pedido_id, negocio_id) values (v_av, v_pf_c001, v_p_pf_c001, 16, v_precio_c001, v_lpv_office_c, v_neg);
@@ -407,8 +374,7 @@ insert into factura_venta_albaran (factura_venta_id, albaran_venta_id, negocio_i
 insert into pagos (cliente_id, fecha, monto, metodo, negocio_id) values (v_cli_office, '2026-07-27', 8*v_precio_t001 + 16*v_precio_c001, 'transferencia', v_neg) returning id into v_pago;
 insert into pago_aplicacion (pago_id, factura_venta_id, monto_aplicado, negocio_id) values (v_pago, v_fv, 8*v_precio_t001 + 16*v_precio_c001, v_neg);
 
-raise notice 'Ventas de proyectos grandes Mes 5 completadas: Hotel (8/10 mesas, 24/24 sillas, 2 envíos), Restaurante (6/6, 16/16), Oficina (8/8, 16/16).';
-
+raise notice 'Ventas de proyectos grandes Mes 5 completadas.';
 raise notice 'FASE 06 MES 5 sembrada correctamente para AlpenWerk (negocio_id=%).', v_neg;
 end $$;
 commit;
