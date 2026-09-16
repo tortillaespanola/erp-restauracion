@@ -2,11 +2,13 @@
   "estado_pedido": {
     "pendiente": "Pending",
     "en_produccion": "In production",
+    "parcial": "Partial",
     "servido": "Served",
     "cancelado": "Cancelled"
   },
   "estado_pedido_compra": {
     "pendiente": "Pending",
+    "parcial": "Partial",
     "recibido": "Received",
     "cancelado": "Cancelled"
   },

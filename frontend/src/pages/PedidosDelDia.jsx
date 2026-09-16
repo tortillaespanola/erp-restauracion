@@ -710,7 +710,9 @@ function PedidosDelDia() {
     setProductosFinales(resProductos.data || [])
 
     // Pedidos pendientes de servir, acotados por la fecha máxima de entrega si se ha filtrado.
-    let query = supabase.from('pedidos_venta').select('id, codigo_pedido, fecha_entrega_prevista, clientes(nombre)').in('estado', ['pendiente', 'en_produccion'])
+    // CONTRATO_ESTADO_PARCIAL_PEDIDOS.md: 'parcial' entra aquí igual que 'pendiente'/'en_produccion'
+    // -- un pedido servido a medias sigue necesitando producción/planificación para el resto.
+    let query = supabase.from('pedidos_venta').select('id, codigo_pedido, fecha_entrega_prevista, clientes(nombre)').in('estado', ['pendiente', 'en_produccion', 'parcial'])
     if (fechaMaxima) query = query.lte('fecha_entrega_prevista', fechaMaxima)
     const resPedidos = await query
     if (resPedidos.error) console.error('Error cargando pedidos:', resPedidos.error)

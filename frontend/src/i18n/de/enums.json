@@ -2,11 +2,13 @@
   "estado_pedido": {
     "pendiente": "Ausstehend",
     "en_produccion": "In Produktion",
+    "parcial": "Teilweise",
     "servido": "Serviert",
     "cancelado": "Storniert"
   },
   "estado_pedido_compra": {
     "pendiente": "Ausstehend",
+    "parcial": "Teilweise",
     "recibido": "Erhalten",
     "cancelado": "Storniert"
   },

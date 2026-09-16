@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { calcularProgresoPedido as calcularProgresoPedidoBase } from '../lib/progresoPedido'
+import { ESTADOS_PEDIDO_VENTA, ESTADO_BADGE_VENTA } from '../lib/estadoPedido'
 import {
   IconChevronRight, IconChevronDown, IconEdit, IconTruckDelivery, IconX,
   IconAlertTriangle, IconArrowUp, IconArrowDown, IconArrowsSort, IconPlus,
@@ -24,17 +25,13 @@ const PAGINA_TAMANO = 20
 // comparador anterior: dentro del grupo "cerrado" ya no se ordena por fecha_entrega_prevista
 // descendente (recién cerrados arriba) -- ambos grupos usan la misma dirección ascendente, un
 // único .order() de servidor no puede invertir el sentido solo para un grupo.
-const ESTADO_BADGE = {
-  pendiente: 'gray',
-  en_produccion: 'amber',
-  servido: 'green',
-  cancelado: 'red',
-}
-
 // CONTRATO_I18N.md, Fase 0: solo las claves del enum (estables, en español porque así están en
 // la BD) viven aquí -- la etiqueta visible se resuelve con t('enums:estado_pedido.<clave>'), ver
 // enums.json en cada carpeta de idioma. Antes ESTADO_LABEL tenía el texto español fijo.
-const ESTADOS_PEDIDO = ['pendiente', 'en_produccion', 'servido', 'cancelado']
+// ESTADOS_PEDIDO / ESTADO_BADGE ahora viven en lib/estadoPedido.js (CONTRATO_ESTADO_PARCIAL_
+// PEDIDOS.md), extraídos para poder testear que 'parcial' tiene badge propio.
+const ESTADOS_PEDIDO = ESTADOS_PEDIDO_VENTA
+const ESTADO_BADGE = ESTADO_BADGE_VENTA
 
 function Pedidos() {
   const navigate = useNavigate()

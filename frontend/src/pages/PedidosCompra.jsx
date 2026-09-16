@@ -9,14 +9,7 @@ import {
 } from '@tabler/icons-react'
 import { PageHeader, Card, Button, LinkAction, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
 import PedidoCompraForm from '../components/PedidoCompraForm'
-
-const ESTADO_BADGE = {
-  pendiente: 'gray',
-  recibido: 'green',
-  cancelado: 'red',
-}
-
-const ESTADOS_PEDIDO_COMPRA = ['pendiente', 'recibido', 'cancelado']
+import { ESTADOS_PEDIDO_COMPRA, ESTADO_BADGE_COMPRA as ESTADO_BADGE } from '../lib/estadoPedido'
 
 // CONTRATO_DRAWERS_COMPRAS.md, último punto (paginación/filtros/orden server-side): mismo tamaño
 // de página que las tres pantallas de Venta (CONTRATO_FILTROS_VENTA.md).
