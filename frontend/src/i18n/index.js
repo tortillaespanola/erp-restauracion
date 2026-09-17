@@ -24,6 +24,7 @@ import facturasCompraEs from './es/facturas_compra.json'
 import articulosEs from './es/articulos.json'
 import inventarioEs from './es/inventario.json'
 import ajustesStockEs from './es/ajustes_stock.json'
+import incidenciasEs from './es/incidencias.json'
 import ajusteStockFormEs from './es/ajuste_stock_form.json'
 import configuracionEs from './es/configuracion.json'
 import contactosComunEs from './es/contactos_comun.json'
@@ -62,6 +63,7 @@ import facturasCompraEn from './en/facturas_compra.json'
 import articulosEn from './en/articulos.json'
 import inventarioEn from './en/inventario.json'
 import ajustesStockEn from './en/ajustes_stock.json'
+import incidenciasEn from './en/incidencias.json'
 import ajusteStockFormEn from './en/ajuste_stock_form.json'
 import configuracionEn from './en/configuracion.json'
 import contactosComunEn from './en/contactos_comun.json'
@@ -100,6 +102,7 @@ import facturasCompraDe from './de/facturas_compra.json'
 import articulosDe from './de/articulos.json'
 import inventarioDe from './de/inventario.json'
 import ajustesStockDe from './de/ajustes_stock.json'
+import incidenciasDe from './de/incidencias.json'
 import ajusteStockFormDe from './de/ajuste_stock_form.json'
 import configuracionDe from './de/configuracion.json'
 import contactosComunDe from './de/contactos_comun.json'
@@ -151,6 +154,7 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraEs, facturas_compra: facturasCompraEs,
       pagos_compra: pagosCompraEs,
       articulos: articulosEs, inventario: inventarioEs, ajustes_stock: ajustesStockEs,
+      incidencias: incidenciasEs,
       ajuste_stock_form: ajusteStockFormEs, configuracion: configuracionEs,
       contactos_comun: contactosComunEs, proveedores: proveedoresEs, clientes: clientesEs,
       ingredientes: ingredientesEs, recetas_comun: recetasComunEs,
@@ -171,6 +175,7 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraEn, facturas_compra: facturasCompraEn,
       pagos_compra: pagosCompraEn,
       articulos: articulosEn, inventario: inventarioEn, ajustes_stock: ajustesStockEn,
+      incidencias: incidenciasEn,
       ajuste_stock_form: ajusteStockFormEn, configuracion: configuracionEn,
       contactos_comun: contactosComunEn, proveedores: proveedoresEn, clientes: clientesEn,
       ingredientes: ingredientesEn, recetas_comun: recetasComunEn,
@@ -191,6 +196,7 @@ i18n.use(initReactI18next).init({
       pedidos_compra: pedidosCompraDe, facturas_compra: facturasCompraDe,
       pagos_compra: pagosCompraDe,
       articulos: articulosDe, inventario: inventarioDe, ajustes_stock: ajustesStockDe,
+      incidencias: incidenciasDe,
       ajuste_stock_form: ajusteStockFormDe, configuracion: configuracionDe,
       contactos_comun: contactosComunDe, proveedores: proveedoresDe, clientes: clientesDe,
       ingredientes: ingredientesDe, recetas_comun: recetasComunDe,
@@ -208,7 +214,7 @@ i18n.use(initReactI18next).init({
     'ventas_comun', 'albaranes_venta', 'facturas_venta', 'pagos', 'registrar_pago_form',
     'registrar_pago_proveedor_form',
     'compras_comun', 'albaranes_compra', 'pedidos_compra', 'facturas_compra', 'pagos_compra',
-    'articulos', 'inventario', 'ajustes_stock', 'ajuste_stock_form', 'configuracion',
+    'articulos', 'inventario', 'ajustes_stock', 'incidencias', 'ajuste_stock_form', 'configuracion',
     'contactos_comun', 'proveedores', 'clientes', 'ingredientes', 'recetas_comun',
     'semielaborados', 'productos_finales', 'auth_gate', 'cierre_tanda',
     'albaran_venta_form', 'factura_venta_form', 'admin_empresas',

@@ -24,11 +24,13 @@
   "campos": {
     "cantidad": "Menge (+ addiert, - subtrahiert)",
     "motivo": "Grund",
-    "detalle_motivo_opcional": "Detail zum Grund (optional)"
+    "detalle_motivo_opcional": "Detail zum Grund (optional)",
+    "origen_rechazo_opcional": "Ursprung der Ablehnung (optional)"
   },
   "motivo_placeholder": "Ablauf, Bruch, Wiegefehler...",
   "detalle_motivo_placeholder": "Zusätzliche Erläuterung...",
   "selecciona_motivo": "Grund auswählen",
+  "sin_origen_rechazo": "Nicht zutreffend / routinemäßige Korrektur",
   "registrar_ajuste": "Korrektur erfassen",
   "alertas": {
     "faltan_campos_producto_final": "Wähle das Produkt, die Charge, die Menge und den Grund",

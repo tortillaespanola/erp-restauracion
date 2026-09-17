@@ -65,6 +65,7 @@
   "guardar_cambios": "Guardar cambios",
   "editar": "Editar",
   "borrar": "Borrar",
+  "declarar_rechazo": "Declarar rechazo",
   "cancelada_badge": "Cancelada",
   "motivo_cancelacion_titulo": "Motivo de la cancelación",
   "cancelada_el_por": "Cancelada el {{fecha}} por {{email}}",

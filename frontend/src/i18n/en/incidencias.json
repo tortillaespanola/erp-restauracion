@@ -1,0 +1,46 @@
+{
+  "titulo": "Incidents",
+  "subtitulo": "Negative stock, expiry and order delivery incidents detected automatically by the system.",
+  "filtros": {
+    "desde": "From",
+    "hasta": "To",
+    "tipo": "Type",
+    "estado": "Status",
+    "item": "Article / item"
+  },
+  "buscar_por_nombre_placeholder": "Search by name...",
+  "error_cargar": "Error loading incidents: {{mensaje}}",
+  "sin_incidencias_filtro": "No incidents match the filters.",
+  "tabla": {
+    "fecha": "Detected",
+    "tipo": "Type",
+    "item": "Item",
+    "referencia": "Reference",
+    "cantidad": "Quantity",
+    "motivo": "Reason",
+    "estado": "Status"
+  },
+  "incidencia_count_one": "{{count}} incident",
+  "incidencia_count_other": "{{count}} incidents",
+  "pagina_de": "Page {{pagina}} of {{total}}",
+  "seleccionadas_one": "{{count}} selected",
+  "seleccionadas_other": "{{count}} selected",
+  "marcar_regularizadas": "Mark as resolved",
+  "marcar_ignoradas": "Mark as ignored",
+  "marcar_regularizada": "Mark as resolved",
+  "marcar_ignorada": "Mark as ignored",
+  "drawer_titulo": "Incident detail",
+  "drawer": {
+    "tipo": "Type",
+    "item": "Item",
+    "referencia": "Reference",
+    "cantidad": "Quantity",
+    "motivo": "Reason",
+    "estado": "Status",
+    "nota": "Note",
+    "detectada_en": "Detected"
+  },
+  "alertas": {
+    "error_actualizar": "Error updating: {{mensaje}}"
+  }
+}

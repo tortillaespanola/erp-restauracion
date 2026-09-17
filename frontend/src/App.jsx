@@ -11,6 +11,7 @@ import PedidosDelDia from './pages/PedidosDelDia'
 import CierreTanda from './pages/CierreTanda'
 import Producciones from './pages/Producciones'
 import AjustesStock from './pages/AjustesStock'
+import IncidenciasStock from './pages/IncidenciasStock'
 import ProductosFinales from './pages/ProductosFinales'
 import ProduccionProductosFinales from './pages/ProduccionProductosFinales'
 import Proveedores from './pages/Proveedores'
@@ -72,6 +73,7 @@ function Enrutado() {
       <Route path="/cierre-tanda" element={<CierreTanda />} />
       <Route path="/producciones" element={<Producciones />} />
       <Route path="/ajustes-stock" element={<AjustesStock />} />
+      <Route path="/incidencias" element={<IncidenciasStock />} />
       <Route path="/productos" element={<ProductosFinales />} />
       <Route path="/produccion-productos" element={<ProduccionProductosFinales />} />
       <Route path="/proveedores" element={<Proveedores />} />

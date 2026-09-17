@@ -1,0 +1,46 @@
+{
+  "titulo": "Incidencias",
+  "subtitulo": "Incidencias de stock negativo, caducidad y reparto de pedidos detectadas automáticamente por el sistema.",
+  "filtros": {
+    "desde": "Desde",
+    "hasta": "Hasta",
+    "tipo": "Tipo",
+    "estado": "Estado",
+    "item": "Artículo / ítem"
+  },
+  "buscar_por_nombre_placeholder": "Buscar por nombre...",
+  "error_cargar": "Error al cargar las incidencias: {{mensaje}}",
+  "sin_incidencias_filtro": "No hay incidencias que coincidan con los filtros.",
+  "tabla": {
+    "fecha": "Detectada",
+    "tipo": "Tipo",
+    "item": "Ítem",
+    "referencia": "Referencia",
+    "cantidad": "Cantidad",
+    "motivo": "Motivo",
+    "estado": "Estado"
+  },
+  "incidencia_count_one": "{{count}} incidencia",
+  "incidencia_count_other": "{{count}} incidencias",
+  "pagina_de": "Página {{pagina}} de {{total}}",
+  "seleccionadas_one": "{{count}} seleccionada",
+  "seleccionadas_other": "{{count}} seleccionadas",
+  "marcar_regularizadas": "Marcar como regularizadas",
+  "marcar_ignoradas": "Marcar como ignoradas",
+  "marcar_regularizada": "Marcar como regularizada",
+  "marcar_ignorada": "Marcar como ignorada",
+  "drawer_titulo": "Detalle de la incidencia",
+  "drawer": {
+    "tipo": "Tipo",
+    "item": "Ítem",
+    "referencia": "Referencia",
+    "cantidad": "Cantidad",
+    "motivo": "Motivo",
+    "estado": "Estado",
+    "nota": "Nota",
+    "detectada_en": "Detectada"
+  },
+  "alertas": {
+    "error_actualizar": "Error al actualizar: {{mensaje}}"
+  }
+}

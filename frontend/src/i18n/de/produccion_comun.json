@@ -65,6 +65,7 @@
   "guardar_cambios": "Änderungen speichern",
   "editar": "Bearbeiten",
   "borrar": "Löschen",
+  "declarar_rechazo": "Ablehnung melden",
   "cancelada_badge": "Storniert",
   "motivo_cancelacion_titulo": "Stornierungsgrund",
   "cancelada_el_por": "Storniert am {{fecha}} von {{email}}",

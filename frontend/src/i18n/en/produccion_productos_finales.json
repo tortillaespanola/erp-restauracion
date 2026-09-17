@@ -1,5 +1,6 @@
 {
   "titulo": "Final product production",
+  "drawer_declarar_rechazo_titulo": "Declare rejection",
   "subtitulo_tanda": "Starting production for a batch from \"Today's production\" — the just-closed Mix lot is suggested based on that batch's orders.",
   "subtitulo_normal": "Start a production, record which lots you consume each component from, and close it with the net quantity obtained.",
   "produccion_enlazada_pedido": "This production will be linked to the selected order.",

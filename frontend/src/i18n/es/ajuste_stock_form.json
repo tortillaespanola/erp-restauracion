@@ -24,11 +24,13 @@
   "campos": {
     "cantidad": "Cantidad (+ suma, - resta)",
     "motivo": "Motivo",
-    "detalle_motivo_opcional": "Detalle del motivo (opcional)"
+    "detalle_motivo_opcional": "Detalle del motivo (opcional)",
+    "origen_rechazo_opcional": "Origen del rechazo (opcional)"
   },
   "motivo_placeholder": "Caducidad, rotura, error pesaje...",
   "detalle_motivo_placeholder": "Aclaración adicional...",
   "selecciona_motivo": "Selecciona motivo",
+  "sin_origen_rechazo": "No aplica / ajuste rutinario",
   "registrar_ajuste": "Registrar ajuste",
   "alertas": {
     "faltan_campos_producto_final": "Selecciona el producto, el lote, la cantidad y el motivo",

@@ -6,8 +6,9 @@ import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
 import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
+import AjusteStockForm from '../components/AjusteStockForm'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
 import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
@@ -248,6 +249,11 @@ function Producciones() {
   const [consumidoPorTanda, setConsumidoPorTanda] = useState(new Map())
   // Punto 1.3: un único id expandido a la vez (acordeón), mismo patrón que AlbaranesVenta.jsx BLOQUE 4.
   const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  // CONTRATO_UI_INCIDENCIAS_STOCK.md, Parte B (Paso 4.6): acceso directo a AjusteStockForm desde
+  // una producción ya cerrada -- mismo mecanismo/tablas que Inventario.jsx, solo cambia el punto
+  // de entrada. `null` = drawer cerrado.
+  const [declararRechazoFijo, setDeclararRechazoFijo] = useState(null)
 
   function toggleExpandido(id) {
     setFilaExpandidaId((prev) => (prev === id ? null : id))
@@ -693,6 +699,16 @@ function Producciones() {
                     consumidoInfo={consumidoPorTanda.get(p.id)}
                     onCambio={cargarHistorial}
                     onBorrar={() => handleBorrarCerrada(p.id)}
+                    onDeclararRechazo={() =>
+                      setDeclararRechazoFijo({
+                        tipo: 'semielaborado',
+                        itemId: p.semielaborado_id,
+                        itemNombre: p.semielaborados?.nombre,
+                        itemUnidad: p.semielaborados?.unidad,
+                        loteId: p.id,
+                        loteLabel: `${p.codigo_lote ? p.codigo_lote + ' · ' : ''}${t('produccion_comun:campos.fecha')}: ${formatFecha(p.fecha)}`,
+                      })
+                    }
                   />
                 ))}
               </tbody>
@@ -734,6 +750,19 @@ function Producciones() {
           </div>
         </div>
       )}
+
+      <Drawer open={!!declararRechazoFijo} onClose={() => setDeclararRechazoFijo(null)} title={t('producciones:drawer_declarar_rechazo_titulo')}>
+        {declararRechazoFijo && (
+          <AjusteStockForm
+            fijo={declararRechazoFijo}
+            onCancelar={() => setDeclararRechazoFijo(null)}
+            onGuardado={() => {
+              setDeclararRechazoFijo(null)
+              cargarHistorial()
+            }}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }
@@ -1284,7 +1313,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
 // vienen del padre (acordeón de una sola fila a la vez); `editando` sigue siendo estado LOCAL de
 // esta fila, exactamente igual que antes -- entrar en edición fuerza la fila abierta (`abierto =
 // expandido || editando`) sin depender de si el padre ya la había expandido primero.
-function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoInfo, onCambio, onBorrar }) {
+function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoInfo, onCambio, onBorrar, onDeclararRechazo }) {
   const { t } = useTranslation(['common', 'produccion_comun', 'producciones'])
   const [editando, setEditando] = useState(false)
   const abierto = expandido || editando
@@ -1336,6 +1365,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
         <td className="px-3 py-3">
           {!cancelada && (
             <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+              <LinkAction tone="amber" onClick={onDeclararRechazo} className="text-xs">{t('produccion_comun:declarar_rechazo')}</LinkAction>
               <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
               <LinkAction tone="red" onClick={onBorrar} className="text-xs">{t('produccion_comun:borrar')}</LinkAction>
             </div>

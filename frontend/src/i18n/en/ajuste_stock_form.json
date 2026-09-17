@@ -24,11 +24,13 @@
   "campos": {
     "cantidad": "Quantity (+ adds, - subtracts)",
     "motivo": "Reason",
-    "detalle_motivo_opcional": "Reason detail (optional)"
+    "detalle_motivo_opcional": "Reason detail (optional)",
+    "origen_rechazo_opcional": "Rejection origin (optional)"
   },
   "motivo_placeholder": "Expiry, breakage, weighing error...",
   "detalle_motivo_placeholder": "Additional clarification...",
   "selecciona_motivo": "Select reason",
+  "sin_origen_rechazo": "Not applicable / routine adjustment",
   "registrar_ajuste": "Register adjustment",
   "alertas": {
     "faltan_campos_producto_final": "Select the product, the lot, the quantity and the reason",

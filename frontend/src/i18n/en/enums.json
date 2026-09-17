@@ -54,6 +54,32 @@
     "volumen": "Volume",
     "unidad": "Unit"
   },
+  "origen_rechazo": {
+    "cliente": "Customer",
+    "inspeccion_calidad": "Quality inspection",
+    "produccion_aguas_abajo": "Downstream production",
+    "otro": "Other"
+  },
+  "tipo_incidencia": {
+    "stock_articulo": "Purchase article",
+    "stock_semielaborado": "Semi-finished good",
+    "stock_producto_final": "Final product",
+    "reparto_pedido": "Order delivery"
+  },
+  "estado_incidencia": {
+    "pendiente": "Pending",
+    "regularizado": "Resolved",
+    "ignorado": "Ignored"
+  },
+  "motivo_incidencia": {
+    "stock_negativo": "Negative stock",
+    "caducidad": "Expiry",
+    "caducidad_antes_entrega": "Expired before delivery",
+    "retraso_produccion": "Production delay",
+    "pedido": "Order discrepancy",
+    "cliente": "Reported by customer",
+    "prevision_no_encontrada": "Forecast not found"
+  },
   "idioma": {
     "es": "Español",
     "en": "English",

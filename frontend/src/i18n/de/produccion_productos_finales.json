@@ -1,5 +1,6 @@
 {
   "titulo": "Produktion von Fertigprodukten",
+  "drawer_declarar_rechazo_titulo": "Ablehnung melden",
   "subtitulo_tanda": "Produktion für eine Charge aus \"Tagesproduktion\" wird gestartet — die gerade abgeschlossene Mix-Charge wird anhand der Bestellungen dieser Charge vorgeschlagen.",
   "subtitulo_normal": "Starte eine Produktion, erfasse aus welchen Chargen du jede Komponente verbrauchst, und schließe sie mit der erzielten Nettomenge ab.",
   "produccion_enlazada_pedido": "Diese Produktion wird mit der ausgewählten Bestellung verknüpft.",

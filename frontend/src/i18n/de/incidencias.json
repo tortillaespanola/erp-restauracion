@@ -1,0 +1,46 @@
+{
+  "titulo": "Vorfälle",
+  "subtitulo": "Vom System automatisch erkannte Vorfälle: negativer Bestand, Ablauf und Bestellzustellung.",
+  "filtros": {
+    "desde": "Von",
+    "hasta": "Bis",
+    "tipo": "Typ",
+    "estado": "Status",
+    "item": "Artikel / Element"
+  },
+  "buscar_por_nombre_placeholder": "Nach Name suchen...",
+  "error_cargar": "Fehler beim Laden der Vorfälle: {{mensaje}}",
+  "sin_incidencias_filtro": "Keine Vorfälle entsprechen den Filtern.",
+  "tabla": {
+    "fecha": "Erkannt",
+    "tipo": "Typ",
+    "item": "Element",
+    "referencia": "Referenz",
+    "cantidad": "Menge",
+    "motivo": "Grund",
+    "estado": "Status"
+  },
+  "incidencia_count_one": "{{count}} Vorfall",
+  "incidencia_count_other": "{{count}} Vorfälle",
+  "pagina_de": "Seite {{pagina}} von {{total}}",
+  "seleccionadas_one": "{{count}} ausgewählt",
+  "seleccionadas_other": "{{count}} ausgewählt",
+  "marcar_regularizadas": "Als bereinigt markieren",
+  "marcar_ignoradas": "Als ignoriert markieren",
+  "marcar_regularizada": "Als bereinigt markieren",
+  "marcar_ignorada": "Als ignoriert markieren",
+  "drawer_titulo": "Vorfalldetail",
+  "drawer": {
+    "tipo": "Typ",
+    "item": "Element",
+    "referencia": "Referenz",
+    "cantidad": "Menge",
+    "motivo": "Grund",
+    "estado": "Status",
+    "nota": "Notiz",
+    "detectada_en": "Erkannt"
+  },
+  "alertas": {
+    "error_actualizar": "Fehler beim Aktualisieren: {{mensaje}}"
+  }
+}

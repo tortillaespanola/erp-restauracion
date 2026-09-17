@@ -10,9 +10,10 @@ import {
   IconArrowUp, IconArrowDown, IconArrowsSort, IconCash,
   IconCircleCheck, IconClock, IconAlertTriangle, IconCircleHalf2,
 } from '@tabler/icons-react'
-import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect } from '../components/ui'
+import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Field, Select, DateInput, MultiSelect, LinkAction } from '../components/ui'
 import AlbaranVentaForm from '../components/AlbaranVentaForm'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
+import AjusteStockForm from '../components/AjusteStockForm'
 import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
 // CONTRATO_I18N.md, Fase 0: icon/color son independientes del idioma y se quedan aquí -- la
@@ -92,8 +93,12 @@ function codigosPedidoOrigen(alb) {
 // BLOQUE 3: linea_pedido_id + lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))
 // embebido para resolver el/los pedido(s) de origen de cada línea sin una query aparte -- misma
 // query principal, un solo viaje de ida y vuelta.
+// CONTRATO_UI_INCIDENCIAS_STOCK.md, Parte B (Paso 4.7): produccion_pf_id + producto_final_id
+// añadidos para poder abrir AjusteStockForm pre-rellenado con el lote de producción exacto de la
+// línea ("Declarar rechazo de cliente") -- solo aplica a líneas de producto final, no a mercadería
+// (articulos_compra), que no tiene noción de producción/lote de origen en este flujo.
 const SELECT_ALBARAN_CON_RELACIONES =
-  '*, clientes(nombre, direccion, cif, tipo), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, productos_finales(nombre, unidades_medida(codigo)), articulos_compra(nombre, unidad), linea_pedido_id, lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))), factura_venta_albaran(facturas_venta_con_saldo(numero_factura, anulada, saldo_pendiente, total))'
+  '*, clientes(nombre, direccion, cif, tipo), lineas_albaran_venta(id, cantidad, precio_unitario, descripcion, producto_final_id, produccion_pf_id, productos_finales(nombre, unidades_medida(codigo)), producciones_producto_final(codigo_lote, fecha), articulos_compra(nombre, unidad), linea_pedido_id, lineas_pedido_venta(pedido_id, pedidos_venta(codigo_pedido))), factura_venta_albaran(facturas_venta_con_saldo(numero_factura, anulada, saldo_pendiente, total))'
 
 // BLOQUE 5 (CONTRATO_UX_ALBARANES_VENTA.md): 20 por página, igual que Pedidos -- volumen similar
 // (~92 albaranes hoy), da ~5 páginas, cómodo para números de página sin elipsis.
@@ -137,6 +142,11 @@ function AlbaranesVenta() {
   // BLOQUE 4 (CONTRATO_UX_ALBARANES_VENTA.md): un único id expandido a nivel de pantalla (no un
   // Set por fila) para forzar comportamiento acordeón -- expandir un albarán colapsa cualquier otro.
   const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  // CONTRATO_UI_INCIDENCIAS_STOCK.md, Parte B (Paso 4.7): "Declarar rechazo de cliente" sobre una
+  // línea de producto final ya entregada -- mismo AjusteStockForm de Inventario.jsx/Producciones.jsx,
+  // preseleccionando origen_rechazo='cliente'.
+  const [declararRechazoFijo, setDeclararRechazoFijo] = useState(null)
 
   function toggleExpandido(id) {
     setFilaExpandidaId((prev) => (prev === id ? null : id))
@@ -552,6 +562,7 @@ function AlbaranesVenta() {
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.producto')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.cantidad')}</th>
                                       <th className="py-1.5 font-medium">{t('albaranes_venta:tabla_detalle.precio')}</th>
+                                      <th className="py-1.5 font-medium text-right"></th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-gray-100">
@@ -559,7 +570,31 @@ function AlbaranesVenta() {
                                       <tr key={linea.id}>
                                         <td className="py-1.5">{nombreLineaVenta(linea)}</td>
                                         <td className="py-1.5">{linea.cantidad}</td>
+                                        {/* Solo líneas de producto final tienen producción/lote de origen que
+                                            referenciar -- la mercadería (articulos_compra) no aplica aquí,
+                                            fuera de alcance de Parte B (CONTRATO_UI_INCIDENCIAS_STOCK.md). */}
                                         <td className="py-1.5">{linea.precio_unitario ?? '-'}</td>
+                                        <td className="py-1.5 text-right">
+                                          {linea.produccion_pf_id && (
+                                            <LinkAction
+                                              tone="amber"
+                                              className="text-xs"
+                                              onClick={() =>
+                                                setDeclararRechazoFijo({
+                                                  tipo: 'producto_final',
+                                                  itemId: linea.producto_final_id,
+                                                  itemNombre: linea.productos_finales?.nombre,
+                                                  itemUnidad: 'ud',
+                                                  loteId: linea.produccion_pf_id,
+                                                  loteLabel: `${linea.producciones_producto_final?.codigo_lote ? linea.producciones_producto_final.codigo_lote + ' · ' : ''}${linea.producciones_producto_final?.fecha ? formatFecha(linea.producciones_producto_final.fecha) : ''}`,
+                                                  origenRechazo: 'cliente',
+                                                })
+                                              }
+                                            >
+                                              {t('albaranes_venta:declarar_rechazo_cliente')}
+                                            </LinkAction>
+                                          )}
+                                        </td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -638,6 +673,19 @@ function AlbaranesVenta() {
             documentoPreseleccionado={pagoDrawer.documento}
             onGuardado={alGuardarPago}
             onCancelar={() => setPagoDrawer(null)}
+          />
+        )}
+      </Drawer>
+
+      <Drawer open={!!declararRechazoFijo} onClose={() => setDeclararRechazoFijo(null)} title={t('albaranes_venta:drawer_declarar_rechazo_titulo')}>
+        {declararRechazoFijo && (
+          <AjusteStockForm
+            fijo={declararRechazoFijo}
+            onCancelar={() => setDeclararRechazoFijo(null)}
+            onGuardado={() => {
+              setDeclararRechazoFijo(null)
+              cargarDatos()
+            }}
           />
         )}
       </Drawer>

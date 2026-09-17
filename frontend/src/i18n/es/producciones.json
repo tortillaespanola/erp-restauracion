@@ -1,5 +1,6 @@
 {
   "titulo": "Producciones",
+  "drawer_declarar_rechazo_titulo": "Declarar rechazo",
   "subtitulo_tanda": "Iniciando producción para una tanda de \"Pedidos del día\" — la cantidad y los consumos se sugieren según los pedidos de esa tanda.",
   "subtitulo_normal": "Inicia una producción, ve registrando consumos de los lotes que uses, y ciérrala cuando tengas el peso neto final.",
   "cantidad_a_producir_opcional": "Cantidad a producir (opcional, valida stock)",

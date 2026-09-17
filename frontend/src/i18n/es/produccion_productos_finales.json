@@ -1,5 +1,6 @@
 {
   "titulo": "Producción de productos finales",
+  "drawer_declarar_rechazo_titulo": "Declarar rechazo",
   "subtitulo_tanda": "Iniciando producción para una tanda de \"Pedidos del día\" — el lote de Mezcla recién cerrado se sugiere según los pedidos de esa tanda.",
   "subtitulo_normal": "Inicia una producción, registra de qué lotes consumes cada componente, y ciérrala con la cantidad neta obtenida.",
   "produccion_enlazada_pedido": "Esta producción quedará enlazada al pedido seleccionado.",

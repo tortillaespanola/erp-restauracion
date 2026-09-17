@@ -13,6 +13,13 @@ import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 // historial_ajustes_stock (ver migración 20260907_i18n_idioma_moneda.sql).
 const MOTIVOS_CATEGORIA = ['caducado', 'roto', 'evento_no_consumido', 'otro']
 
+// CONTRATO_UI_INCIDENCIAS_STOCK.md, Parte B (Paso 4.5): desglose de origen del rechazo, solo
+// sobre semielaborado/producto final -- un artículo base (materia prima comprada) no tiene una
+// "producción de origen" de la que algo pueda ser rechazado por un cliente o una inspección.
+// Opcional a propósito, igual que MOTIVOS_CATEGORIA: la mayoría de ajustes siguen siendo
+// correcciones rutinarias sin un origen de rechazo real que declarar.
+const ORIGENES_RECHAZO = ['cliente', 'inspeccion_calidad', 'produccion_aguas_abajo', 'otro']
+
 const hoyIso = () => new Date().toISOString().slice(0, 10)
 
 // Formulario de alta de ajuste de stock, único componente para los 2 puntos de entrada
@@ -39,6 +46,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
   const [motivo, setMotivo] = useState('')
   const [motivoCategoria, setMotivoCategoria] = useState('')
   const [motivoDetalle, setMotivoDetalle] = useState('')
+  const [origenRechazo, setOrigenRechazo] = useState(fijo?.origenRechazo ?? '')
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
@@ -117,10 +125,12 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
     } else if (tipo === 'semielaborado') {
       ;({ error } = await supabase.from('ajustes_semielaborado').insert({
         semielaborado_id: parseInt(itemId), produccion_id: parseInt(loteId), cantidad: cant, motivo, fecha,
+        origen_rechazo: origenRechazo || null,
       }))
     } else {
       ;({ error } = await supabase.from('ajustes_producto_final').insert({
         produccion_pf_id: parseInt(loteId), cantidad: cant, motivo_categoria: motivoCategoria, motivo_detalle: motivoDetalle || null, fecha,
+        origen_rechazo: origenRechazo || null,
       }))
     }
 
@@ -224,6 +234,17 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
       {tipo === 'producto_final' && (
         <Field label={t('ajuste_stock_form:campos.detalle_motivo_opcional')}>
           <Input type="text" placeholder={t('ajuste_stock_form:detalle_motivo_placeholder')} value={motivoDetalle} onChange={(e) => setMotivoDetalle(e.target.value)} />
+        </Field>
+      )}
+
+      {(tipo === 'semielaborado' || tipo === 'producto_final') && (
+        <Field label={t('ajuste_stock_form:campos.origen_rechazo_opcional')}>
+          <Select value={origenRechazo} onChange={(e) => setOrigenRechazo(e.target.value)}>
+            <option value="">{t('ajuste_stock_form:sin_origen_rechazo')}</option>
+            {ORIGENES_RECHAZO.map((valor) => (
+              <option key={valor} value={valor}>{t(`enums:origen_rechazo.${valor}`)}</option>
+            ))}
+          </Select>
         </Field>
       )}
 

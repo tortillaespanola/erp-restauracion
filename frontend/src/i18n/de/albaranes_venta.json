@@ -27,6 +27,8 @@
     "cantidad": "Menge",
     "precio": "Preis"
   },
+  "declarar_rechazo_cliente": "Kundenablehnung melden",
+  "drawer_declarar_rechazo_titulo": "Kundenablehnung melden",
   "albaran_pagina_count_one": "{{count}} Lieferschein · Seite {{pagina}} von {{total}}",
   "albaran_pagina_count_other": "{{count}} Lieferscheine · Seite {{pagina}} von {{total}}",
   "alertas": {

@@ -5,8 +5,9 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
+import AjusteStockForm from '../components/AjusteStockForm'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
 import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
@@ -262,6 +263,9 @@ function ProduccionProductosFinales() {
   const [despachoRealPorTanda, setDespachoRealPorTanda] = useState(new Map())
   // Punto 2.3 (mismo criterio que 1.3): un único id expandido a la vez.
   const [filaExpandidaId, setFilaExpandidaId] = useState(null)
+
+  // CONTRATO_UI_INCIDENCIAS_STOCK.md, Parte B (Paso 4.6): mismo mecanismo que Producciones.jsx.
+  const [declararRechazoFijo, setDeclararRechazoFijo] = useState(null)
 
   function toggleExpandido(id) {
     setFilaExpandidaId((prev) => (prev === id ? null : id))
@@ -629,6 +633,16 @@ function ProduccionProductosFinales() {
                     despachoRealInfo={despachoRealPorTanda.get(p.id)}
                     onCambio={cargarHistorial}
                     onBorrar={() => handleBorrarCerrada(p.id)}
+                    onDeclararRechazo={() =>
+                      setDeclararRechazoFijo({
+                        tipo: 'producto_final',
+                        itemId: p.producto_final_id,
+                        itemNombre: p.productos_finales?.nombre,
+                        itemUnidad: t('produccion_productos_finales:unidad_corta'),
+                        loteId: p.id,
+                        loteLabel: `${p.codigo_lote ? p.codigo_lote + ' · ' : ''}${t('produccion_comun:campos.fecha')}: ${formatFecha(p.fecha)}`,
+                      })
+                    }
                   />
                 ))}
               </tbody>
@@ -670,6 +684,19 @@ function ProduccionProductosFinales() {
           </div>
         </div>
       )}
+
+      <Drawer open={!!declararRechazoFijo} onClose={() => setDeclararRechazoFijo(null)} title={t('produccion_productos_finales:drawer_declarar_rechazo_titulo')}>
+        {declararRechazoFijo && (
+          <AjusteStockForm
+            fijo={declararRechazoFijo}
+            onCancelar={() => setDeclararRechazoFijo(null)}
+            onGuardado={() => {
+              setDeclararRechazoFijo(null)
+              cargarHistorial()
+            }}
+          />
+        )}
+      </Drawer>
     </div>
   )
 }
@@ -1191,7 +1218,7 @@ function IngredienteConsumo({ ingrediente, fechaDestino, value, onChange, estima
 // ProduccionCerrada en Producciones.jsx / AlbaranesVenta.jsx BLOQUE 4) en vez de la <Card> apilada
 // anterior. `expandido`/`onToggleExpandir` vienen del padre; `editando` sigue siendo estado LOCAL de
 // esta fila, igual que en Producciones.jsx.
-function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacionInfo, despachoRealInfo, onCambio, onBorrar }) {
+function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacionInfo, despachoRealInfo, onCambio, onBorrar, onDeclararRechazo }) {
   const { t } = useTranslation(['common', 'produccion_comun', 'produccion_productos_finales'])
   const [editando, setEditando] = useState(false)
   const abierto = expandido || editando
@@ -1252,6 +1279,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacion
         <td className="px-3 py-3">
           {!cancelada && (
             <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+              <LinkAction tone="amber" onClick={onDeclararRechazo} className="text-xs">{t('produccion_comun:declarar_rechazo')}</LinkAction>
               <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
               <LinkAction tone="red" onClick={onBorrar} className="text-xs">{t('produccion_comun:borrar')}</LinkAction>
             </div>

@@ -54,6 +54,32 @@
     "volumen": "Volumen",
     "unidad": "Einheit"
   },
+  "origen_rechazo": {
+    "cliente": "Kunde",
+    "inspeccion_calidad": "Qualitätskontrolle",
+    "produccion_aguas_abajo": "Nachgelagerte Produktion",
+    "otro": "Sonstiges"
+  },
+  "tipo_incidencia": {
+    "stock_articulo": "Einkaufsartikel",
+    "stock_semielaborado": "Halbfertigprodukt",
+    "stock_producto_final": "Fertigprodukt",
+    "reparto_pedido": "Bestellzustellung"
+  },
+  "estado_incidencia": {
+    "pendiente": "Ausstehend",
+    "regularizado": "Bereinigt",
+    "ignorado": "Ignoriert"
+  },
+  "motivo_incidencia": {
+    "stock_negativo": "Negativer Bestand",
+    "caducidad": "Ablauf",
+    "caducidad_antes_entrega": "Vor Lieferung abgelaufen",
+    "retraso_produccion": "Produktionsverzögerung",
+    "pedido": "Bestellabweichung",
+    "cliente": "Von Kunde gemeldet",
+    "prevision_no_encontrada": "Prognose nicht gefunden"
+  },
   "idioma": {
     "es": "Español",
     "en": "English",

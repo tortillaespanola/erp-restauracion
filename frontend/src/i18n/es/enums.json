@@ -54,6 +54,32 @@
     "volumen": "Volumen",
     "unidad": "Unidad"
   },
+  "origen_rechazo": {
+    "cliente": "Cliente",
+    "inspeccion_calidad": "Inspección de calidad",
+    "produccion_aguas_abajo": "Producción aguas abajo",
+    "otro": "Otro"
+  },
+  "tipo_incidencia": {
+    "stock_articulo": "Artículo de compra",
+    "stock_semielaborado": "Semielaborado",
+    "stock_producto_final": "Producto final",
+    "reparto_pedido": "Reparto de pedido"
+  },
+  "estado_incidencia": {
+    "pendiente": "Pendiente",
+    "regularizado": "Regularizada",
+    "ignorado": "Ignorada"
+  },
+  "motivo_incidencia": {
+    "stock_negativo": "Stock negativo",
+    "caducidad": "Caducidad",
+    "caducidad_antes_entrega": "Caducidad antes de la entrega",
+    "retraso_produccion": "Retraso de producción",
+    "pedido": "Discrepancia de pedido",
+    "cliente": "Reportado por cliente",
+    "prevision_no_encontrada": "Previsión no encontrada"
+  },
   "idioma": {
     "es": "Español",
     "en": "English",

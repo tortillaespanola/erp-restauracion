@@ -5,7 +5,7 @@ import {
   IconTruckDelivery, IconPackage, IconFileInvoice, IconReceipt,
   IconComponents, IconStack3, IconTools, IconSquareCheck, IconRoute,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
-  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2, IconBuildingSkyscraper,
+  IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2, IconBuildingSkyscraper, IconAlertTriangle,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
 import { useNegocio } from '../context/useNegocio'
@@ -35,6 +35,7 @@ const NAV_SECTIONS = [
       { to: '/semielaborados', clave: 'semielaborados', icon: IconStack3 },
       { to: '/producciones', clave: 'producciones', icon: IconPlayerPlay },
       { to: '/ajustes-stock', clave: 'ajustes_stock', icon: IconTools },
+      { to: '/incidencias', clave: 'incidencias', icon: IconAlertTriangle },
       { to: '/productos', clave: 'productos', icon: IconSquareCheck },
       { to: '/produccion-productos', clave: 'produccion_productos', icon: IconRoute },
     ],
@@ -67,6 +68,7 @@ const RUTA_A_CLAVE = {
   '/semielaborados': 'semielaborados',
   '/producciones': 'producciones',
   '/ajustes-stock': 'ajustes_stock',
+  '/incidencias': 'incidencias',
   '/productos': 'productos',
   '/produccion-productos': 'produccion_productos',
   '/pedidos': 'pedidos',

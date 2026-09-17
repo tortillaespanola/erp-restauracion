@@ -1,5 +1,6 @@
 {
   "titulo": "Productions",
+  "drawer_declarar_rechazo_titulo": "Declare rejection",
   "subtitulo_tanda": "Starting production for a batch from \"Today's production\" — the quantity and consumption are suggested based on that batch's orders.",
   "subtitulo_normal": "Start a production, register consumption from the lots you use, and close it once you have the final net weight.",
   "cantidad_a_producir_opcional": "Quantity to produce (optional, validates stock)",

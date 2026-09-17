@@ -27,6 +27,8 @@
     "cantidad": "Cantidad",
     "precio": "Precio"
   },
+  "declarar_rechazo_cliente": "Declarar rechazo de cliente",
+  "drawer_declarar_rechazo_titulo": "Declarar rechazo de cliente",
   "albaran_pagina_count_one": "{{count}} albarán · página {{pagina}} de {{total}}",
   "albaran_pagina_count_other": "{{count}} albaranes · página {{pagina}} de {{total}}",
   "alertas": {
