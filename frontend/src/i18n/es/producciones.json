@@ -18,10 +18,10 @@
     "ingrediente": "Componente"
   },
   "sin_produccion_en_curso": "No hay ninguna producción en curso de este semielaborado.",
-  "historial_titulo": "Historial de producciones cerradas",
-  "historial_titulo_de": "Historial de producciones cerradas de {{nombre}}",
-  "sin_producciones_cerradas": "Todavía no hay producciones cerradas.",
-  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas de este semielaborado.",
+  "historial_titulo": "Historial de producciones",
+  "historial_titulo_de": "Historial de producciones de {{nombre}}",
+  "sin_producciones_cerradas": "Todavía no hay producciones cerradas ni canceladas.",
+  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas ni canceladas de este semielaborado.",
   "tabla_historial": {
     "semielaborado": "Semielaborado",
     "estado_consumo": "Estado de consumo"

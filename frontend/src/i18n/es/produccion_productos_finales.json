@@ -12,10 +12,10 @@
     "producto": "Producto",
     "stock": "Stock"
   },
-  "historial_titulo": "Historial de producciones cerradas",
-  "historial_titulo_de": "Historial de producciones cerradas de {{nombre}}",
-  "sin_producciones_cerradas": "Todavía no hay producciones cerradas.",
-  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas de este producto.",
+  "historial_titulo": "Historial de producciones",
+  "historial_titulo_de": "Historial de producciones de {{nombre}}",
+  "sin_producciones_cerradas": "Todavía no hay producciones cerradas ni canceladas.",
+  "sin_producciones_cerradas_de": "Todavía no hay producciones cerradas ni canceladas de este producto.",
   "tabla_historial": {
     "producto": "Producto",
     "estado_asignacion": "Estado de asignación",
@@ -39,7 +39,6 @@
   },
   "venta_directa": "Venta directa",
   "sin_fecha": "sin fecha",
-  "confirmar_cancelar": "¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados.",
   "confirmar_borrar": "¿Seguro que quieres borrar esta producción? Se revertirán sus consumos y su stock.",
   "indica_cantidad_neta": "Indica la cantidad neta producida"
 }

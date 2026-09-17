@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import CancelarProduccionForm from '../components/CancelarProduccionForm'
 
 // CONTRATO_MEJORAS_MES.md, punto 2: mismos criterios que Producciones.jsx (punto 1) -- 20 por
 // página, y el mismo umbral de tolerancia para el badge de estado.
@@ -341,7 +342,7 @@ function ProduccionProductosFinales() {
       `,
         { count: 'exact' }
       )
-      .eq('estado', 'cerrada')
+      .in('estado', ['cerrada', 'cancelada'])
 
     if (productoId) historialQuery = historialQuery.eq('producto_final_id', parseInt(productoId))
 
@@ -494,17 +495,6 @@ function ProduccionProductosFinales() {
     cargarDatos()
   }
 
-  async function handleCancelar(id) {
-    if (!confirm(t('produccion_productos_finales:confirmar_cancelar'))) return
-    const { error } = await supabase.from('producciones_producto_final').delete().eq('id', id)
-    if (error) {
-      alert(t('produccion_comun:alertas.error_cancelar', { mensaje: error.message }))
-      return
-    }
-    toast.success(t('common:feedback.cancelado'))
-    cargarDatos()
-  }
-
   async function handleBorrarCerrada(id) {
     if (!confirm(t('produccion_productos_finales:confirmar_borrar'))) return
     const { error } = await supabase.from('producciones_producto_final').delete().eq('id', id)
@@ -564,7 +554,6 @@ function ProduccionProductosFinales() {
                 key={p.id}
                 produccion={p}
                 onCambio={cargarDatos}
-                onCancelar={() => handleCancelar(p.id)}
               />
             ))}
           </div>
@@ -683,7 +672,7 @@ function ProduccionProductosFinales() {
   )
 }
 
-function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
+function ProduccionAbierta({ produccion, onCambio }) {
   const navigate = useNavigate()
   const { t } = useTranslation(['common', 'produccion_comun', 'produccion_productos_finales'])
   const UNIDADES = t('produccion_productos_finales:unidad_larga')
@@ -691,6 +680,7 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
   const [cargandoIngredientes, setCargandoIngredientes] = useState(true)
   const [filasConsumo, setFilasConsumo] = useState({})
   const [confirmando, setConfirmando] = useState(false)
+  const [cancelando, setCancelando] = useState(false)
 
   const [cantidadProducida, setCantidadProducida] = useState('')
   const [notas, setNotas] = useState(produccion.notas ?? '')
@@ -961,8 +951,19 @@ function ProduccionAbierta({ produccion, onCambio, onCancelar }) {
             {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">{t('produccion_productos_finales:pedido_codigo', { codigo: produccion.pedidos_venta.codigo_pedido })}</span>}
           </p>
         </div>
-        <LinkAction tone="red" onClick={onCancelar}>{t('produccion_comun:cancelar_produccion')}</LinkAction>
+        {!cancelando && <LinkAction tone="red" onClick={() => setCancelando(true)}>{t('produccion_comun:cancelar_produccion')}</LinkAction>}
       </div>
+
+      {cancelando && (
+        <div className="mt-3 bg-red-50/60 border border-red-100 rounded-md p-3">
+          <CancelarProduccionForm
+            tipo="producto_final"
+            produccionId={produccion.id}
+            onCancelado={() => { setCancelando(false); onCambio() }}
+            onCerrar={() => setCancelando(false)}
+          />
+        </div>
+      )}
 
       <div className="mt-3 flex items-end gap-3 flex-wrap">
         <Field label={t('produccion_comun:cantidad_objetivo', { unidad: UNIDADES })} className="w-56">
@@ -1166,17 +1167,27 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacion
   const [editando, setEditando] = useState(false)
   const abierto = expandido || editando
 
+  // CONTRATO_AUDITORIA_CANCELACION_PRODUCCION.md: mismo criterio que Producciones.jsx -- una
+  // producción 'cancelada' ya no tiene consumo propio (el RPC de cancelación lo revierte, ver
+  // 20261020), se muestra el motivo/usuario/fecha de la cancelación en su lugar, y se ocultan
+  // Editar/Borrar para no poder deshacer con un DELETE el rastro de auditoría de la cancelación.
+  const cancelada = produccion.estado === 'cancelada'
+
   // Punto 2.4: badge de estado de asignación -- asignacionInfo llega del padre (cargarHistorial), ya
   // agregado por produccion_pf_id a partir de previsiones_distribucion_pf.
   const previsto = asignacionInfo?.previsto || 0
-  const { color, texto } = estadoAsignacion(produccion.cantidad_producida, previsto, t)
+  const { color, texto } = cancelada
+    ? { color: 'gray', texto: t('produccion_comun:cancelada_badge') }
+    : estadoAsignacion(produccion.cantidad_producida, previsto, t)
   const detalleReparto = asignacionInfo?.detalle || []
   const detalleAjustes = asignacionInfo?.ajustesDetalle || []
 
   // CONTRATO_ESTADO_DESPACHO_REAL.md, Parte 2: badge de estado de despacho REAL -- despachoRealInfo
   // llega del padre, agregado por produccion_pf_id a partir de lineas_albaran_venta.
   const real = despachoRealInfo?.real || 0
-  const { color: colorDespacho, texto: textoDespacho } = estadoDespachoReal(produccion.cantidad_producida, real, t)
+  const { color: colorDespacho, texto: textoDespacho } = cancelada
+    ? { color: 'gray', texto: '—' }
+    : estadoDespachoReal(produccion.cantidad_producida, real, t)
   const detalleDespacho = despachoRealInfo?.detalle || []
 
   function iniciarEdicion() {
@@ -1203,10 +1214,12 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacion
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
         <td className="px-3 py-3"><Badge color={colorDespacho}>{textoDespacho}</Badge></td>
         <td className="px-3 py-3">
-          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-            <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
-            <LinkAction tone="red" onClick={onBorrar} className="text-xs">{t('produccion_comun:borrar')}</LinkAction>
-          </div>
+          {!cancelada && (
+            <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+              <LinkAction tone="blue" onClick={iniciarEdicion} className="text-xs">{t('produccion_comun:editar')}</LinkAction>
+              <LinkAction tone="red" onClick={onBorrar} className="text-xs">{t('produccion_comun:borrar')}</LinkAction>
+            </div>
+          )}
         </td>
       </tr>
       <tr>
@@ -1214,7 +1227,20 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacion
           <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
             <div className="overflow-hidden">
               <div className="bg-gray-50/60 px-3 py-3">
-                {editando ? (
+                {cancelada ? (
+                  <div className="text-sm">
+                    <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      {t('produccion_comun:motivo_cancelacion_titulo')}
+                    </p>
+                    <p className="text-gray-700 mb-2">{produccion.motivo_cancelacion}</p>
+                    <p className="text-xs text-gray-400">
+                      {t('produccion_comun:cancelada_el_por', {
+                        fecha: produccion.cancelada_en ? formatFecha(produccion.cancelada_en) : '—',
+                        email: produccion.cancelada_por_email || t('produccion_comun:usuario_desconocido'),
+                      })}
+                    </p>
+                  </div>
+                ) : editando ? (
                   <ProduccionCerradaEdicion
                     produccion={produccion}
                     onCancelar={() => setEditando(false)}

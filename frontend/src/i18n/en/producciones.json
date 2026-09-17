@@ -18,10 +18,10 @@
     "ingrediente": "Component"
   },
   "sin_produccion_en_curso": "There is no production in progress for this semi-finished good.",
-  "historial_titulo": "History of closed productions",
-  "historial_titulo_de": "History of closed productions of {{nombre}}",
-  "sin_producciones_cerradas": "There are no closed productions yet.",
-  "sin_producciones_cerradas_de": "There are no closed productions of this semi-finished good yet.",
+  "historial_titulo": "Production history",
+  "historial_titulo_de": "Production history of {{nombre}}",
+  "sin_producciones_cerradas": "There are no closed or cancelled productions yet.",
+  "sin_producciones_cerradas_de": "There are no closed or cancelled productions of this semi-finished good yet.",
   "tabla_historial": {
     "semielaborado": "Semi-finished good",
     "estado_consumo": "Consumption status"

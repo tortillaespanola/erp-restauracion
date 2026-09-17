@@ -12,10 +12,10 @@
     "producto": "Produkt",
     "stock": "Bestand"
   },
-  "historial_titulo": "Verlauf abgeschlossener Produktionen",
-  "historial_titulo_de": "Verlauf abgeschlossener Produktionen von {{nombre}}",
-  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen Produktionen.",
-  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen Produktionen dieses Produkts.",
+  "historial_titulo": "Produktionsverlauf",
+  "historial_titulo_de": "Produktionsverlauf von {{nombre}}",
+  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen oder stornierten Produktionen.",
+  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen oder stornierten Produktionen dieses Produkts.",
   "tabla_historial": {
     "producto": "Produkt",
     "estado_asignacion": "Zuweisungsstatus",
@@ -39,7 +39,6 @@
   },
   "venta_directa": "Direktverkauf",
   "sin_fecha": "kein Datum",
-  "confirmar_cancelar": "Diese laufende Produktion abbrechen? Bereits erfasste Verbräuche werden rückgängig gemacht.",
   "confirmar_borrar": "Möchtest du diese Produktion wirklich löschen? Ihr Verbrauch und Bestand werden rückgängig gemacht.",
   "indica_cantidad_neta": "Gib die produzierte Nettomenge an"
 }

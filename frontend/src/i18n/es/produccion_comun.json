@@ -59,6 +59,17 @@
   "guardar_cambios": "Guardar cambios",
   "editar": "Editar",
   "borrar": "Borrar",
+  "cancelada_badge": "Cancelada",
+  "motivo_cancelacion_titulo": "Motivo de la cancelación",
+  "cancelada_el_por": "Cancelada el {{fecha}} por {{email}}",
+  "usuario_desconocido": "usuario desconocido",
+  "cancelar_form": {
+    "aviso": "El consumo ya registrado por esta producción se revertirá. La producción quedará marcada como cancelada, no se borrará.",
+    "motivo_label": "Motivo de la cancelación",
+    "motivo_placeholder": "¿Por qué se cancela esta producción?",
+    "confirmar": "Confirmar cancelación",
+    "motivo_obligatorio": "Indica un motivo para cancelar la producción"
+  },
   "tabla": {
     "cantidad_producida": "Cantidad producida",
     "notas": "Notas",
@@ -73,8 +84,7 @@
     "error_borrar": "Error al borrar: {{mensaje}}",
     "error_quitar_consumo": "Error al quitar el consumo: {{mensaje}}",
     "error_cerrar_produccion": "Error al cerrar la producción: {{mensaje}}",
-    "ninguna_linea_guardada": "Ninguna línea se ha guardado — revisa el error y vuelve a confirmar:\n\n{{mensaje}}",
-    "confirmar_cancelar_produccion": "¿Cancelar esta producción abierta? Se revertirán los consumos ya registrados."
+    "ninguna_linea_guardada": "Ninguna línea se ha guardado — revisa el error y vuelve a confirmar:\n\n{{mensaje}}"
   },
   "pendientes_sin_confirmar_one": "Tienes {{count}} línea de consumo rellena pero sin confirmar — se perderá si cierras ahora sin confirmarla antes. ¿Cerrar de todas formas?",
   "pendientes_sin_confirmar_other": "Tienes {{count}} líneas de consumo rellenas pero sin confirmar — se perderán si cierras ahora sin confirmarlas antes. ¿Cerrar de todas formas?",

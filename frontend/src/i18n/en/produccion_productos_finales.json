@@ -12,10 +12,10 @@
     "producto": "Product",
     "stock": "Stock"
   },
-  "historial_titulo": "History of closed productions",
-  "historial_titulo_de": "History of closed productions of {{nombre}}",
-  "sin_producciones_cerradas": "There are no closed productions yet.",
-  "sin_producciones_cerradas_de": "There are no closed productions of this product yet.",
+  "historial_titulo": "Production history",
+  "historial_titulo_de": "Production history of {{nombre}}",
+  "sin_producciones_cerradas": "There are no closed or cancelled productions yet.",
+  "sin_producciones_cerradas_de": "There are no closed or cancelled productions of this product yet.",
   "tabla_historial": {
     "producto": "Product",
     "estado_asignacion": "Assignment status",
@@ -39,7 +39,6 @@
   },
   "venta_directa": "Direct sale",
   "sin_fecha": "no date",
-  "confirmar_cancelar": "Cancel this open production? Any consumption already registered will be reverted.",
   "confirmar_borrar": "Are you sure you want to delete this production? Its consumption and stock will be reverted.",
   "indica_cantidad_neta": "Enter the net quantity produced"
 }

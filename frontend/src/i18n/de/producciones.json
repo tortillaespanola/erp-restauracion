@@ -18,10 +18,10 @@
     "ingrediente": "Komponente"
   },
   "sin_produccion_en_curso": "Es läuft keine Produktion für dieses Halbfertigprodukt.",
-  "historial_titulo": "Verlauf abgeschlossener Produktionen",
-  "historial_titulo_de": "Verlauf abgeschlossener Produktionen von {{nombre}}",
-  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen Produktionen.",
-  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen Produktionen dieses Halbfertigprodukts.",
+  "historial_titulo": "Produktionsverlauf",
+  "historial_titulo_de": "Produktionsverlauf von {{nombre}}",
+  "sin_producciones_cerradas": "Es gibt noch keine abgeschlossenen oder stornierten Produktionen.",
+  "sin_producciones_cerradas_de": "Es gibt noch keine abgeschlossenen oder stornierten Produktionen dieses Halbfertigprodukts.",
   "tabla_historial": {
     "semielaborado": "Halbfertigprodukt",
     "estado_consumo": "Verbrauchsstatus"

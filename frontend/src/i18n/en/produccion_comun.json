@@ -59,6 +59,17 @@
   "guardar_cambios": "Save changes",
   "editar": "Edit",
   "borrar": "Delete",
+  "cancelada_badge": "Cancelled",
+  "motivo_cancelacion_titulo": "Cancellation reason",
+  "cancelada_el_por": "Cancelled on {{fecha}} by {{email}}",
+  "usuario_desconocido": "unknown user",
+  "cancelar_form": {
+    "aviso": "Consumption already registered by this production will be reverted. The production will be marked as cancelled, not deleted.",
+    "motivo_label": "Cancellation reason",
+    "motivo_placeholder": "Why is this production being cancelled?",
+    "confirmar": "Confirm cancellation",
+    "motivo_obligatorio": "Enter a reason to cancel the production"
+  },
   "tabla": {
     "cantidad_producida": "Quantity produced",
     "notas": "Notes",
@@ -73,8 +84,7 @@
     "error_borrar": "Error deleting: {{mensaje}}",
     "error_quitar_consumo": "Error removing the consumption: {{mensaje}}",
     "error_cerrar_produccion": "Error closing the production: {{mensaje}}",
-    "ninguna_linea_guardada": "No line was saved — check the error and confirm again:\n\n{{mensaje}}",
-    "confirmar_cancelar_produccion": "Cancel this open production? Any consumption already registered will be reverted."
+    "ninguna_linea_guardada": "No line was saved — check the error and confirm again:\n\n{{mensaje}}"
   },
   "pendientes_sin_confirmar_one": "You have {{count}} consumption line filled in but not confirmed — it will be lost if you close now without confirming it first. Close anyway?",
   "pendientes_sin_confirmar_other": "You have {{count}} consumption lines filled in but not confirmed — they will be lost if you close now without confirming them first. Close anyway?",

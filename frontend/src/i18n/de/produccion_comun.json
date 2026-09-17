@@ -59,6 +59,17 @@
   "guardar_cambios": "Änderungen speichern",
   "editar": "Bearbeiten",
   "borrar": "Löschen",
+  "cancelada_badge": "Storniert",
+  "motivo_cancelacion_titulo": "Stornierungsgrund",
+  "cancelada_el_por": "Storniert am {{fecha}} von {{email}}",
+  "usuario_desconocido": "unbekannter Benutzer",
+  "cancelar_form": {
+    "aviso": "Der bereits erfasste Verbrauch dieser Produktion wird rückgängig gemacht. Die Produktion wird als storniert markiert, nicht gelöscht.",
+    "motivo_label": "Stornierungsgrund",
+    "motivo_placeholder": "Warum wird diese Produktion storniert?",
+    "confirmar": "Stornierung bestätigen",
+    "motivo_obligatorio": "Gib einen Grund für die Stornierung der Produktion an"
+  },
   "tabla": {
     "cantidad_producida": "Produzierte Menge",
     "notas": "Notizen",
@@ -73,8 +84,7 @@
     "error_borrar": "Fehler beim Löschen: {{mensaje}}",
     "error_quitar_consumo": "Fehler beim Entfernen des Verbrauchs: {{mensaje}}",
     "error_cerrar_produccion": "Fehler beim Abschließen der Produktion: {{mensaje}}",
-    "ninguna_linea_guardada": "Keine Zeile wurde gespeichert — prüfe den Fehler und bestätige erneut:\n\n{{mensaje}}",
-    "confirmar_cancelar_produccion": "Diese laufende Produktion abbrechen? Bereits erfasste Verbräuche werden rückgängig gemacht."
+    "ninguna_linea_guardada": "Keine Zeile wurde gespeichert — prüfe den Fehler und bestätige erneut:\n\n{{mensaje}}"
   },
   "pendientes_sin_confirmar_one": "Du hast {{count}} ausgefüllte, aber nicht bestätigte Verbrauchszeile — sie geht verloren, wenn du jetzt ohne Bestätigung abschließt. Trotzdem abschließen?",
   "pendientes_sin_confirmar_other": "Du hast {{count}} ausgefüllte, aber nicht bestätigte Verbrauchszeilen — sie gehen verloren, wenn du jetzt ohne Bestätigung abschließt. Trotzdem abschließen?",
