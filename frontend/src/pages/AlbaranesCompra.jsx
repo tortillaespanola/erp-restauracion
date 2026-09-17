@@ -218,10 +218,13 @@ function AlbaranesCompra() {
     const [resAlbaranes, resProveedores, resPedidosCompra] = await Promise.all([
       albaranesQuery,
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
+      // CONTRATO_ESTADO_PARCIAL_PEDIDOS.md: 'parcial' entra aquí igual que 'pendiente' -- un pedido
+      // de compra ya recibido a medias sigue necesitando un albarán/recepción para el resto (mismo
+      // patrón que PedidosDelDia.jsx con pedidos_venta).
       supabase
         .from('pedidos_compra')
         .select('id, codigo_pedido, proveedor_id, referencia_proveedor, proveedores(nombre_comercial), lineas_pedido_compra(id, articulo_id, cantidad, precio_unitario, articulos_compra(nombre, unidad))')
-        .eq('estado', 'pendiente')
+        .in('estado', ['pendiente', 'parcial'])
         .order('fecha', { ascending: false }),
     ])
 
