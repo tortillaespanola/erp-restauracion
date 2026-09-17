@@ -8,6 +8,7 @@ import { validarStockReceta } from '../lib/validarStockReceta'
 import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown } from '@tabler/icons-react'
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
+import { motivoRechazoValido } from '../lib/mermaProduccion'
 
 // CONTRATO_MEJORAS_MES.md, punto 1.4: 20 por página, mismo tamaño que Pedidos/Albaranes/Facturas.
 const PAGINA_TAMANO = 20
@@ -747,6 +748,8 @@ function ProduccionAbierta({ produccion, onCambio }) {
 
   const [cantidadProducida, setCantidadProducida] = useState('')
   const [notas, setNotas] = useState(produccion.notas ?? '')
+  const [cantidadRechazada, setCantidadRechazada] = useState('')
+  const [motivoRechazo, setMotivoRechazo] = useState('')
   const [cerrando, setCerrando] = useState(false)
 
   const [cantidadObjetivo, setCantidadObjetivo] = useState('')
@@ -984,11 +987,18 @@ function ProduccionAbierta({ produccion, onCambio }) {
       return
     }
 
+    if (!motivoRechazoValido(cantidadRechazada, motivoRechazo)) {
+      alert(t('produccion_comun:alertas.motivo_rechazo_obligatorio'))
+      return
+    }
+
     const pendientes = filasCompletas().length
     if (pendientes > 0) {
       const continuar = confirm(t('produccion_comun:pendientes_sin_confirmar', { count: pendientes }))
       if (!continuar) return
     }
+
+    const rechazada = parseFloat(cantidadRechazada) || 0
 
     const { error } = await supabase
       .from('producciones_semielaborado')
@@ -996,6 +1006,8 @@ function ProduccionAbierta({ produccion, onCambio }) {
         cantidad_producida: parseFloat(cantidadProducida),
         estado: 'cerrada',
         notas: notas || null,
+        cantidad_rechazada: rechazada,
+        motivo_rechazo: rechazada > 0 ? motivoRechazo.trim() : null,
       })
       .eq('id', produccion.id)
 
@@ -1097,6 +1109,13 @@ function ProduccionAbierta({ produccion, onCambio }) {
             autoFocus title={t('common:redondea_3_decimales')} />
           <Input type="text" placeholder={t('produccion_comun:notas_placeholder')}
             value={notas} onChange={(e) => setNotas(e.target.value)} />
+          <Input type="number" step="0.001" min="0" placeholder={t('produccion_comun:cantidad_rechazada_placeholder', { unidad: produccion.semielaborados?.unidad })}
+            value={cantidadRechazada} onChange={(e) => setCantidadRechazada(e.target.value)}
+            title={t('common:redondea_3_decimales')} />
+          {parseFloat(cantidadRechazada) > 0 && (
+            <Input type="text" className="md:col-span-2" placeholder={t('produccion_comun:motivo_rechazo_placeholder')}
+              value={motivoRechazo} onChange={(e) => setMotivoRechazo(e.target.value)} />
+          )}
           <Button variant="success" onClick={cerrarProduccion}>{t('produccion_comun:confirmar_cierre')}</Button>
         </div>
       )}
@@ -1293,7 +1312,14 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
           {produccion.semielaborados?.nombre}
           {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
         </td>
-        <td className="px-3 py-3 whitespace-nowrap text-gray-600">{produccion.cantidad_producida} {produccion.semielaborados?.unidad}</td>
+        <td className="px-3 py-3 whitespace-nowrap text-gray-600">
+          {produccion.cantidad_producida} {produccion.semielaborados?.unidad}
+          {produccion.cantidad_rechazada > 0 && (
+            <span className="ml-1.5 text-xs text-amber-600" title={produccion.motivo_rechazo}>
+              ({t('produccion_comun:rechazada_abrev', { cantidad: produccion.cantidad_rechazada })})
+            </span>
+          )}
+        </td>
         <td className="px-3 py-3 text-gray-500 italic max-w-[16rem] truncate" title={produccion.notas || undefined}>{produccion.notas || '—'}</td>
         <td className="px-3 py-3"><Badge color={color}>{texto}</Badge></td>
         <td className="px-3 py-3">
@@ -1333,6 +1359,19 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
                   />
                 ) : (
                   <>
+                    {/* CONTRATO_MERMA_RECHAZO_PRODUCCION.md: desglose utilizable/rechazada -- solo se
+                        muestra si hubo rechazo, no añade ruido al caso mayoritario sin merma. */}
+                    {produccion.cantidad_rechazada > 0 && (
+                      <div className="mb-3 bg-amber-50/60 border border-amber-100 rounded-md p-2.5">
+                        <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide mb-1">
+                          {t('produccion_comun:merma_titulo')}
+                        </p>
+                        <p className="text-sm text-amber-800">
+                          {t('produccion_comun:merma_detalle', { cantidad: produccion.cantidad_rechazada, unidad: produccion.semielaborados?.unidad })}
+                        </p>
+                        <p className="text-xs text-amber-700 mt-0.5">{produccion.motivo_rechazo}</p>
+                      </div>
+                    )}
                     {/* Punto 1.6.1: ingredientes consumidos por esta producción (aguas arriba) -- la
                         misma tabla que ya existía, sin cambios de fondo, solo movida aquí dentro. */}
                     <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
