@@ -1,6 +1,6 @@
 # NOTAS.md
 
-Notas de trabajo del proyecto **ERP Restauración**. Última actualización: 2026-07-31.
+Notas de trabajo del proyecto **FlowBase**. Última actualización: 2026-07-31.
 
 ---
 
