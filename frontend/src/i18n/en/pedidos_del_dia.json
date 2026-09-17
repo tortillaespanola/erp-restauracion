@@ -49,6 +49,8 @@
   "tanda_fecha": "Batch {{fecha}}",
   "solo_disp": " · only {{valor}} avail.",
   "disp_sufijo": "{{valor}} avail.",
+  "tanda_caducada_aviso": " — ⚠ expired",
+  "tanda_proxima_caducar_aviso": " — ⏳ expires in {{dias}} day(s)",
   "selecciona_tanda": "Select batch",
   "cantidad_placeholder": "Quantity",
   "repartir_otra_tanda": "+ allocate to another batch",

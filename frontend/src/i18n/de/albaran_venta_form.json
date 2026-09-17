@@ -31,6 +31,8 @@
   "disponible_unidad_sufijo": "{{valor}} {{unidad}} verf.",
   "fecha_posterior_aviso": " — ⚠ späteres Datum, kann nicht verkauft werden",
   "caducado_aviso": " — ⚠ abgelaufen, vor Verkauf prüfen",
+  "proximo_aviso": " — ⏳ läuft in {{dias}} Tag(en) ab",
+  "caducidad_abrev": " · MHD {{fecha}}",
   "restante_pendiente_pedido": "{{restante}} Einheiten aus der Bestellung offen",
   "descripcion_placeholder": "Beschreibung (z. B. Brot, zusätzliche Showcooking-Stunden...)",
   "alertas": {

@@ -49,6 +49,8 @@
   "tanda_fecha": "Tanda {{fecha}}",
   "solo_disp": " · solo {{valor}} disp.",
   "disp_sufijo": "{{valor}} disp.",
+  "tanda_caducada_aviso": " — ⚠ caducada",
+  "tanda_proxima_caducar_aviso": " — ⏳ caduca en {{dias}} día(s)",
   "selecciona_tanda": "Selecciona tanda",
   "cantidad_placeholder": "Cantidad",
   "repartir_otra_tanda": "+ repartir en otra tanda",

@@ -5,7 +5,7 @@ import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad, formatMoneda } from '../lib/formatCantidad'
 import { useNegocio } from '../context/useNegocio'
 import { IconChevronRight, IconChevronDown } from '@tabler/icons-react'
-import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer, LinkAction } from '../components/ui'
+import { PageHeader, Card, CardBody, Field, MultiSelect, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer, LinkAction, EtiquetaCaducidad } from '../components/ui'
 import AjusteStockForm from '../components/AjusteStockForm'
 
 const datosVacios = {
@@ -53,7 +53,7 @@ function Inventario() {
       supabase.from('articulo_proveedor').select('id, articulo_id, proveedor_id, precio, preferente'),
       supabase.from('proveedores').select('id, nombre_comercial').order('nombre_comercial'),
       supabase.from('stock_lotes_articulo').select('entrada_material_id, articulo_id, stock_disponible'),
-      supabase.from('entrada_material').select('id, articulo_id, cantidad, precio, codigo_lote, albaranes_compra(proveedor_id, fecha)'),
+      supabase.from('entrada_material').select('id, articulo_id, cantidad, precio, codigo_lote, fecha_caducidad, albaranes_compra(proveedor_id, fecha)'),
       supabase.from('receta_producto_final').select('producto_final_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, cantidad'),
       supabase.from('receta_semielaborado').select('semielaborado_id, articulo_id, ingrediente_id, ingrediente_semielaborado_id, cantidad'),
       supabase.from('productos_finales').select('id, nombre').order('nombre'),
@@ -200,6 +200,7 @@ function Inventario() {
         entradaMaterialId: lote.entrada_material_id,
         codigoLote: em.codigo_lote,
         fechaRecepcion: em.albaranes_compra?.fecha,
+        fechaCaducidad: em.fecha_caducidad,
         cantidadRecibida: Number(em.cantidad),
         ajustesPositivos: ajustes.positivos,
         entrado: Number(em.cantidad) + ajustes.positivos,
@@ -494,6 +495,7 @@ function Inventario() {
                                                                     <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400">
                                                                       <th className="pl-24 pr-2 py-1 font-medium">{t('inventario:tabla.recepcion')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.lote')}</th>
+                                                                      <th className="px-2 py-1 font-medium">{t('inventario:tabla.caducidad')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.entrado')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.consumido')}</th>
                                                                       <th className="px-2 py-1 font-medium">{t('inventario:tabla.stock')}</th>
@@ -505,6 +507,14 @@ function Inventario() {
                                                                       <tr key={lote.entradaMaterialId}>
                                                                         <td className="pl-24 pr-2 py-1.5">{lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—'}</td>
                                                                         <td className="px-2 py-1.5">{lote.codigoLote || '—'}</td>
+                                                                        <td className="px-2 py-1.5">
+                                                                          {lote.fechaCaducidad ? (
+                                                                            <span className="flex items-center gap-1.5">
+                                                                              {formatFecha(lote.fechaCaducidad)}
+                                                                              <EtiquetaCaducidad fechaCaducidad={lote.fechaCaducidad} />
+                                                                            </span>
+                                                                          ) : '—'}
+                                                                        </td>
                                                                         <td className="px-2 py-1.5">
                                                                           {formatCantidad(lote.entrado, art.unidad)} {art.unidad}
                                                                           {lote.ajustesPositivos > 0 && (
@@ -532,6 +542,7 @@ function Inventario() {
                                                                               itemUnidad: art.unidad,
                                                                               loteId: lote.entradaMaterialId,
                                                                               loteLabel: `${lote.codigoLote ? lote.codigoLote + ' · ' : ''}${t('inventario:recepcion_lote_label', { fecha: lote.fechaRecepcion ? formatFecha(lote.fechaRecepcion) : '—' })}`,
+                                                                              fechaCaducidad: lote.fechaCaducidad,
                                                                               stockActual: lote.stock,
                                                                             })}
                                                                           >

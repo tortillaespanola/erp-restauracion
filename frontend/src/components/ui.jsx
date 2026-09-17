@@ -9,6 +9,7 @@ import { IconChevronDown, IconX } from '@tabler/icons-react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { seleccionarAlEnfocar, evitarColapsoDeSeleccion } from '../lib/seleccionAlEnfocar'
 import { mensajeValidacionNativa } from '../lib/validacionNativa'
+import { estadoCaducidad, diasParaCaducar, BADGE_COLOR_CADUCIDAD } from '../lib/caducidadLote'
 
 registerLocale('es', es)
 
@@ -236,6 +237,20 @@ const badgeColors = {
 
 export function Badge({ children, color = 'gray' }) {
   return <span className={`inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-pill whitespace-nowrap ${badgeColors[color]}`}>{children}</span>
+}
+
+// CONTRATO_BADGE_CADUCIDAD_LOTES.md: badge reutilizable para cualquier selector/tabla de lote que
+// renderice JSX libre (no dentro de un <option> nativo, que no admite <span> coloreado -- esos
+// selectores usan en su lugar el texto de aviso ya existente por componente, ver caducidadLote.js).
+// Normal (o sin fecha_caducidad) no pinta nada, igual que el resto de badges opcionales del proyecto.
+export function EtiquetaCaducidad({ fechaCaducidad, fechaReferencia }) {
+  const { t } = useTranslation('common')
+  const estado = estadoCaducidad(fechaCaducidad, fechaReferencia)
+  if (!estado || estado === 'normal') return null
+  const texto = estado === 'caducado'
+    ? t('caducidad_lote.caducado')
+    : t('caducidad_lote.caduca_en_dias', { dias: diasParaCaducar(fechaCaducidad, fechaReferencia) })
+  return <Badge color={BADGE_COLOR_CADUCIDAD[estado]}>{texto}</Badge>
 }
 
 export function Table({ children, className = '' }) {

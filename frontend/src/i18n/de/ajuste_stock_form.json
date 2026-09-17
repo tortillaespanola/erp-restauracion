@@ -18,6 +18,8 @@
   "lote_stock_actual": "aktueller Bestand: {{stock}}",
   "lote_produccion": "Produktion {{fecha}}",
   "lote_caduca": " · läuft ab {{fecha}}",
+  "lote_caducado_aviso": " — ⚠ abgelaufen, vor Verwendung prüfen",
+  "lote_proximo_caducar_aviso": " — ⏳ läuft in {{dias}} Tag(en) ab",
   "stock_actual_del_lote": "Aktueller Bestand der Charge: {{cantidad}} {{unidad}}",
   "campos": {
     "cantidad": "Menge (+ addiert, - subtrahiert)",

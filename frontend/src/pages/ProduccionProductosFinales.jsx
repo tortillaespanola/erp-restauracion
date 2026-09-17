@@ -8,6 +8,7 @@ import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
+import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
 // CONTRATO_MEJORAS_MES.md, punto 2: mismos criterios que Producciones.jsx (punto 1) -- 20 por
 // página, y el mismo umbral de tolerancia para el badge de estado.
@@ -1069,19 +1070,28 @@ function ProduccionAbierta({ produccion, onCambio }) {
   )
 }
 
+// CONTRATO_BADGE_CADUCIDAD_LOTES.md: mismo criterio que Producciones.jsx -- comparado contra
+// fechaDestino cuando existe, contra hoy si no. `fechaPosterior` sigue siendo un aviso aparte, no
+// relacionado con caducidad (ver disabled en opcion() más abajo, que solo depende de fechaPosterior).
 function labelLote(ingrediente, l, fechaDestino, fechaPosterior, t) {
-  const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
+  const fechaRef = fechaDestino || new Date().toISOString().slice(0, 10)
+  const estado = estadoCaducidad(l.fecha_caducidad, fechaRef)
+  const avisoCaducidad = estado === 'caducado'
+    ? t('produccion_comun:lote_caducado_aviso')
+    : estado === 'proximo'
+      ? t('produccion_comun:lote_proximo_caducar_aviso', { dias: diasParaCaducar(l.fecha_caducidad, fechaRef) })
+      : ''
   const stockDisp = t('produccion_comun:lote_stock_disp', { stock: l.stock_disponible.toFixed(3), unidad: l.unidad })
   if (ingrediente.esArticulo) {
     const proveedor = l.proveedor ? `${l.proveedor} · ` : ''
     const numero = l.numero_albaran || t('produccion_comun:lote_sin_numero')
     const cad = l.fecha_caducidad ? ` · ${t('produccion_comun:lote_caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) })}` : ''
-    const aviso = caducado ? t('produccion_comun:lote_caducado_aviso') : ''
-    return `${l.nombre} · ${proveedor}${t('produccion_comun:lote_albaran', { numero })} · ${formatFecha(l.fecha_recepcion)}${cad} · ${stockDisp}${aviso}`
+    return `${l.nombre} · ${proveedor}${t('produccion_comun:lote_albaran', { numero })} · ${formatFecha(l.fecha_recepcion)}${cad} · ${stockDisp}${avisoCaducidad}`
   }
   const codigo = l.codigo_lote ? l.codigo_lote + ' · ' : ''
-  const aviso = fechaPosterior ? t('produccion_comun:lote_fecha_posterior_aviso') : caducado ? t('produccion_comun:lote_caducado_aviso') : ''
-  return `${l.nombre} · ${codigo}${t('produccion_comun:lote_produccion_label', { fecha: formatFecha(l.fecha) })} · ${stockDisp}${aviso}`
+  const cad = l.fecha_caducidad ? ` · ${t('produccion_comun:lote_caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) })}` : ''
+  const aviso = fechaPosterior ? t('produccion_comun:lote_fecha_posterior_aviso') : avisoCaducidad
+  return `${l.nombre} · ${codigo}${t('produccion_comun:lote_produccion_label', { fecha: formatFecha(l.fecha) })}${cad} · ${stockDisp}${aviso}`
 }
 
 // Fila controlada (lote + cantidad): el padre decide qué hacer con las

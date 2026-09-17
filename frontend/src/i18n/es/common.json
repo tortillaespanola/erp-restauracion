@@ -75,6 +75,10 @@
   "sin_cliente": "Sin cliente",
   "sin_numero": "(sin número)",
   "redondea_3_decimales": "Se redondeará a 3 decimales",
+  "caducidad_lote": {
+    "caducado": "Caducado",
+    "caduca_en_dias": "Caduca en {{dias}} día(s)"
+  },
   "feedback": {
     "guardado": "Guardado correctamente",
     "eliminado": "Eliminado correctamente",

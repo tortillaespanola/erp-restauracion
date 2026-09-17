@@ -5,7 +5,20 @@ import { IconStack3, IconComponents, IconCircleCheck, IconAlertTriangle, IconClo
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
+import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 import { PageHeader, Card, CardBody, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+
+// CONTRATO_BADGE_CADUCIDAD_LOTES.md: selector de tanda (produccion_pf_id) para el desglose de una
+// línea -- también itera lotes de stock_lotes_producto_final, aunque el contrato no lo mencione
+// explícitamente (ver auditoría). Sin fecha de destino propia (no es una venta/consumo con fecha),
+// se compara siempre contra hoy. Extraído porque se usa en dos <Select> de tanda (reasignar / split
+// nuevo) con el mismo formato de opción.
+function avisoCaducidadTanda(fechaCaducidad, t) {
+  const estado = estadoCaducidad(fechaCaducidad)
+  if (estado === 'caducado') return t('pedidos_del_dia:tanda_caducada_aviso')
+  if (estado === 'proximo') return t('pedidos_del_dia:tanda_proxima_caducar_aviso', { dias: diasParaCaducar(fechaCaducidad) })
+  return ''
+}
 
 // Jerarquía hoja→raíz (CONTRATO_VISTA_DINAMICA_PRODUCCION.md): dado el conjunto pequeño de
 // semielaborados ya presentes en el resultado, resuelve solo las relaciones semielaborado→
@@ -554,7 +567,7 @@ function DesgloseDistribucionPF({
                                 <option value="">{t('pedidos_del_dia:sin_tanda_asignada')}</option>
                                 {tandasProducto.map((t2) => (
                                   <option key={t2.produccion_id} value={t2.produccion_id}>
-                                    {formatFecha(t2.fecha)} · {t('pedidos_del_dia:disp_sufijo', { valor: Number(t2.stock_disponible).toFixed(3) })}
+                                    {formatFecha(t2.fecha)} · {t('pedidos_del_dia:disp_sufijo', { valor: Number(t2.stock_disponible).toFixed(3) })}{avisoCaducidadTanda(t2.fecha_caducidad, t)}
                                   </option>
                                 ))}
                               </Select>
@@ -588,7 +601,7 @@ function DesgloseDistribucionPF({
                               .filter((t2) => !tandasUsadasPorLinea.has(Number(t2.produccion_id)))
                               .map((t2) => (
                                 <option key={t2.produccion_id} value={t2.produccion_id}>
-                                  {formatFecha(t2.fecha)} · {t('pedidos_del_dia:disp_sufijo', { valor: Number(t2.stock_disponible).toFixed(3) })}
+                                  {formatFecha(t2.fecha)} · {t('pedidos_del_dia:disp_sufijo', { valor: Number(t2.stock_disponible).toFixed(3) })}{avisoCaducidadTanda(t2.fecha_caducidad, t)}
                                 </option>
                               ))}
                           </Select>
@@ -1035,7 +1048,7 @@ function PedidosDelDia() {
       supabase.rpc('distribucion_prevista_pf', { p_producto_final_id: productoFinalId }),
       supabase
         .from('stock_lotes_producto_final')
-        .select('produccion_id, fecha, stock_disponible, codigo_lote')
+        .select('produccion_id, fecha, stock_disponible, codigo_lote, fecha_caducidad')
         .eq('producto_final_id', productoFinalId)
         .gt('stock_disponible', 0)
         .order('fecha', { ascending: true }),

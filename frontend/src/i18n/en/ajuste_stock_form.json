@@ -18,6 +18,8 @@
   "lote_stock_actual": "current stock: {{stock}}",
   "lote_produccion": "Production {{fecha}}",
   "lote_caduca": " · expires {{fecha}}",
+  "lote_caducado_aviso": " — ⚠ expired, check before using",
+  "lote_proximo_caducar_aviso": " — ⏳ expires in {{dias}} day(s)",
   "stock_actual_del_lote": "Current stock of the lot: {{cantidad}} {{unidad}}",
   "campos": {
     "cantidad": "Quantity (+ adds, - subtracts)",

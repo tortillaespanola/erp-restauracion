@@ -42,6 +42,7 @@
   "lote_caducidad_abrev": "MHD {{fecha}}",
   "lote_stock_disp": "{{stock}} {{unidad}} verf.",
   "lote_caducado_aviso": " — ⚠ abgelaufen, vor Verwendung prüfen",
+  "lote_proximo_caducar_aviso": " — ⏳ läuft in {{dias}} Tag(en) ab",
   "lote_fecha_posterior_aviso": " — ⚠ späteres Datum, kann nicht verbraucht werden",
   "lote_produccion_label": "Produktion {{fecha}}",
   "usar_estimacion": "Schätzung verwenden",

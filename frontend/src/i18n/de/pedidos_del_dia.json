@@ -49,6 +49,8 @@
   "tanda_fecha": "Charge {{fecha}}",
   "solo_disp": " · nur {{valor}} verf.",
   "disp_sufijo": "{{valor}} verf.",
+  "tanda_caducada_aviso": " — ⚠ abgelaufen",
+  "tanda_proxima_caducar_aviso": " — ⏳ läuft in {{dias}} Tag(en) ab",
   "selecciona_tanda": "Charge auswählen",
   "cantidad_placeholder": "Menge",
   "repartir_otra_tanda": "+ auf andere Charge verteilen",

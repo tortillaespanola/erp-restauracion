@@ -42,6 +42,7 @@
   "lote_caducidad_abrev": "exp. {{fecha}}",
   "lote_stock_disp": "{{stock}} {{unidad}} avail.",
   "lote_caducado_aviso": " — ⚠ expired, check before using",
+  "lote_proximo_caducar_aviso": " — ⏳ expires in {{dias}} day(s)",
   "lote_fecha_posterior_aviso": " — ⚠ later date, cannot be consumed",
   "lote_produccion_label": "Production {{fecha}}",
   "usar_estimacion": "Use estimate",

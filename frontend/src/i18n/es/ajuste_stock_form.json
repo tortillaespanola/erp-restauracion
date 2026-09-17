@@ -18,6 +18,8 @@
   "lote_stock_actual": "stock actual: {{stock}}",
   "lote_produccion": "Producción {{fecha}}",
   "lote_caduca": " · caduca {{fecha}}",
+  "lote_caducado_aviso": " — ⚠ caducado, revisar antes de usar",
+  "lote_proximo_caducar_aviso": " — ⏳ caduca en {{dias}} día(s)",
   "stock_actual_del_lote": "Stock actual del lote: {{cantidad}} {{unidad}}",
   "campos": {
     "cantidad": "Cantidad (+ suma, - resta)",

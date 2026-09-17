@@ -31,6 +31,8 @@
   "disponible_unidad_sufijo": "{{valor}} {{unidad}} avail.",
   "fecha_posterior_aviso": " — ⚠ later date, cannot be sold",
   "caducado_aviso": " — ⚠ expired, check before selling",
+  "proximo_aviso": " — ⏳ expires in {{dias}} day(s)",
+  "caducidad_abrev": " · exp. {{fecha}}",
   "restante_pendiente_pedido": "{{restante}} units pending from the order",
   "descripcion_placeholder": "Description (e.g. Bread, extra showcooking hours...)",
   "alertas": {

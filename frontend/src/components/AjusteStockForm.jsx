@@ -4,7 +4,8 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad } from '../lib/formatCantidad'
-import { Field, Input, Select, Button } from './ui'
+import { Field, Input, Select, Button, EtiquetaCaducidad } from './ui'
+import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
 // CONTRATO_I18N.md, Fase 0: claves del enum motivo_categoria (fijas en BD) -- la etiqueta
 // visible se resuelve con t('enums:motivo_categoria.<clave>'), ver enums.json. Antes
@@ -140,7 +141,10 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
       {fijo ? (
         <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
           <p className="font-medium text-ink">{fijo.itemNombre}</p>
-          <p className="text-gray-500 text-xs mt-0.5">{fijo.loteLabel}</p>
+          <p className="text-gray-500 text-xs mt-0.5 flex items-center gap-1.5">
+            {fijo.loteLabel}
+            {fijo.fechaCaducidad && <EtiquetaCaducidad fechaCaducidad={fijo.fechaCaducidad} />}
+          </p>
           {stockActualLote != null && (
             <p className="text-gray-500 text-xs mt-1">{t('ajuste_stock_form:stock_actual_del_lote', { cantidad: formatCantidad(stockActualLote, unidad), unidad })}</p>
           )}
@@ -177,11 +181,19 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
                 const esMasAntiguo = index === 0
                 const masAntiguoPrefijo = esMasAntiguo ? t('ajuste_stock_form:mas_antiguo_badge') : ''
                 const stockActualSufijo = t('ajuste_stock_form:lote_stock_actual', { stock: Number(l.stock_disponible).toFixed(3) })
+                // CONTRATO_BADGE_CADUCIDAD_LOTES.md: este selector no mostraba fecha_caducidad ni
+                // aviso de caducado en absoluto salvo en producto_final (auditoría) -- se unifica
+                // aquí para los 3 tipos, reutilizando la misma lógica que Producciones.jsx.
+                const estado = estadoCaducidad(l.fecha_caducidad)
+                const cad = l.fecha_caducidad ? t('ajuste_stock_form:lote_caduca', { fecha: formatFecha(l.fecha_caducidad) }) : ''
+                const aviso = estado === 'caducado'
+                  ? t('ajuste_stock_form:lote_caducado_aviso')
+                  : estado === 'proximo'
+                    ? t('ajuste_stock_form:lote_proximo_caducar_aviso', { dias: diasParaCaducar(l.fecha_caducidad) })
+                    : ''
                 const label = tipo === 'articulo'
-                  ? `${masAntiguoPrefijo}${t('ajuste_stock_form:lote_albaran', { numero: l.numero_albaran || t('ajuste_stock_form:lote_sin_numero') })} · ${formatFecha(l.fecha_recepcion)} · ${stockActualSufijo}`
-                  : tipo === 'semielaborado'
-                  ? `${masAntiguoPrefijo}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}${t('ajuste_stock_form:lote_produccion', { fecha: formatFecha(l.fecha) })} · ${stockActualSufijo}`
-                  : `${masAntiguoPrefijo}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}${t('ajuste_stock_form:lote_produccion', { fecha: formatFecha(l.fecha) })}${l.fecha_caducidad ? t('ajuste_stock_form:lote_caduca', { fecha: formatFecha(l.fecha_caducidad) }) : ''} · ${stockActualSufijo}`
+                  ? `${masAntiguoPrefijo}${t('ajuste_stock_form:lote_albaran', { numero: l.numero_albaran || t('ajuste_stock_form:lote_sin_numero') })} · ${formatFecha(l.fecha_recepcion)}${cad} · ${stockActualSufijo}${aviso}`
+                  : `${masAntiguoPrefijo}${l.codigo_lote ? l.codigo_lote + ' · ' : ''}${t('ajuste_stock_form:lote_produccion', { fecha: formatFecha(l.fecha) })}${cad} · ${stockActualSufijo}${aviso}`
                 return <option key={id} value={id}>{label}</option>
               })}
             </Select>

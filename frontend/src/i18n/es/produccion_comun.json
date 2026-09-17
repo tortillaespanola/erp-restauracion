@@ -42,6 +42,7 @@
   "lote_caducidad_abrev": "cad. {{fecha}}",
   "lote_stock_disp": "{{stock}} {{unidad}} disp.",
   "lote_caducado_aviso": " — ⚠ caducado, revisar antes de usar",
+  "lote_proximo_caducar_aviso": " — ⏳ caduca en {{dias}} día(s)",
   "lote_fecha_posterior_aviso": " — ⚠ fecha posterior, no se podrá consumir",
   "lote_produccion_label": "Producción {{fecha}}",
   "usar_estimacion": "Usar estimación",

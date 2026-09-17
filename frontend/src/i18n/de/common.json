@@ -75,6 +75,10 @@
   "sin_cliente": "Kein Kunde",
   "sin_numero": "(o. Nr.)",
   "redondea_3_decimales": "Wird auf 3 Dezimalstellen gerundet",
+  "caducidad_lote": {
+    "caducado": "Abgelaufen",
+    "caduca_en_dias": "Läuft in {{dias}} Tag(en) ab"
+  },
   "feedback": {
     "guardado": "Erfolgreich gespeichert",
     "eliminado": "Erfolgreich gelöscht",

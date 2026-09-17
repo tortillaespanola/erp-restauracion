@@ -9,6 +9,7 @@ import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
+import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
 // CONTRATO_MEJORAS_MES.md, punto 1.4: 20 por página, mismo tamaño que Pedidos/Albaranes/Facturas.
 const PAGINA_TAMANO = 20
@@ -1164,9 +1165,18 @@ function ProduccionAbierta({ produccion, onCambio }) {
 // Fila controlada (lote + cantidad): el padre decide qué hacer con las
 // líneas rellenas (confirmar en bloque, añadir a una edición, etc.) —
 // este componente no tiene acción ni estado propios.
+// CONTRATO_BADGE_CADUCIDAD_LOTES.md: comparado contra fechaDestino (cuándo se va a consumir el
+// lote), no contra hoy, cuando hay fecha objetivo -- mismo criterio que
+// registrar_incidencia_caducidad_consumo() en backend (20260826). Sin fechaDestino se usa hoy, para
+// no dejar de avisar solo porque aún no se ha fijado la fecha del consumo.
 function labelLote(ingrediente, l, fechaDestino, t) {
-  const caducado = l.fecha_caducidad && fechaDestino && l.fecha_caducidad < fechaDestino
-  const aviso = caducado ? t('produccion_comun:lote_caducado_aviso') : ''
+  const fechaRef = fechaDestino || new Date().toISOString().slice(0, 10)
+  const estado = estadoCaducidad(l.fecha_caducidad, fechaRef)
+  const aviso = estado === 'caducado'
+    ? t('produccion_comun:lote_caducado_aviso')
+    : estado === 'proximo'
+      ? t('produccion_comun:lote_proximo_caducar_aviso', { dias: diasParaCaducar(l.fecha_caducidad, fechaRef) })
+      : ''
   const stockDisp = t('produccion_comun:lote_stock_disp', { stock: l.stock_disponible.toFixed(3), unidad: l.unidad })
   if (ingrediente.esArticulo) {
     const proveedor = l.proveedor ? `${l.proveedor} · ` : ''
@@ -1175,7 +1185,8 @@ function labelLote(ingrediente, l, fechaDestino, t) {
     return `${l.nombre} · ${proveedor}${t('produccion_comun:lote_albaran', { numero })} · ${formatFecha(l.fecha_recepcion)}${cad} · ${stockDisp}${aviso}`
   }
   const codigo = l.codigo_lote ? l.codigo_lote + ' · ' : ''
-  return `${l.nombre} · ${codigo}${t('produccion_comun:lote_produccion_label', { fecha: formatFecha(l.fecha) })} · ${stockDisp}${aviso}`
+  const cad = l.fecha_caducidad ? ` · ${t('produccion_comun:lote_caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) })}` : ''
+  return `${l.nombre} · ${codigo}${t('produccion_comun:lote_produccion_label', { fecha: formatFecha(l.fecha) })}${cad} · ${stockDisp}${aviso}`
 }
 
 // Addenda "reorganización del bloque de registro de consumo": `estimacion` ({necesario, disponible,

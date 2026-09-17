@@ -7,8 +7,9 @@ import { formatFecha } from '../lib/formatFecha'
 import { formatMoneda } from '../lib/formatCantidad'
 import { generarAlbaranVentaPdf, prepararDocumentoAlbaranVenta } from '../lib/generarAlbaranVentaPdf'
 import { IconTrash } from '@tabler/icons-react'
-import { Field, Input, Select, DateInput, SectionLabel, Button, LinkAction } from './ui'
+import { Field, Input, Select, DateInput, SectionLabel, Button, LinkAction, EtiquetaCaducidad } from './ui'
 import { useNegocio } from '../context/useNegocio'
+import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
 // Fix: los avisos de stock mostraban "3.000" en vez de "3" para valores enteros -- redondea a 3
 // decimales (mismo tope ya usado en toda la UI, step="0.001") y quita los ceros sobrantes.
@@ -416,7 +417,7 @@ export default function AlbaranVentaForm({ pedidoIdParam, clientes, productos, a
 // precargada (neta de lo ya añadido en esta sesión para esa tanda concreta) y "+ Añadir" propio.
 // Vuelve null en cuanto esa previsión concreta queda cubierta (restante <= 0), igual criterio que el
 // resto del sistema ("nada pendiente, no mostrar nada").
-function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas, lineaPedido }) {
+function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLineas, lineaPedido, fechaAlbaran }) {
   const { t } = useTranslation(['common', 'albaran_venta_form'])
   const yaUsado = cantidadYaEnLineas(prevision.produccion_pf_id)
   const restante = Number(prevision.cantidad_prevista) - yaUsado
@@ -436,9 +437,12 @@ function FilaBloqueada({ producto, prevision, tandaInfo, onAdd, cantidadYaEnLine
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 mt-2 items-center">
-      <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5">
-        {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: tandaInfo ? formatFecha(tandaInfo.fecha) : '' })}
-        <span className="text-gray-400 text-xs">{t('albaran_venta_form:asignado_tanda_nota')}</span>
+      <div className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-md px-2.5 py-1.5 flex items-center gap-1.5 flex-wrap">
+        <span>
+          {tandaInfo?.codigo_lote ? `${tandaInfo.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: tandaInfo ? formatFecha(tandaInfo.fecha) : '' })}
+          <span className="text-gray-400 text-xs">{t('albaran_venta_form:asignado_tanda_nota')}</span>
+        </span>
+        {tandaInfo?.fecha_caducidad && <EtiquetaCaducidad fechaCaducidad={tandaInfo.fecha_caducidad} fechaReferencia={fechaAlbaran} />}
       </div>
       <Input type="number" step="0.001" placeholder={t('albaran_venta_form:cantidad_placeholder')} value={cantidad}
         onChange={(e) => setCantidad(e.target.value)}
@@ -535,6 +539,7 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
           onAdd={onAdd}
           cantidadYaEnLineas={cantidadYaEnLineas}
           lineaPedido={lineaPedido}
+          fechaAlbaran={fechaAlbaran}
         />
       ))}
 
@@ -544,10 +549,20 @@ function ProductoParaVender({ producto, onAdd, refrescoStock, cantidadYaEnLineas
             <option value="">{t('albaran_venta_form:selecciona_lote_produccion')}</option>
             {lotesConDisponibleReal.map((l) => {
               const fechaPosterior = fechaAlbaran && l.fecha > fechaAlbaran
-              const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
+              // CONTRATO_BADGE_CADUCIDAD_LOTES.md: comparado contra fechaAlbaran (cuándo se
+              // vende), no contra hoy, cuando existe -- mismo criterio que backend
+              // (registrar_incidencia_caducidad_consumo_venta(), 20260826).
+              const fechaRef = fechaAlbaran || new Date().toISOString().slice(0, 10)
+              const estado = estadoCaducidad(l.fecha_caducidad, fechaRef)
+              const cad = l.fecha_caducidad ? t('albaran_venta_form:caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) }) : ''
+              const avisoCaducidad = estado === 'caducado'
+                ? t('albaran_venta_form:caducado_aviso')
+                : estado === 'proximo'
+                  ? t('albaran_venta_form:proximo_aviso', { dias: diasParaCaducar(l.fecha_caducidad, fechaRef) })
+                  : ''
               return (
                 <option key={l.produccion_id} value={l.produccion_id} disabled={fechaPosterior}>
-                  {l.codigo_lote ? `${l.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: formatFecha(l.fecha) })} · {t('albaran_venta_form:disponible_sufijo', { valor: l.disponibleReal.toFixed(3) })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : caducado ? t('albaran_venta_form:caducado_aviso') : ''}
+                  {l.codigo_lote ? `${l.codigo_lote} · ` : ''}{t('albaran_venta_form:produccion_label', { fecha: formatFecha(l.fecha) })}{cad} · {t('albaran_venta_form:disponible_sufijo', { valor: l.disponibleReal.toFixed(3) })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : avisoCaducidad}
                 </option>
               )
             })}
@@ -617,10 +632,17 @@ function ArticuloParaVender({ articulo, onAdd, refrescoStock, cantidadYaEnLineas
           <option value="">{t('albaran_venta_form:selecciona_lote')}</option>
           {lotesConDisponibleReal.map((l) => {
             const fechaPosterior = fechaAlbaran && l.fecha_recepcion > fechaAlbaran
-            const caducado = l.fecha_caducidad && fechaAlbaran && l.fecha_caducidad < fechaAlbaran
+            const fechaRef = fechaAlbaran || new Date().toISOString().slice(0, 10)
+            const estado = estadoCaducidad(l.fecha_caducidad, fechaRef)
+            const cad = l.fecha_caducidad ? t('albaran_venta_form:caducidad_abrev', { fecha: formatFecha(l.fecha_caducidad) }) : ''
+            const avisoCaducidad = estado === 'caducado'
+              ? t('albaran_venta_form:caducado_aviso')
+              : estado === 'proximo'
+                ? t('albaran_venta_form:proximo_aviso', { dias: diasParaCaducar(l.fecha_caducidad, fechaRef) })
+                : ''
             return (
               <option key={l.entrada_material_id} value={l.entrada_material_id} disabled={fechaPosterior}>
-                {l.proveedor ? `${l.proveedor} · ` : ''}{t('albaran_venta_form:albaran_label', { numero: l.numero_albaran || t('albaran_venta_form:sin_numero') })} · {formatFecha(l.fecha_recepcion)} · {t('albaran_venta_form:disponible_unidad_sufijo', { valor: l.disponibleReal.toFixed(3), unidad: articulo.unidad })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : caducado ? t('albaran_venta_form:caducado_aviso') : ''}
+                {l.proveedor ? `${l.proveedor} · ` : ''}{t('albaran_venta_form:albaran_label', { numero: l.numero_albaran || t('albaran_venta_form:sin_numero') })} · {formatFecha(l.fecha_recepcion)}{cad} · {t('albaran_venta_form:disponible_unidad_sufijo', { valor: l.disponibleReal.toFixed(3), unidad: articulo.unidad })}{fechaPosterior ? t('albaran_venta_form:fecha_posterior_aviso') : avisoCaducidad}
               </option>
             )
           })}
