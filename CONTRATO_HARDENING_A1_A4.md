@@ -4,7 +4,7 @@
 
 Este contrato cubre **solo** los 4 problemas críticos detectados en la auditoría funcional de FlowBase (browser automation). NO toca generalización de producto, UX secundaria ni features nuevas — eso irá en contratos separados (`CONTRATO_HARDENING_A5_A11.md` y el ya existente `CONTRATO_GENERICO_CATALOGO.md`).
 
-Repositorio: https://github.com/tortillaespanola/erp-restauracion
+Repositorio: https://github.com/tortillaespanola/flowbase
 Desplegado: https://flowbase-orpin.vercel.app
 
 No hagas cambios fuera del scope de este contrato, aunque los detectes de paso. Anótalos en un apartado "Detectado pero fuera de scope" en tu informe final.
