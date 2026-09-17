@@ -7,6 +7,7 @@ import { formatFecha } from '../lib/formatFecha'
 import { validarStockReceta } from '../lib/validarStockReceta'
 import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 import { PageHeader, Card, CardBody, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState } from '../components/ui'
+import BadgeScrap from '../components/BadgeScrap'
 
 // CONTRATO_BADGE_CADUCIDAD_LOTES.md: selector de tanda (produccion_pf_id) para el desglose de una
 // línea -- también itera lotes de stock_lotes_producto_final, aunque el contrato no lo mencione
@@ -1285,6 +1286,7 @@ function PedidosDelDia() {
                       </Td>
                       <Td className="font-medium">
                         <span title={tooltipPedidos(f.pedidos, t)}>{f.nombre}</span>
+                        <span className="ml-2"><BadgeScrap tipo="producto_final" itemId={f.id} /></span>
                       </Td>
                       <Td>{f.necesidad.toFixed(3)} uds</Td>
                       <Td>{f.disponible.toFixed(3)} uds</Td>
@@ -1361,6 +1363,7 @@ function PedidosDelDia() {
                       </Td>
                       <Td className="font-medium">
                         <span title={tooltipPedidos(f.pedidos, t)}>{f.nombre}</span>
+                        <span className="ml-2"><BadgeScrap tipo="semielaborado" itemId={f.id} /></span>
                       </Td>
                       <Td>{f.necesidad.toFixed(3)} {f.unidad}</Td>
                       <Td>{f.disponible.toFixed(3)} {f.unidad}</Td>

@@ -8,6 +8,7 @@ import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
 import AjusteStockForm from '../components/AjusteStockForm'
+import BadgeScrap from '../components/BadgeScrap'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
 import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
@@ -1264,6 +1265,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, asignacion
           {produccion.productos_finales?.nombre}
           {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
           {produccion.pedidos_venta && <span className="ml-2 text-xs font-mono text-gray-400">{t('produccion_productos_finales:pedido_codigo', { codigo: produccion.pedidos_venta.codigo_pedido })}</span>}
+          <span className="ml-2"><BadgeScrap tipo="producto_final" origenId={produccion.id} /></span>
         </td>
         <td className="px-3 py-3 whitespace-nowrap text-gray-600">
           {produccion.cantidad_producida} {t('produccion_productos_finales:unidad_corta')}

@@ -4,8 +4,9 @@ import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { formatFecha } from '../lib/formatFecha'
 import { formatCantidad } from '../lib/formatCantidad'
-import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Field, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
+import { PageHeader, Card, CardHeader, CardBody, Button, Badge, LinkAction, Field, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import AjusteStockForm from '../components/AjusteStockForm'
+import ResolverRechazoForm from '../components/ResolverRechazoForm'
 
 // CONTRATO_I18N.md, Fase 0: etiqueta resuelta con t('enums:tipo_ajuste.<clave>') -- ver
 // enums.json. Antes TIPO_LABEL tenía el texto español fijo.
@@ -27,6 +28,9 @@ function motivoMostrado(a, t) {
 function AjustesStock() {
   const { t } = useTranslation(['common', 'enums', 'ajustes_stock'])
   const [drawerAbierto, setDrawerAbierto] = useState(false)
+  // CONTRATO_PROPAGACION_RECHAZOS.md, Parte A: rechazo de cliente pendiente de resolver
+  // (abono/reenvío/descarte), sea uno recién declarado en otra pantalla o uno más antiguo.
+  const [rechazoAResolver, setRechazoAResolver] = useState(null)
   const [historial, setHistorial] = useState([])
   const [total, setTotal] = useState(0)
   const [pagina, setPagina] = useState(0)
@@ -154,7 +158,19 @@ function AjustesStock() {
                     <Td className="text-gray-500">{motivoMostrado(a, t)}</Td>
                     <Td className="text-gray-500">{a.user_email || '—'}</Td>
                     <Td className="text-right">
-                      <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">{t('ajustes_stock:borrar')}</LinkAction>
+                      <div className="flex items-center justify-end gap-2">
+                        {/* CONTRATO_PROPAGACION_RECHAZOS.md, Parte A: solo los rechazos de cliente
+                            (origen_rechazo='cliente', siempre tipo='producto_final' -- ver migración)
+                            tienen resolución; ya resuelto muestra el desenlace en vez de la acción. */}
+                        {a.origen_rechazo === 'cliente' && (
+                          a.tipo_resolucion ? (
+                            <Badge color="gray">{t(`enums:tipo_resolucion.${a.tipo_resolucion}`, { defaultValue: a.tipo_resolucion })}</Badge>
+                          ) : (
+                            <LinkAction tone="amber" onClick={() => setRechazoAResolver(a)} className="text-xs">{t('ajustes_stock:resolver')}</LinkAction>
+                          )
+                        )}
+                        <LinkAction tone="red" onClick={() => handleBorrar(a)} className="text-xs">{t('ajustes_stock:borrar')}</LinkAction>
+                      </div>
                     </Td>
                   </tr>
                 ))}
@@ -182,6 +198,19 @@ function AjustesStock() {
             cargarHistorial()
           }}
         />
+      </Drawer>
+
+      <Drawer open={!!rechazoAResolver} onClose={() => setRechazoAResolver(null)} title={t('ajustes_stock:drawer_resolver_rechazo_titulo')}>
+        {rechazoAResolver && (
+          <ResolverRechazoForm
+            ajuste={rechazoAResolver}
+            onOmitir={() => setRechazoAResolver(null)}
+            onResuelto={() => {
+              setRechazoAResolver(null)
+              cargarHistorial()
+            }}
+          />
+        )}
       </Drawer>
     </div>
   )

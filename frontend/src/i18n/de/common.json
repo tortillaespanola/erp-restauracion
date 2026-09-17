@@ -81,6 +81,11 @@
     "caducado": "Abgelaufen",
     "caduca_en_dias": "Läuft in {{dias}} Tag(en) ab"
   },
+  "badge_scrap": {
+    "etiqueta": "Ausschuss gemeldet",
+    "tooltip_one": "{{count}} Schwund-/Reklamationsbuchung ({{cantidad}} {{unidad}})",
+    "tooltip_other": "{{count}} Schwund-/Reklamationsbuchungen ({{cantidad}} {{unidad}})"
+  },
   "feedback": {
     "guardado": "Erfolgreich gespeichert",
     "eliminado": "Erfolgreich gelöscht",

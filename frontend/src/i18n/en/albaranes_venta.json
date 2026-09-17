@@ -29,6 +29,7 @@
   },
   "declarar_rechazo_cliente": "Declare customer rejection",
   "drawer_declarar_rechazo_titulo": "Declare customer rejection",
+  "drawer_resolver_rechazo_titulo": "Resolve customer rejection",
   "albaran_pagina_count_one": "{{count}} delivery note · page {{pagina}} of {{total}}",
   "albaran_pagina_count_other": "{{count}} delivery notes · page {{pagina}} of {{total}}",
   "alertas": {

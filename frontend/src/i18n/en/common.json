@@ -81,6 +81,11 @@
     "caducado": "Expired",
     "caduca_en_dias": "Expires in {{dias}} day(s)"
   },
+  "badge_scrap": {
+    "etiqueta": "Scrap declared",
+    "tooltip_one": "{{count}} waste/rejection adjustment ({{cantidad}} {{unidad}})",
+    "tooltip_other": "{{count}} waste/rejection adjustments ({{cantidad}} {{unidad}})"
+  },
   "feedback": {
     "guardado": "Saved successfully",
     "eliminado": "Deleted successfully",

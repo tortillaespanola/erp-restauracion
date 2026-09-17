@@ -14,6 +14,8 @@ import { PageHeader, Card, Button, Badge, EmptyState, LoadingState, Drawer, Fiel
 import AlbaranVentaForm from '../components/AlbaranVentaForm'
 import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import AjusteStockForm from '../components/AjusteStockForm'
+import ResolverRechazoForm from '../components/ResolverRechazoForm'
+import BadgeScrap from '../components/BadgeScrap'
 import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
 // CONTRATO_I18N.md, Fase 0: icon/color son independientes del idioma y se quedan aquí -- la
@@ -147,6 +149,9 @@ function AlbaranesVenta() {
   // línea de producto final ya entregada -- mismo AjusteStockForm de Inventario.jsx/Producciones.jsx,
   // preseleccionando origen_rechazo='cliente'.
   const [declararRechazoFijo, setDeclararRechazoFijo] = useState(null)
+  // CONTRATO_PROPAGACION_RECHAZOS.md, Parte A: ajuste recién insertado (origen_rechazo='cliente'),
+  // en espera del paso de resolución (abono/reenvío/descarte) inmediatamente después de declararlo.
+  const [rechazoAResolver, setRechazoAResolver] = useState(null)
 
   function toggleExpandido(id) {
     setFilaExpandidaId((prev) => (prev === id ? null : id))
@@ -575,25 +580,29 @@ function AlbaranesVenta() {
                                             fuera de alcance de Parte B (CONTRATO_UI_INCIDENCIAS_STOCK.md). */}
                                         <td className="py-1.5">{linea.precio_unitario ?? '-'}</td>
                                         <td className="py-1.5 text-right">
-                                          {linea.produccion_pf_id && (
-                                            <LinkAction
-                                              tone="amber"
-                                              className="text-xs"
-                                              onClick={() =>
-                                                setDeclararRechazoFijo({
-                                                  tipo: 'producto_final',
-                                                  itemId: linea.producto_final_id,
-                                                  itemNombre: linea.productos_finales?.nombre,
-                                                  itemUnidad: 'ud',
-                                                  loteId: linea.produccion_pf_id,
-                                                  loteLabel: `${linea.producciones_producto_final?.codigo_lote ? linea.producciones_producto_final.codigo_lote + ' · ' : ''}${linea.producciones_producto_final?.fecha ? formatFecha(linea.producciones_producto_final.fecha) : ''}`,
-                                                  origenRechazo: 'cliente',
-                                                })
-                                              }
-                                            >
-                                              {t('albaranes_venta:declarar_rechazo_cliente')}
-                                            </LinkAction>
-                                          )}
+                                          <div className="flex items-center justify-end gap-2">
+                                            {linea.produccion_pf_id && <BadgeScrap tipo="producto_final" origenId={linea.produccion_pf_id} />}
+                                            {linea.produccion_pf_id && (
+                                              <LinkAction
+                                                tone="amber"
+                                                className="text-xs"
+                                                onClick={() =>
+                                                  setDeclararRechazoFijo({
+                                                    tipo: 'producto_final',
+                                                    itemId: linea.producto_final_id,
+                                                    itemNombre: linea.productos_finales?.nombre,
+                                                    itemUnidad: 'ud',
+                                                    loteId: linea.produccion_pf_id,
+                                                    loteLabel: `${linea.producciones_producto_final?.codigo_lote ? linea.producciones_producto_final.codigo_lote + ' · ' : ''}${linea.producciones_producto_final?.fecha ? formatFecha(linea.producciones_producto_final.fecha) : ''}`,
+                                                    origenRechazo: 'cliente',
+                                                    lineaPedidoOrigenId: linea.linea_pedido_id,
+                                                  })
+                                                }
+                                              >
+                                                {t('albaranes_venta:declarar_rechazo_cliente')}
+                                              </LinkAction>
+                                            )}
+                                          </div>
                                         </td>
                                       </tr>
                                     ))}
@@ -682,8 +691,29 @@ function AlbaranesVenta() {
           <AjusteStockForm
             fijo={declararRechazoFijo}
             onCancelar={() => setDeclararRechazoFijo(null)}
-            onGuardado={() => {
+            onGuardado={(ajusteCreado) => {
               setDeclararRechazoFijo(null)
+              cargarDatos()
+              // CONTRATO_PROPAGACION_RECHAZOS.md, Parte A (Paso 4.4): encadena directamente el paso
+              // de resolución -- todo rechazo de cliente declarado aquí tiene linea_pedido_origen_id,
+              // así que "Reenvío" siempre está disponible en este punto de entrada. El insert solo
+              // trae columnas crudas de ajustes_producto_final (sin item_nombre/unidad, que viven en
+              // la vista historial_ajustes_stock) -- se completan con lo que ya teníamos en `fijo`.
+              if (ajusteCreado) {
+                setRechazoAResolver({ ...ajusteCreado, item_nombre: declararRechazoFijo.itemNombre, unidad: declararRechazoFijo.itemUnidad })
+              }
+            }}
+          />
+        )}
+      </Drawer>
+
+      <Drawer open={!!rechazoAResolver} onClose={() => setRechazoAResolver(null)} title={t('albaranes_venta:drawer_resolver_rechazo_titulo')}>
+        {rechazoAResolver && (
+          <ResolverRechazoForm
+            ajuste={rechazoAResolver}
+            onOmitir={() => setRechazoAResolver(null)}
+            onResuelto={() => {
+              setRechazoAResolver(null)
               cargarDatos()
             }}
           />

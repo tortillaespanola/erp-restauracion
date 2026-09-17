@@ -28,10 +28,15 @@ const hoyIso = () => new Date().toISOString().slice(0, 10)
 // formulario original), solo cambia si tipo/ítem/lote vienen fijados por el contexto de la fila
 // o los elige el usuario.
 //
-// `fijo`: { tipo, itemId, itemNombre, itemUnidad, loteId, loteLabel, stockActual } | null
+// `fijo`: { tipo, itemId, itemNombre, itemUnidad, loteId, loteLabel, stockActual, origenRechazo,
+//           lineaPedidoOrigenId } | null
 //   Cuando viene informado, tipo/ítem/lote se muestran como contexto de solo lectura (no hay
 //   selectores) -- caso Inventario.jsx, siempre tipo 'articulo' hoy porque es el único nivel que
 //   esa pantalla expone. `null` = modo manual, igual que el formulario original de AjustesStock.jsx.
+//   `lineaPedidoOrigenId` (CONTRATO_PROPAGACION_RECHAZOS.md, Parte A): solo lo pasa
+//   AlbaranesVenta.jsx al declarar un rechazo de cliente -- la línea de pedido concreta que se está
+//   rechazando, necesaria más tarde para que resolver_rechazo_cliente() sepa dónde crear la línea de
+//   reenvío.
 export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar }) {
   const { t } = useTranslation(['common', 'enums', 'ajuste_stock_form'])
   const [tipo, setTipo] = useState(fijo?.tipo || 'articulo')
@@ -117,7 +122,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
     const fecha = hoyIso()
     setGuardando(true)
 
-    let error
+    let error, data
     if (tipo === 'articulo') {
       ;({ error } = await supabase.from('ajustes_articulo').insert({
         articulo_id: parseInt(itemId), entrada_material_id: parseInt(loteId), cantidad: cant, motivo, fecha,
@@ -128,10 +133,11 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
         origen_rechazo: origenRechazo || null,
       }))
     } else {
-      ;({ error } = await supabase.from('ajustes_producto_final').insert({
+      ;({ error, data } = await supabase.from('ajustes_producto_final').insert({
         produccion_pf_id: parseInt(loteId), cantidad: cant, motivo_categoria: motivoCategoria, motivo_detalle: motivoDetalle || null, fecha,
         origen_rechazo: origenRechazo || null,
-      }))
+        linea_pedido_origen_id: fijo?.lineaPedidoOrigenId ?? null,
+      }).select().single())
     }
 
     setGuardando(false)
@@ -140,7 +146,10 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
       return
     }
     toast.success(t('common:feedback.guardado'))
-    onGuardado()
+    // CONTRATO_PROPAGACION_RECHAZOS.md, Parte A: se devuelve el ajuste insertado (solo lo hay para
+    // producto_final, único tipo con resolución de rechazo) para que el llamador pueda encadenar el
+    // paso de resolución (abono/reenvío/descarte) sin otra consulta.
+    onGuardado(data ?? null)
   }
 
   const items = tipo === 'articulo' ? articulos : tipo === 'semielaborado' ? semielaborados : productosFinales

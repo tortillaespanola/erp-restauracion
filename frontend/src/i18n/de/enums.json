@@ -60,6 +60,11 @@
     "produccion_aguas_abajo": "Nachgelagerte Produktion",
     "otro": "Sonstiges"
   },
+  "tipo_resolucion": {
+    "abono": "Gutschrift",
+    "reenvio": "Nachlieferung",
+    "descarte": "Verwurf"
+  },
   "tipo_incidencia": {
     "stock_articulo": "Einkaufsartikel",
     "stock_semielaborado": "Halbfertigprodukt",

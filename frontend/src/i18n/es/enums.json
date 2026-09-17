@@ -60,6 +60,11 @@
     "produccion_aguas_abajo": "Producción aguas abajo",
     "otro": "Otro"
   },
+  "tipo_resolucion": {
+    "abono": "Abono",
+    "reenvio": "Reenvío",
+    "descarte": "Descarte"
+  },
   "tipo_incidencia": {
     "stock_articulo": "Artículo de compra",
     "stock_semielaborado": "Semielaborado",

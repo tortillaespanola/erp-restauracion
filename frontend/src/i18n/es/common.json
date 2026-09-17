@@ -81,6 +81,11 @@
     "caducado": "Caducado",
     "caduca_en_dias": "Caduca en {{dias}} día(s)"
   },
+  "badge_scrap": {
+    "etiqueta": "Scrap declarado",
+    "tooltip_one": "{{count}} ajuste de merma/rechazo ({{cantidad}} {{unidad}})",
+    "tooltip_other": "{{count}} ajustes de merma/rechazo ({{cantidad}} {{unidad}})"
+  },
   "feedback": {
     "guardado": "Guardado correctamente",
     "eliminado": "Eliminado correctamente",

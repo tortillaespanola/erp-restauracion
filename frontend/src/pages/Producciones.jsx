@@ -9,6 +9,7 @@ import { IconTrash, IconWand, IconCircleCheck, IconChevronRight, IconChevronDown
 import { PageHeader, Card, CardHeader, CardBody, Button, LinkAction, Badge, Field, Select, Input, DateInput, Table, Thead, Th, Td, EmptyState, LoadingState, Drawer } from '../components/ui'
 import CancelarProduccionForm from '../components/CancelarProduccionForm'
 import AjusteStockForm from '../components/AjusteStockForm'
+import BadgeScrap from '../components/BadgeScrap'
 import { motivoRechazoValido } from '../lib/mermaProduccion'
 import { estadoCaducidad, diasParaCaducar } from '../lib/caducidadLote'
 
@@ -1351,6 +1352,7 @@ function ProduccionCerrada({ produccion, expandido, onToggleExpandir, consumidoI
         <td className="px-3 py-3 font-medium text-ink">
           {produccion.semielaborados?.nombre}
           {produccion.codigo_lote && <span className="ml-2 text-xs font-mono text-gray-400">{produccion.codigo_lote}</span>}
+          <span className="ml-2"><BadgeScrap tipo="semielaborado" origenId={produccion.id} /></span>
         </td>
         <td className="px-3 py-3 whitespace-nowrap text-gray-600">
           {produccion.cantidad_producida} {produccion.semielaborados?.unidad}

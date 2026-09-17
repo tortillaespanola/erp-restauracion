@@ -60,6 +60,11 @@
     "produccion_aguas_abajo": "Downstream production",
     "otro": "Other"
   },
+  "tipo_resolucion": {
+    "abono": "Credit note",
+    "reenvio": "Reshipment",
+    "descarte": "Discard"
+  },
   "tipo_incidencia": {
     "stock_articulo": "Purchase article",
     "stock_semielaborado": "Semi-finished good",

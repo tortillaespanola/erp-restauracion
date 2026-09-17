@@ -21,12 +21,23 @@
     "usuario": "Benutzer"
   },
   "borrar": "Löschen",
+  "resolver": "Klären",
   "movimiento_count_one": "{{count}} Bewegung",
   "movimiento_count_other": "{{count}} Bewegungen",
   "pagina_de": "Seite {{pagina}} von {{total}}",
   "drawer_nuevo_ajuste_titulo": "Neue Bestandskorrektur",
+  "drawer_resolver_rechazo_titulo": "Kundenreklamation klären",
   "alertas": {
     "confirmar_borrar": "Möchtest du diese Korrektur wirklich löschen? Der Bestand wird auf seinen vorherigen Wert zurückgesetzt.",
     "error_borrar": "Fehler beim Löschen: {{mensaje}}"
+  },
+  "rechazo": {
+    "pregunta": "Wie soll die Reklamation von {{cantidad}} {{unidad}} \"{{item}}\" geklärt werden?",
+    "abono": "Gutschrift",
+    "reenvio": "Nachlieferung (erstellt eine offene Bestellposition)",
+    "descarte": "Verwurf",
+    "reenvio_no_disponible": "Diese Reklamation hat keine zugehörige Ursprungs-Bestellposition -- keine Nachlieferung möglich.",
+    "resolver_mas_tarde": "Später klären",
+    "error_resolver": "Fehler beim Klären der Reklamation: {{mensaje}}"
   }
 }

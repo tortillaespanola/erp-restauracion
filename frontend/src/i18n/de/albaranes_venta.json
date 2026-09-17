@@ -29,6 +29,7 @@
   },
   "declarar_rechazo_cliente": "Kundenablehnung melden",
   "drawer_declarar_rechazo_titulo": "Kundenablehnung melden",
+  "drawer_resolver_rechazo_titulo": "Kundenreklamation klären",
   "albaran_pagina_count_one": "{{count}} Lieferschein · Seite {{pagina}} von {{total}}",
   "albaran_pagina_count_other": "{{count}} Lieferscheine · Seite {{pagina}} von {{total}}",
   "alertas": {

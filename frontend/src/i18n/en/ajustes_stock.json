@@ -21,12 +21,23 @@
     "usuario": "User"
   },
   "borrar": "Delete",
+  "resolver": "Resolve",
   "movimiento_count_one": "{{count}} movement",
   "movimiento_count_other": "{{count}} movements",
   "pagina_de": "Page {{pagina}} of {{total}}",
   "drawer_nuevo_ajuste_titulo": "New stock adjustment",
+  "drawer_resolver_rechazo_titulo": "Resolve customer rejection",
   "alertas": {
     "confirmar_borrar": "Are you sure you want to delete this adjustment? The stock will return to its previous value.",
     "error_borrar": "Error deleting: {{mensaje}}"
+  },
+  "rechazo": {
+    "pregunta": "How should the rejection of {{cantidad}} {{unidad}} of \"{{item}}\" be resolved?",
+    "abono": "Credit note",
+    "reenvio": "Reshipment (creates a pending order line)",
+    "descarte": "Discard",
+    "reenvio_no_disponible": "This rejection has no associated origin order line -- it cannot be reshipped.",
+    "resolver_mas_tarde": "Resolve later",
+    "error_resolver": "Error resolving the rejection: {{mensaje}}"
   }
 }

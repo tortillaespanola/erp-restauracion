@@ -21,12 +21,23 @@
     "usuario": "Usuario"
   },
   "borrar": "Borrar",
+  "resolver": "Resolver",
   "movimiento_count_one": "{{count}} movimiento",
   "movimiento_count_other": "{{count}} movimientos",
   "pagina_de": "Página {{pagina}} de {{total}}",
   "drawer_nuevo_ajuste_titulo": "Nuevo ajuste de stock",
+  "drawer_resolver_rechazo_titulo": "Resolver rechazo de cliente",
   "alertas": {
     "confirmar_borrar": "¿Seguro que quieres eliminar este ajuste? El stock volverá a su valor anterior.",
     "error_borrar": "Error al borrar: {{mensaje}}"
+  },
+  "rechazo": {
+    "pregunta": "¿Cómo se resuelve el rechazo de {{cantidad}} {{unidad}} de \"{{item}}\"?",
+    "abono": "Abono",
+    "reenvio": "Reenvío (crea línea de pedido pendiente)",
+    "descarte": "Descarte",
+    "reenvio_no_disponible": "Este rechazo no tiene una línea de pedido de origen asociada -- no se puede reenviar.",
+    "resolver_mas_tarde": "Resolver más tarde",
+    "error_resolver": "Error al resolver el rechazo: {{mensaje}}"
   }
 }
