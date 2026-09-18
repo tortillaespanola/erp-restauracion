@@ -94,7 +94,7 @@ function Enrutado() {
   )
 }
 
-function App({ session, onLogout }) {
+function App({ session, onLogout, demoSesion }) {
   return (
     <BrowserRouter>
       <Toaster
@@ -105,7 +105,7 @@ function App({ session, onLogout }) {
           error: { icon: <IconAlertCircle size={18} stroke={1.75} className="text-danger-600" /> },
         }}
       />
-      <Layout session={session} onLogout={onLogout}>
+      <Layout session={session} onLogout={onLogout} demoSesion={demoSesion}>
         <Enrutado />
       </Layout>
     </BrowserRouter>

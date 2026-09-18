@@ -1,6 +1,7 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
+import demoEs from './es/demo.json'
 import dashboardEs from './es/dashboard.json'
 import commonEs from './es/common.json'
 import enumsEs from './es/enums.json'
@@ -41,6 +42,7 @@ import albaranVentaFormEs from './es/albaran_venta_form.json'
 import facturaVentaFormEs from './es/factura_venta_form.json'
 import adminEmpresasEs from './es/admin_empresas.json'
 
+import demoEn from './en/demo.json'
 import dashboardEn from './en/dashboard.json'
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
@@ -81,6 +83,7 @@ import albaranVentaFormEn from './en/albaran_venta_form.json'
 import facturaVentaFormEn from './en/factura_venta_form.json'
 import adminEmpresasEn from './en/admin_empresas.json'
 
+import demoDe from './de/demo.json'
 import dashboardDe from './de/dashboard.json'
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
@@ -146,6 +149,7 @@ function idiomaInicial() {
 i18n.use(initReactI18next).init({
   resources: {
     es: {
+      demo: demoEs,
       dashboard: dashboardEs,
       common: commonEs, enums: enumsEs, estados_calculados: estadosCalculadosEs,
       produccion_comun: produccionComunEs, producciones: produccionesEs,
@@ -168,6 +172,7 @@ i18n.use(initReactI18next).init({
       admin_empresas: adminEmpresasEs,
     },
     en: {
+      demo: demoEn,
       dashboard: dashboardEn,
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
       produccion_comun: produccionComunEn, producciones: produccionesEn,
@@ -190,6 +195,7 @@ i18n.use(initReactI18next).init({
       admin_empresas: adminEmpresasEn,
     },
     de: {
+      demo: demoDe,
       dashboard: dashboardDe,
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
       produccion_comun: produccionComunDe, producciones: produccionesDe,
@@ -215,6 +221,7 @@ i18n.use(initReactI18next).init({
   lng: idiomaInicial(),
   fallbackLng: 'es',
   ns: [
+    'demo',
     'dashboard',
     'common', 'enums', 'estados_calculados', 'produccion_comun', 'producciones',
     'produccion_productos_finales', 'pedidos_del_dia', 'pedidos', 'pedido_form',

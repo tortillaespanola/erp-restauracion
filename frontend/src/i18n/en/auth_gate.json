@@ -10,5 +10,7 @@
   "confirmar_contrasena": "Confirm password",
   "guardar_contrasena": "Save and continue",
   "contrasenas_no_coinciden": "Passwords don't match.",
-  "contrasena_muy_corta": "Password must be at least 6 characters long."
+  "contrasena_muy_corta": "Password must be at least 6 characters long.",
+  "entrar_demo": "Try the demo",
+  "demo_no_disponible": "The demo isn't available right now. Please try again in a few minutes."
 }

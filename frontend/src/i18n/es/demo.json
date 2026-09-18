@@ -1,0 +1,25 @@
+{
+  "banner": {
+    "titulo": "Sesión demo",
+    "tiempo_restante": "Quedan {{minutos}} min",
+    "tiempo_restante_segundos": "Quedan {{segundos}} s",
+    "salir": "Salir del demo"
+  },
+  "aviso_2_minutos": {
+    "titulo": "La sesión demo termina pronto",
+    "cuerpo": "Quedan 2 minutos. Todos los cambios se revertirán automáticamente al finalizar."
+  },
+  "sesion_expirada": "La sesión demo ha terminado. Todos los cambios se han restaurado.",
+  "salida_manual": "Has salido del demo. Todos los cambios se han restaurado.",
+  "error_inicio": "No se ha podido iniciar la demo. Inténtalo de nuevo.",
+  "seleccion_idioma": {
+    "titulo": "Elige tu idioma"
+  },
+  "transicion": {
+    "linea1": "Vas a entrar en una demo de FlowBase.",
+    "linea2": "Gestionarás AlpenWerk Möbel GmbH, una empresa ficticia de muebles.",
+    "linea3": "Prueba todo lo que quieras: crea, edita, borra sin miedo.",
+    "linea4": "Nada de lo que hagas se queda — se revierte al cerrar la sesión.",
+    "continuar": "Continuar"
+  }
+}

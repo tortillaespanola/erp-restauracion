@@ -1,0 +1,25 @@
+{
+  "banner": {
+    "titulo": "Demo-Sitzung",
+    "tiempo_restante": "Noch {{minutos}} Min.",
+    "tiempo_restante_segundos": "Noch {{segundos}} Sek.",
+    "salir": "Demo verlassen"
+  },
+  "aviso_2_minutos": {
+    "titulo": "Die Demo-Sitzung endet bald",
+    "cuerpo": "Noch 2 Minuten. Alle Änderungen werden beim Beenden automatisch rückgängig gemacht."
+  },
+  "sesion_expirada": "Die Demo-Sitzung ist beendet. Alle Änderungen wurden zurückgesetzt.",
+  "salida_manual": "Du hast die Demo verlassen. Alle Änderungen wurden zurückgesetzt.",
+  "error_inicio": "Die Demo konnte nicht gestartet werden. Bitte versuche es erneut.",
+  "seleccion_idioma": {
+    "titulo": "Wähle deine Sprache"
+  },
+  "transicion": {
+    "linea1": "Du betrittst gleich eine FlowBase-Demo.",
+    "linea2": "Du verwaltest AlpenWerk Möbel GmbH, ein fiktives Möbelunternehmen.",
+    "linea3": "Probiere alles aus: erstellen, bearbeiten, löschen — ganz ohne Risiko.",
+    "linea4": "Nichts bleibt erhalten — beim Beenden der Sitzung wird alles zurückgesetzt.",
+    "continuar": "Weiter"
+  }
+}

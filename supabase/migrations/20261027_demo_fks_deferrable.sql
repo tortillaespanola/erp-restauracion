@@ -1,0 +1,162 @@
+-- CONTRATO_DEMO.md: prerrequisito de esquema para el mecanismo de snapshot/restore de la
+-- sesión DEMO (ver 20261029_demo_iniciar_revertir_functions.sql). El revert borra e reinserta
+-- filas de las 44 tablas tenant-scoped dentro de una única transacción con
+-- SET CONSTRAINTS ALL DEFERRED; para que eso funcione sin depender de calcular a mano el orden
+-- exacto de borrado/inserción entre tablas con relaciones FK (pedido→albarán→factura,
+-- producción, stock...), todas las FKs de esas tablas deben ser DEFERRABLE INITIALLY DEFERRED.
+--
+-- Este es un cambio de esquema puramente de metadatos (no reescribe la tabla, solo cambia
+-- cuándo Postgres comprueba la constraint) y es seguro fuera de una sesión demo: con
+-- INITIALLY DEFERRED, cada INSERT/UPDATE/DELETE normal fuera de una transacción explícita
+-- sigue comprobándose exactamente igual (al final de su propia transacción implícita de una
+-- sola sentencia).
+--
+-- Las 142 sentencias siguientes fueron generadas a partir de una consulta a pg_constraint
+-- (unir con la lista estática de las 44 tablas con negocio_id -- ver esa misma lista repetida
+-- como array en 20261029_demo_iniciar_revertir_functions.sql) y pegadas aquí como SQL estático
+-- para que el diff sea auditable, siguiendo el mismo criterio que
+-- 20260907_reescribir_42_policies_negocio_actual.sql: preferir una lista revisada a mano frente
+-- a un bloque DO que descubra las tablas dinámicamente en tiempo de ejecución.
+
+alter table ajustes_articulo alter constraint ajustes_articulo_articulo_id_fkey deferrable initially deferred;
+alter table ajustes_articulo alter constraint ajustes_articulo_entrada_material_id_fkey deferrable initially deferred;
+alter table ajustes_articulo alter constraint ajustes_articulo_negocio_id_fkey deferrable initially deferred;
+alter table ajustes_articulo alter constraint ajustes_articulo_user_id_fkey deferrable initially deferred;
+alter table ajustes_producto_final alter constraint ajustes_producto_final_linea_pedido_origen_id_fkey deferrable initially deferred;
+alter table ajustes_producto_final alter constraint ajustes_producto_final_linea_pedido_reposicion_id_fkey deferrable initially deferred;
+alter table ajustes_producto_final alter constraint ajustes_producto_final_negocio_id_fkey deferrable initially deferred;
+alter table ajustes_producto_final alter constraint ajustes_producto_final_produccion_pf_id_fkey deferrable initially deferred;
+alter table ajustes_producto_final alter constraint ajustes_producto_final_user_id_fkey deferrable initially deferred;
+alter table ajustes_semielaborado alter constraint ajustes_semielaborado_negocio_id_fkey deferrable initially deferred;
+alter table ajustes_semielaborado alter constraint ajustes_semielaborado_produccion_id_fkey deferrable initially deferred;
+alter table ajustes_semielaborado alter constraint ajustes_semielaborado_semielaborado_id_fkey deferrable initially deferred;
+alter table ajustes_semielaborado alter constraint ajustes_semielaborado_user_id_fkey deferrable initially deferred;
+alter table albaranes_compra alter constraint albaranes_compra_negocio_id_fkey deferrable initially deferred;
+alter table albaranes_compra alter constraint albaranes_compra_pedido_compra_id_fkey deferrable initially deferred;
+alter table albaranes_compra alter constraint albaranes_compra_proveedor_id_fkey deferrable initially deferred;
+alter table albaranes_venta alter constraint albaranes_venta_cliente_id_fkey deferrable initially deferred;
+alter table albaranes_venta alter constraint albaranes_venta_negocio_id_fkey deferrable initially deferred;
+alter table articulo_ingrediente alter constraint articulo_ingrediente_articulo_id_fkey deferrable initially deferred;
+alter table articulo_ingrediente alter constraint articulo_ingrediente_ingrediente_id_fkey deferrable initially deferred;
+alter table articulo_ingrediente alter constraint articulo_ingrediente_negocio_id_fkey deferrable initially deferred;
+alter table articulo_proveedor alter constraint articulo_proveedor_articulo_id_fkey deferrable initially deferred;
+alter table articulo_proveedor alter constraint articulo_proveedor_negocio_id_fkey deferrable initially deferred;
+alter table articulo_proveedor alter constraint articulo_proveedor_proveedor_id_fkey deferrable initially deferred;
+alter table articulos_compra alter constraint articulos_compra_categoria_id_fkey deferrable initially deferred;
+alter table articulos_compra alter constraint articulos_compra_negocio_id_fkey deferrable initially deferred;
+alter table articulos_compra alter constraint articulos_compra_unidad_id_fkey deferrable initially deferred;
+alter table categorias_articulo alter constraint categorias_articulo_negocio_id_fkey deferrable initially deferred;
+alter table clientes alter constraint clientes_negocio_id_fkey deferrable initially deferred;
+alter table consumo_produccion alter constraint consumo_produccion_entrada_material_id_fkey deferrable initially deferred;
+alter table consumo_produccion alter constraint consumo_produccion_negocio_id_fkey deferrable initially deferred;
+alter table consumo_produccion alter constraint consumo_produccion_produccion_id_fkey deferrable initially deferred;
+alter table consumo_produccion alter constraint consumo_produccion_produccion_origen_id_fkey deferrable initially deferred;
+alter table consumo_produccion_pf alter constraint consumo_produccion_pf_entrada_material_id_fkey deferrable initially deferred;
+alter table consumo_produccion_pf alter constraint consumo_produccion_pf_negocio_id_fkey deferrable initially deferred;
+alter table consumo_produccion_pf alter constraint consumo_produccion_pf_produccion_origen_id_fkey deferrable initially deferred;
+alter table consumo_produccion_pf alter constraint consumo_produccion_pf_produccion_pf_id_fkey deferrable initially deferred;
+alter table datos_bancarios alter constraint datos_bancarios_negocio_id_fkey deferrable initially deferred;
+alter table empresa_config alter constraint empresa_config_negocio_id_fkey deferrable initially deferred;
+alter table entrada_material alter constraint entrada_material_albaran_compra_id_fkey deferrable initially deferred;
+alter table entrada_material alter constraint entrada_material_articulo_id_fkey deferrable initially deferred;
+alter table entrada_material alter constraint entrada_material_linea_pedido_compra_id_fkey deferrable initially deferred;
+alter table entrada_material alter constraint entrada_material_negocio_id_fkey deferrable initially deferred;
+alter table entrada_material alter constraint entrada_material_ubicacion_id_fkey deferrable initially deferred;
+alter table factura_compra_albaran alter constraint factura_compra_albaran_albaran_compra_id_fkey deferrable initially deferred;
+alter table factura_compra_albaran alter constraint factura_compra_albaran_factura_compra_id_fkey deferrable initially deferred;
+alter table factura_compra_albaran alter constraint factura_compra_albaran_negocio_id_fkey deferrable initially deferred;
+alter table factura_venta_albaran alter constraint factura_venta_albaran_albaran_venta_id_fkey deferrable initially deferred;
+alter table factura_venta_albaran alter constraint factura_venta_albaran_factura_venta_id_fkey deferrable initially deferred;
+alter table factura_venta_albaran alter constraint factura_venta_albaran_negocio_id_fkey deferrable initially deferred;
+alter table facturas_compra alter constraint facturas_compra_negocio_id_fkey deferrable initially deferred;
+alter table facturas_compra alter constraint facturas_compra_proveedor_id_fkey deferrable initially deferred;
+alter table facturas_venta alter constraint facturas_venta_cliente_id_fkey deferrable initially deferred;
+alter table facturas_venta alter constraint facturas_venta_negocio_id_fkey deferrable initially deferred;
+alter table facturas_venta_secuencia alter constraint facturas_venta_secuencia_negocio_id_fkey deferrable initially deferred;
+alter table incidencias_reparto_pedido alter constraint incidencias_reparto_pedido_linea_albaran_venta_id_fkey deferrable initially deferred;
+alter table incidencias_reparto_pedido alter constraint incidencias_reparto_pedido_negocio_id_fkey deferrable initially deferred;
+alter table incidencias_reparto_pedido alter constraint incidencias_reparto_pedido_pedido_esperado_id_fkey deferrable initially deferred;
+alter table incidencias_reparto_pedido alter constraint incidencias_reparto_pedido_pedido_real_id_fkey deferrable initially deferred;
+alter table incidencias_reparto_pedido alter constraint incidencias_reparto_pedido_produccion_pf_id_fkey deferrable initially deferred;
+alter table incidencias_stock_articulo alter constraint incidencias_stock_articulo_consumo_produccion_id_fkey deferrable initially deferred;
+alter table incidencias_stock_articulo alter constraint incidencias_stock_articulo_consumo_produccion_pf_id_fkey deferrable initially deferred;
+alter table incidencias_stock_articulo alter constraint incidencias_stock_articulo_entrada_material_id_fkey deferrable initially deferred;
+alter table incidencias_stock_articulo alter constraint incidencias_stock_articulo_linea_albaran_venta_id_fkey deferrable initially deferred;
+alter table incidencias_stock_articulo alter constraint incidencias_stock_articulo_negocio_id_fkey deferrable initially deferred;
+alter table incidencias_stock_producto_final alter constraint incidencias_stock_producto_final_linea_albaran_venta_id_fkey deferrable initially deferred;
+alter table incidencias_stock_producto_final alter constraint incidencias_stock_producto_final_negocio_id_fkey deferrable initially deferred;
+alter table incidencias_stock_producto_final alter constraint incidencias_stock_producto_final_produccion_pf_id_fkey deferrable initially deferred;
+alter table incidencias_stock_semielaborado alter constraint incidencias_stock_semielaborad_produccion_semielaborado_id_fkey deferrable initially deferred;
+alter table incidencias_stock_semielaborado alter constraint incidencias_stock_semielaborado_consumo_produccion_id_fkey deferrable initially deferred;
+alter table incidencias_stock_semielaborado alter constraint incidencias_stock_semielaborado_consumo_produccion_pf_id_fkey deferrable initially deferred;
+alter table incidencias_stock_semielaborado alter constraint incidencias_stock_semielaborado_negocio_id_fkey deferrable initially deferred;
+alter table ingredientes alter constraint ingredientes_categoria_id_fkey deferrable initially deferred;
+alter table ingredientes alter constraint ingredientes_negocio_id_fkey deferrable initially deferred;
+alter table ingredientes alter constraint ingredientes_unidad_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_albaran_venta_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_articulo_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_entrada_material_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_linea_pedido_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_negocio_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_produccion_pf_id_fkey deferrable initially deferred;
+alter table lineas_albaran_venta alter constraint lineas_albaran_venta_producto_final_id_fkey deferrable initially deferred;
+alter table lineas_pedido_compra alter constraint lineas_pedido_compra_articulo_id_fkey deferrable initially deferred;
+alter table lineas_pedido_compra alter constraint lineas_pedido_compra_negocio_id_fkey deferrable initially deferred;
+alter table lineas_pedido_compra alter constraint lineas_pedido_compra_pedido_compra_id_fkey deferrable initially deferred;
+alter table lineas_pedido_venta alter constraint lineas_pedido_venta_articulo_id_fkey deferrable initially deferred;
+alter table lineas_pedido_venta alter constraint lineas_pedido_venta_negocio_id_fkey deferrable initially deferred;
+alter table lineas_pedido_venta alter constraint lineas_pedido_venta_pedido_id_fkey deferrable initially deferred;
+alter table lineas_pedido_venta alter constraint lineas_pedido_venta_producto_final_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_albaran_compra_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_albaran_venta_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_factura_compra_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_factura_venta_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_negocio_id_fkey deferrable initially deferred;
+alter table pago_aplicacion alter constraint pago_aplicacion_pago_id_fkey deferrable initially deferred;
+alter table pagos alter constraint pagos_cliente_id_fkey deferrable initially deferred;
+alter table pagos alter constraint pagos_negocio_id_fkey deferrable initially deferred;
+alter table pagos alter constraint pagos_proveedor_id_fkey deferrable initially deferred;
+alter table pedidos_compra alter constraint pedidos_compra_negocio_id_fkey deferrable initially deferred;
+alter table pedidos_compra alter constraint pedidos_compra_proveedor_id_fkey deferrable initially deferred;
+alter table pedidos_venta alter constraint pedidos_venta_cliente_id_fkey deferrable initially deferred;
+alter table pedidos_venta alter constraint pedidos_venta_negocio_id_fkey deferrable initially deferred;
+alter table pedidos_venta alter constraint pedidos_venta_tanda_id_fkey deferrable initially deferred;
+alter table previsiones_distribucion_pf alter constraint previsiones_distribucion_pf_linea_pedido_id_fkey deferrable initially deferred;
+alter table previsiones_distribucion_pf alter constraint previsiones_distribucion_pf_negocio_id_fkey deferrable initially deferred;
+alter table previsiones_distribucion_pf alter constraint previsiones_distribucion_pf_produccion_pf_id_fkey deferrable initially deferred;
+alter table previsiones_distribucion_pf alter constraint previsiones_distribucion_pf_producto_final_id_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_cancelada_por_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_negocio_id_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_pedido_id_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_producto_final_id_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_tanda_id_fkey deferrable initially deferred;
+alter table producciones_producto_final alter constraint producciones_producto_final_ubicacion_id_fkey deferrable initially deferred;
+alter table producciones_semielaborado alter constraint producciones_semielaborado_cancelada_por_fkey deferrable initially deferred;
+alter table producciones_semielaborado alter constraint producciones_semielaborado_negocio_id_fkey deferrable initially deferred;
+alter table producciones_semielaborado alter constraint producciones_semielaborado_semielaborado_id_fkey deferrable initially deferred;
+alter table producciones_semielaborado alter constraint producciones_semielaborado_tanda_id_fkey deferrable initially deferred;
+alter table producciones_semielaborado alter constraint producciones_semielaborado_ubicacion_id_fkey deferrable initially deferred;
+alter table productos_finales alter constraint productos_finales_categoria_id_fkey deferrable initially deferred;
+alter table productos_finales alter constraint productos_finales_negocio_id_fkey deferrable initially deferred;
+alter table productos_finales alter constraint productos_finales_unidad_id_fkey deferrable initially deferred;
+alter table proveedores alter constraint proveedores_negocio_id_fkey deferrable initially deferred;
+alter table receta_producto_final alter constraint receta_producto_final_articulo_id_fkey deferrable initially deferred;
+alter table receta_producto_final alter constraint receta_producto_final_ingrediente_id_fkey deferrable initially deferred;
+alter table receta_producto_final alter constraint receta_producto_final_ingrediente_semielaborado_id_fkey deferrable initially deferred;
+alter table receta_producto_final alter constraint receta_producto_final_negocio_id_fkey deferrable initially deferred;
+alter table receta_producto_final alter constraint receta_producto_final_producto_final_id_fkey deferrable initially deferred;
+alter table receta_semielaborado alter constraint receta_semielaborado_articulo_id_fkey deferrable initially deferred;
+alter table receta_semielaborado alter constraint receta_semielaborado_ingrediente_id_fkey deferrable initially deferred;
+alter table receta_semielaborado alter constraint receta_semielaborado_ingrediente_semielaborado_id_fkey deferrable initially deferred;
+alter table receta_semielaborado alter constraint receta_semielaborado_negocio_id_fkey deferrable initially deferred;
+alter table receta_semielaborado alter constraint receta_semielaborado_semielaborado_id_fkey deferrable initially deferred;
+alter table secuencias_lote alter constraint secuencias_lote_negocio_id_fkey deferrable initially deferred;
+alter table semielaborados alter constraint semielaborados_categoria_id_fkey deferrable initially deferred;
+alter table semielaborados alter constraint semielaborados_negocio_id_fkey deferrable initially deferred;
+alter table semielaborados alter constraint semielaborados_unidad_id_fkey deferrable initially deferred;
+alter table tandas_produccion alter constraint tandas_produccion_negocio_id_fkey deferrable initially deferred;
+alter table ubicaciones alter constraint ubicaciones_negocio_id_fkey deferrable initially deferred;
+alter table ubicaciones alter constraint ubicaciones_ubicacion_padre_id_fkey deferrable initially deferred;
+alter table unidades_medida alter constraint unidades_medida_negocio_id_fkey deferrable initially deferred;
+alter table usuarios_negocios alter constraint usuarios_negocios_negocio_id_fkey deferrable initially deferred;
+alter table usuarios_negocios alter constraint usuarios_negocios_usuario_id_fkey deferrable initially deferred;

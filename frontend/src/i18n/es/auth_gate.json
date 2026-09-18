@@ -10,5 +10,7 @@
   "confirmar_contrasena": "Confirma la contraseña",
   "guardar_contrasena": "Guardar y entrar",
   "contrasenas_no_coinciden": "Las contraseñas no coinciden.",
-  "contrasena_muy_corta": "La contraseña debe tener al menos 6 caracteres."
+  "contrasena_muy_corta": "La contraseña debe tener al menos 6 caracteres.",
+  "entrar_demo": "Probar la demo",
+  "demo_no_disponible": "La demo no está disponible en este momento. Inténtalo de nuevo en unos minutos."
 }

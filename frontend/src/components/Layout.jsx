@@ -10,6 +10,7 @@ import {
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
 import { useNegocio } from '../context/useNegocio'
+import DemoBanner from './DemoBanner'
 import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
 
 // CONTRATO_I18N.md, Fase 0: las claves (compras/proveedores/...) son estables e independientes
@@ -105,7 +106,7 @@ function iniciales(email) {
   return email.slice(0, 2).toUpperCase()
 }
 
-function Layout({ children, session, onLogout }) {
+function Layout({ children, session, onLogout, demoSesion }) {
   const location = useLocation()
   const { t, i18n } = useTranslation('common')
   const { esSuperAdmin } = useNegocio()
@@ -208,6 +209,7 @@ function Layout({ children, session, onLogout }) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
+        {demoSesion && <DemoBanner expiresAt={demoSesion.expiresAt} onSalir={onLogout} />}
         <header className="h-topbar bg-surface border-b border-border flex items-center justify-between px-5 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <button

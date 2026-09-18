@@ -9,9 +9,9 @@ import NegocioProvider from './context/NegocioContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthGate>
-      {(session, onLogout) => (
+      {(session, onLogout, demoSesion) => (
         <NegocioProvider>
-          <App session={session} onLogout={onLogout} />
+          <App session={session} onLogout={onLogout} demoSesion={demoSesion} />
         </NegocioProvider>
       )}
     </AuthGate>
