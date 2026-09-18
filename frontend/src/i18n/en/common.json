@@ -1,12 +1,14 @@
 {
   "nav": {
     "sections": {
+      "general": "General",
       "compras": "Purchasing",
       "produccion": "Production",
       "ventas": "Sales",
       "administracion": "Administration"
     },
     "items": {
+      "dashboard": "Dashboard",
       "admin_empresas": "Companies",
       "pedidos_compra": "Purchase orders",
       "proveedores": "Suppliers",
@@ -31,6 +33,7 @@
     }
   },
   "titles": {
+    "dashboard": { "title": "Dashboard", "breadcrumb": "General · Dashboard" },
     "pedidos_compra": { "title": "Purchase orders", "breadcrumb": "Purchasing · Purchase orders" },
     "proveedores": { "title": "Suppliers", "breadcrumb": "Purchasing · Suppliers" },
     "articulos": { "title": "Purchase articles", "breadcrumb": "Purchasing · Articles" },

@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
 import Layout from './components/Layout'
 import { useNegocio } from './context/useNegocio'
+import Dashboard from './pages/Dashboard'
 import Articulos from './pages/Articulos'
 import Ingredientes from './pages/Ingredientes'
 import Inventario from './pages/Inventario'
@@ -63,7 +64,8 @@ function Enrutado() {
 
   return (
     <Routes>
-      <Route path="/" element={<Articulos />} />
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/articulos" element={<Articulos />} />
 
       <Route path="/ingredientes" element={<Ingredientes />} />

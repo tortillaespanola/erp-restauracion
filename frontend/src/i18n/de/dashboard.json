@@ -1,0 +1,67 @@
+{
+  "titulo": "Dashboard",
+  "subtitulo": "Übersicht für {{negocio}}",
+  "fecha_referencia": {
+    "label": "Referenzdatum (\"heute\")",
+    "resetear": "Echtes Datum verwenden",
+    "nota": "Verzögerungs-/Stillstandsberechnungen auf dieser Seite verwenden dieses Datum statt der Browseruhr."
+  },
+  "kpi": {
+    "sales_backlog": {
+      "titulo": "Verkaufsrückstand",
+      "descripcion": "Verkaufte Aufträge, noch nicht geliefert oder fakturiert"
+    },
+    "open_ar": {
+      "titulo": "Offene Forderungen",
+      "descripcion": "Offener Saldo nicht stornierter Verkaufsrechnungen"
+    },
+    "active_wip": {
+      "titulo": "Laufende Produktion",
+      "descripcion": "Heute offene Produktionsaufträge"
+    },
+    "overdue_pos": {
+      "titulo": "Verspätete Bestellungen",
+      "descripcion": "Bestellungen mit überschrittenem Liefertermin"
+    }
+  },
+  "exceptions": {
+    "titulo": "Ausnahme-Center",
+    "subtitulo": "Was heute Ihre Aufmerksamkeit braucht",
+    "vacio": "Keine offenen Ausnahmen — alles in Ordnung.",
+    "stock_negativo": {
+      "titulo": "Negativer Bestand (Fertigprodukte)",
+      "descripcion_one": "{{count}} Charge mit negativem verfügbarem Bestand",
+      "descripcion_other": "{{count}} Chargen mit negativem verfügbarem Bestand",
+      "accion": "Mit Korrektur beheben"
+    },
+    "rechazo_pendiente": {
+      "titulo": "Ungeklärte Kundenreklamation",
+      "descripcion_one": "{{count}} Kundenreklamation wartet auf Gutschrift/Nachlieferung/Verwurf",
+      "descripcion_other": "{{count}} Kundenreklamationen warten auf Gutschrift/Nachlieferung/Verwurf",
+      "accion": "Rücksendung bearbeiten"
+    },
+    "produccion_estancada": {
+      "titulo": "Stillstehende Produktion",
+      "descripcion_one": "{{count}} Produktion seit mehr als 15 Tagen offen",
+      "descripcion_other": "{{count}} Produktionen seit mehr als 15 Tagen offen",
+      "accion": "Charge prüfen"
+    },
+    "bom_sin_proveedor": {
+      "titulo": "Stückliste ohne Beschaffungsweg",
+      "descripcion_one": "{{count}} Artikel in einer Fertigprodukt-Stückliste ohne zugewiesenen Lieferanten",
+      "descripcion_other": "{{count}} Artikel in Fertigprodukt-Stücklisten ohne zugewiesenen Lieferanten",
+      "accion": "Lieferant zuweisen"
+    }
+  },
+  "quick_actions": {
+    "titulo": "Schnellaktionen",
+    "nueva_venta": "Neuer Verkaufsauftrag",
+    "produccion_dia": "Tagesproduktion",
+    "nueva_compra": "Neue Bestellung",
+    "ajuste_stock": "Bestandskorrektur"
+  },
+  "proximamente": {
+    "titulo": "Demnächst",
+    "texto": "Ausschussquote und OTIF (termingerechte Lieferung) sind nicht Teil dieser ersten Version: Die Ausschussquote benötigt abgeschlossene Produktionen, die \"cantidad_rechazada\" statt nur Freitextnotizen erfassen, und OTIF benötigt eine neue SQL-Sicht, die geplantes Datum und Lieferscheindatum verknüpft."
+  }
+}

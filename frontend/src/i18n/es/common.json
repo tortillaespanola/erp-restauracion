@@ -1,12 +1,14 @@
 {
   "nav": {
     "sections": {
+      "general": "General",
       "compras": "Compras",
       "produccion": "Producción",
       "ventas": "Ventas",
       "administracion": "Administración"
     },
     "items": {
+      "dashboard": "Dashboard",
       "admin_empresas": "Empresas",
       "pedidos_compra": "Pedidos de compra",
       "proveedores": "Proveedores",
@@ -31,6 +33,7 @@
     }
   },
   "titles": {
+    "dashboard": { "title": "Dashboard", "breadcrumb": "General · Dashboard" },
     "pedidos_compra": { "title": "Pedidos de compra", "breadcrumb": "Compras · Pedidos de compra" },
     "proveedores": { "title": "Proveedores", "breadcrumb": "Compras · Proveedores" },
     "articulos": { "title": "Artículos de compra", "breadcrumb": "Compras · Artículos" },

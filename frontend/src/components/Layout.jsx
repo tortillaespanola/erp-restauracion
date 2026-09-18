@@ -6,6 +6,7 @@ import {
   IconComponents, IconStack3, IconTools, IconSquareCheck, IconRoute,
   IconClipboardList, IconClipboardCheck, IconUsers, IconTruck, IconFileDollar, IconSettings, IconSearch, IconLogout,
   IconPlayerPlay, IconStack2, IconBuildingWarehouse, IconCash, IconMenu2, IconBuildingSkyscraper, IconAlertTriangle,
+  IconLayoutDashboard,
 } from '@tabler/icons-react'
 import { cambiarIdioma, IDIOMAS_VALIDOS } from '../i18n'
 import { useNegocio } from '../context/useNegocio'
@@ -15,6 +16,12 @@ import logoIconOnbrand from '../assets/logos/flowbase-icon-onbrand.svg'
 // del idioma -- las etiquetas visibles se resuelven en el render vía t('nav.items.<clave>'), ver
 // common.json en cada carpeta de idioma. Antes esta lista llevaba el texto en español directo.
 const NAV_SECTIONS = [
+  {
+    clave: 'general',
+    items: [
+      { to: '/', clave: 'dashboard', icon: IconLayoutDashboard },
+    ],
+  },
   {
     clave: 'compras',
     items: [
@@ -55,6 +62,8 @@ const NAV_SECTIONS = [
 // Ruta -> clave de traducción en titles.* (ver common.json). Mismo mapeo que antes tenía TITULOS,
 // solo que ahora guarda la clave en vez del texto ya resuelto.
 const RUTA_A_CLAVE = {
+  '/': 'dashboard',
+  '/dashboard': 'dashboard',
   '/pedidos-compra': 'pedidos_compra',
   '/proveedores': 'proveedores',
   '/articulos': 'articulos',

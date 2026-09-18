@@ -1,12 +1,14 @@
 {
   "nav": {
     "sections": {
+      "general": "Allgemein",
       "compras": "Einkauf",
       "produccion": "Produktion",
       "ventas": "Verkauf",
       "administracion": "Verwaltung"
     },
     "items": {
+      "dashboard": "Dashboard",
       "admin_empresas": "Unternehmen",
       "pedidos_compra": "Bestellungen",
       "proveedores": "Lieferanten",
@@ -31,6 +33,7 @@
     }
   },
   "titles": {
+    "dashboard": { "title": "Dashboard", "breadcrumb": "Allgemein · Dashboard" },
     "pedidos_compra": { "title": "Bestellungen", "breadcrumb": "Einkauf · Bestellungen" },
     "proveedores": { "title": "Lieferanten", "breadcrumb": "Einkauf · Lieferanten" },
     "articulos": { "title": "Einkaufsartikel", "breadcrumb": "Einkauf · Artikel" },

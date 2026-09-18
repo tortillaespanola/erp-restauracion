@@ -1,6 +1,7 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
+import dashboardEs from './es/dashboard.json'
 import commonEs from './es/common.json'
 import enumsEs from './es/enums.json'
 import estadosCalculadosEs from './es/estados_calculados.json'
@@ -40,6 +41,7 @@ import albaranVentaFormEs from './es/albaran_venta_form.json'
 import facturaVentaFormEs from './es/factura_venta_form.json'
 import adminEmpresasEs from './es/admin_empresas.json'
 
+import dashboardEn from './en/dashboard.json'
 import commonEn from './en/common.json'
 import enumsEn from './en/enums.json'
 import estadosCalculadosEn from './en/estados_calculados.json'
@@ -79,6 +81,7 @@ import albaranVentaFormEn from './en/albaran_venta_form.json'
 import facturaVentaFormEn from './en/factura_venta_form.json'
 import adminEmpresasEn from './en/admin_empresas.json'
 
+import dashboardDe from './de/dashboard.json'
 import commonDe from './de/common.json'
 import enumsDe from './de/enums.json'
 import estadosCalculadosDe from './de/estados_calculados.json'
@@ -143,6 +146,7 @@ function idiomaInicial() {
 i18n.use(initReactI18next).init({
   resources: {
     es: {
+      dashboard: dashboardEs,
       common: commonEs, enums: enumsEs, estados_calculados: estadosCalculadosEs,
       produccion_comun: produccionComunEs, producciones: produccionesEs,
       produccion_productos_finales: produccionProductosFinalesEs,
@@ -164,6 +168,7 @@ i18n.use(initReactI18next).init({
       admin_empresas: adminEmpresasEs,
     },
     en: {
+      dashboard: dashboardEn,
       common: commonEn, enums: enumsEn, estados_calculados: estadosCalculadosEn,
       produccion_comun: produccionComunEn, producciones: produccionesEn,
       produccion_productos_finales: produccionProductosFinalesEn,
@@ -185,6 +190,7 @@ i18n.use(initReactI18next).init({
       admin_empresas: adminEmpresasEn,
     },
     de: {
+      dashboard: dashboardDe,
       common: commonDe, enums: enumsDe, estados_calculados: estadosCalculadosDe,
       produccion_comun: produccionComunDe, producciones: produccionesDe,
       produccion_productos_finales: produccionProductosFinalesDe,
@@ -209,6 +215,7 @@ i18n.use(initReactI18next).init({
   lng: idiomaInicial(),
   fallbackLng: 'es',
   ns: [
+    'dashboard',
     'common', 'enums', 'estados_calculados', 'produccion_comun', 'producciones',
     'produccion_productos_finales', 'pedidos_del_dia', 'pedidos', 'pedido_form',
     'ventas_comun', 'albaranes_venta', 'facturas_venta', 'pagos', 'registrar_pago_form',

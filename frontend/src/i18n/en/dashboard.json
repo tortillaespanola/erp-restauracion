@@ -1,0 +1,67 @@
+{
+  "titulo": "Dashboard",
+  "subtitulo": "Overview of {{negocio}}",
+  "fecha_referencia": {
+    "label": "Reference date (\"today\")",
+    "resetear": "Use real date",
+    "nota": "Overdue/stalled calculations on this screen use this date instead of the browser's clock."
+  },
+  "kpi": {
+    "sales_backlog": {
+      "titulo": "Sales backlog",
+      "descripcion": "Sold orders, not yet delivered or invoiced"
+    },
+    "open_ar": {
+      "titulo": "Open AR",
+      "descripcion": "Outstanding balance on non-voided sales invoices"
+    },
+    "active_wip": {
+      "titulo": "Active WIP",
+      "descripcion": "Production runs open today"
+    },
+    "overdue_pos": {
+      "titulo": "Overdue POs",
+      "descripcion": "Purchase orders past their expected delivery date"
+    }
+  },
+  "exceptions": {
+    "titulo": "Exception center",
+    "subtitulo": "What needs your attention today",
+    "vacio": "No open exceptions — everything in order.",
+    "stock_negativo": {
+      "titulo": "Negative stock (finished goods)",
+      "descripcion_one": "{{count}} lot with negative available stock",
+      "descripcion_other": "{{count}} lots with negative available stock",
+      "accion": "Fix with adjustment"
+    },
+    "rechazo_pendiente": {
+      "titulo": "Unresolved customer rejection",
+      "descripcion_one": "{{count}} customer rejection pending credit/reshipment/discard",
+      "descripcion_other": "{{count}} customer rejections pending credit/reshipment/discard",
+      "accion": "Manage return"
+    },
+    "produccion_estancada": {
+      "titulo": "Stalled production",
+      "descripcion_one": "{{count}} production open for more than 15 days",
+      "descripcion_other": "{{count}} productions open for more than 15 days",
+      "accion": "Review batch"
+    },
+    "bom_sin_proveedor": {
+      "titulo": "BOM without a supply route",
+      "descripcion_one": "{{count}} article used in a finished-product BOM has no assigned supplier",
+      "descripcion_other": "{{count}} articles used in finished-product BOMs have no assigned supplier",
+      "accion": "Assign supplier"
+    }
+  },
+  "quick_actions": {
+    "titulo": "Quick actions",
+    "nueva_venta": "New sales order",
+    "produccion_dia": "Today's production",
+    "nueva_compra": "New purchase order",
+    "ajuste_stock": "Stock adjustment"
+  },
+  "proximamente": {
+    "titulo": "Coming soon",
+    "texto": "Scrap rate and OTIF (on-time delivery) are out of scope for this first version: scrap rate needs closed production runs to record \"cantidad_rechazada\" instead of only free-text notes, and OTIF needs a new SQL view crossing expected date and delivery-note date."
+  }
+}

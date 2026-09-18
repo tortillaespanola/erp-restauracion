@@ -1,0 +1,67 @@
+{
+  "titulo": "Dashboard",
+  "subtitulo": "Vista general de {{negocio}}",
+  "fecha_referencia": {
+    "label": "Fecha de referencia (\"hoy\")",
+    "resetear": "Usar fecha real",
+    "nota": "Los cálculos de retraso/antigüedad de esta pantalla usan esta fecha en vez del reloj del navegador."
+  },
+  "kpi": {
+    "sales_backlog": {
+      "titulo": "Cartera de ventas",
+      "descripcion": "Pedidos vendidos, no entregados ni facturados"
+    },
+    "open_ar": {
+      "titulo": "Cuentas por cobrar",
+      "descripcion": "Saldo pendiente de facturas de venta no anuladas"
+    },
+    "active_wip": {
+      "titulo": "Producción en curso",
+      "descripcion": "Producciones abiertas hoy"
+    },
+    "overdue_pos": {
+      "titulo": "Compras retrasadas",
+      "descripcion": "Pedidos a proveedor con entrega prevista vencida"
+    }
+  },
+  "exceptions": {
+    "titulo": "Centro de excepciones",
+    "subtitulo": "Lo que requiere tu atención hoy",
+    "vacio": "Sin excepciones abiertas — todo en orden.",
+    "stock_negativo": {
+      "titulo": "Stock negativo (producto final)",
+      "descripcion_one": "{{count}} lote con stock disponible negativo",
+      "descripcion_other": "{{count}} lotes con stock disponible negativo",
+      "accion": "Regularizar ajuste"
+    },
+    "rechazo_pendiente": {
+      "titulo": "Rechazo de cliente sin resolver",
+      "descripcion_one": "{{count}} rechazo de cliente pendiente de abono/reenvío/descarte",
+      "descripcion_other": "{{count}} rechazos de cliente pendientes de abono/reenvío/descarte",
+      "accion": "Gestionar devolución"
+    },
+    "produccion_estancada": {
+      "titulo": "Producción estancada",
+      "descripcion_one": "{{count}} producción abierta desde hace más de 15 días",
+      "descripcion_other": "{{count}} producciones abiertas desde hace más de 15 días",
+      "accion": "Revisar lote"
+    },
+    "bom_sin_proveedor": {
+      "titulo": "BOM sin ruta de suministro",
+      "descripcion_one": "{{count}} artículo usado en una fórmula de producto final sin proveedor asignado",
+      "descripcion_other": "{{count}} artículos usados en fórmulas de producto final sin proveedor asignado",
+      "accion": "Asignar proveedor"
+    }
+  },
+  "quick_actions": {
+    "titulo": "Acciones rápidas",
+    "nueva_venta": "Nueva orden de venta",
+    "produccion_dia": "Producción del día",
+    "nueva_compra": "Nueva orden de compra",
+    "ajuste_stock": "Ajuste de inventario"
+  },
+  "proximamente": {
+    "titulo": "Próximamente",
+    "texto": "Tasa de merma y OTIF (cumplimiento de entrega a tiempo) quedan fuera de esta primera versión: la primera requiere que las producciones cerradas registren \"cantidad_rechazada\" en vez de solo notas libres, y la segunda necesita una vista SQL nueva que cruce fecha prevista y fecha de albarán."
+  }
+}
