@@ -86,6 +86,11 @@
     "tooltip_one": "{{count}} Schwund-/Reklamationsbuchung ({{cantidad}} {{unidad}})",
     "tooltip_other": "{{count}} Schwund-/Reklamationsbuchungen ({{cantidad}} {{unidad}})"
   },
+  "badge_rechazo_pendiente": {
+    "etiqueta": "Reklamation offen",
+    "tooltip_one": "{{count}} ungeklärte Kundenreklamation (Gutschrift/Nachlieferung/Verwurf)",
+    "tooltip_other": "{{count}} ungeklärte Kundenreklamationen (Gutschrift/Nachlieferung/Verwurf)"
+  },
   "feedback": {
     "guardado": "Erfolgreich gespeichert",
     "eliminado": "Erfolgreich gelöscht",

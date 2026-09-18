@@ -16,6 +16,7 @@ import RegistrarPagoForm from '../components/RegistrarPagoForm'
 import AjusteStockForm from '../components/AjusteStockForm'
 import ResolverRechazoForm from '../components/ResolverRechazoForm'
 import BadgeScrap from '../components/BadgeScrap'
+import BadgeRechazoPendiente from '../components/BadgeRechazoPendiente'
 import { saldosDeAlbaranesSueltos, estadosPagoDeAlbaranesSueltos, estadoPago, EPSILON, clientesParaDrawer } from '../lib/saldosVenta'
 
 // CONTRATO_I18N.md, Fase 0: icon/color son independientes del idioma y se quedan aquí -- la
@@ -582,6 +583,7 @@ function AlbaranesVenta() {
                                         <td className="py-1.5 text-right">
                                           <div className="flex items-center justify-end gap-2">
                                             {linea.produccion_pf_id && <BadgeScrap tipo="producto_final" origenId={linea.produccion_pf_id} />}
+                                            {linea.produccion_pf_id && <BadgeRechazoPendiente origenId={linea.produccion_pf_id} />}
                                             {linea.produccion_pf_id && (
                                               <LinkAction
                                                 tone="amber"

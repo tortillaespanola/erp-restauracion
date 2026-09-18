@@ -7,7 +7,9 @@
     "desde": "From",
     "hasta": "To",
     "articulo_item": "Article / item",
-    "motivo": "Reason"
+    "motivo": "Reason",
+    "rechazos_pendientes": "Customer rejections",
+    "solo_pendientes_resolver": "Only pending resolution"
   },
   "buscar_por_nombre_placeholder": "Search by name...",
   "buscar_por_motivo_placeholder": "Search by reason...",

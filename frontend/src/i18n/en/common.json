@@ -86,6 +86,11 @@
     "tooltip_one": "{{count}} waste/rejection adjustment ({{cantidad}} {{unidad}})",
     "tooltip_other": "{{count}} waste/rejection adjustments ({{cantidad}} {{unidad}})"
   },
+  "badge_rechazo_pendiente": {
+    "etiqueta": "Rejection pending",
+    "tooltip_one": "{{count}} unresolved customer rejection (credit note/reshipment/discard)",
+    "tooltip_other": "{{count}} unresolved customer rejections (credit note/reshipment/discard)"
+  },
   "feedback": {
     "guardado": "Saved successfully",
     "eliminado": "Deleted successfully",

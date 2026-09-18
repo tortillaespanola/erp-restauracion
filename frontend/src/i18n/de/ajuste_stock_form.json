@@ -25,16 +25,20 @@
     "cantidad": "Menge (+ addiert, - subtrahiert)",
     "motivo": "Grund",
     "detalle_motivo_opcional": "Detail zum Grund (optional)",
-    "origen_rechazo_opcional": "Ursprung der Ablehnung (optional)"
+    "origen_rechazo_opcional": "Ursprung der Ablehnung (optional)",
+    "linea_pedido_origen": "Ursprüngliche Bestellposition"
   },
   "motivo_placeholder": "Ablauf, Bruch, Wiegefehler...",
   "detalle_motivo_placeholder": "Zusätzliche Erläuterung...",
   "selecciona_motivo": "Grund auswählen",
   "sin_origen_rechazo": "Nicht zutreffend / routinemäßige Korrektur",
+  "selecciona_linea_pedido_origen": "Wähle, zu welcher Bestellung die Reklamation gehört",
+  "linea_pedido_origen_opcion": "{{codigo}} — {{cliente}} · {{cantidad}} Stk · {{fecha}}",
   "registrar_ajuste": "Korrektur erfassen",
   "alertas": {
     "faltan_campos_producto_final": "Wähle das Produkt, die Charge, die Menge und den Grund",
     "faltan_campos": "Wähle das Element, die Charge, die Menge und den Grund",
+    "falta_linea_pedido_origen": "Eine Kundenreklamation braucht die ursprüngliche Bestellposition -- wähle sie vor dem Speichern aus",
     "error_guardar": "Fehler beim Speichern der Korrektur: {{mensaje}}"
   }
 }

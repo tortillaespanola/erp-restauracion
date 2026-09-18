@@ -25,16 +25,20 @@
     "cantidad": "Cantidad (+ suma, - resta)",
     "motivo": "Motivo",
     "detalle_motivo_opcional": "Detalle del motivo (opcional)",
-    "origen_rechazo_opcional": "Origen del rechazo (opcional)"
+    "origen_rechazo_opcional": "Origen del rechazo (opcional)",
+    "linea_pedido_origen": "Línea de pedido de origen"
   },
   "motivo_placeholder": "Caducidad, rotura, error pesaje...",
   "detalle_motivo_placeholder": "Aclaración adicional...",
   "selecciona_motivo": "Selecciona motivo",
   "sin_origen_rechazo": "No aplica / ajuste rutinario",
+  "selecciona_linea_pedido_origen": "Selecciona a qué pedido pertenece el rechazo",
+  "linea_pedido_origen_opcion": "{{codigo}} — {{cliente}} · {{cantidad}} ud · {{fecha}}",
   "registrar_ajuste": "Registrar ajuste",
   "alertas": {
     "faltan_campos_producto_final": "Selecciona el producto, el lote, la cantidad y el motivo",
     "faltan_campos": "Selecciona el ítem, el lote, la cantidad y el motivo",
+    "falta_linea_pedido_origen": "Un rechazo de cliente necesita la línea de pedido de origen -- selecciónala antes de guardar",
     "error_guardar": "Error al guardar el ajuste: {{mensaje}}"
   }
 }

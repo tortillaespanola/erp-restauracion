@@ -86,6 +86,11 @@
     "tooltip_one": "{{count}} ajuste de merma/rechazo ({{cantidad}} {{unidad}})",
     "tooltip_other": "{{count}} ajustes de merma/rechazo ({{cantidad}} {{unidad}})"
   },
+  "badge_rechazo_pendiente": {
+    "etiqueta": "Rechazo pendiente",
+    "tooltip_one": "{{count}} rechazo de cliente sin resolver (abono/reenvío/descarte)",
+    "tooltip_other": "{{count}} rechazos de cliente sin resolver (abono/reenvío/descarte)"
+  },
   "feedback": {
     "guardado": "Guardado correctamente",
     "eliminado": "Eliminado correctamente",

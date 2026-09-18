@@ -7,7 +7,9 @@
     "desde": "Desde",
     "hasta": "Hasta",
     "articulo_item": "Artículo / ítem",
-    "motivo": "Motivo"
+    "motivo": "Motivo",
+    "rechazos_pendientes": "Rechazos de cliente",
+    "solo_pendientes_resolver": "Solo pendientes de resolver"
   },
   "buscar_por_nombre_placeholder": "Buscar por nombre...",
   "buscar_por_motivo_placeholder": "Buscar por motivo...",

@@ -25,16 +25,20 @@
     "cantidad": "Quantity (+ adds, - subtracts)",
     "motivo": "Reason",
     "detalle_motivo_opcional": "Reason detail (optional)",
-    "origen_rechazo_opcional": "Rejection origin (optional)"
+    "origen_rechazo_opcional": "Rejection origin (optional)",
+    "linea_pedido_origen": "Origin order line"
   },
   "motivo_placeholder": "Expiry, breakage, weighing error...",
   "detalle_motivo_placeholder": "Additional clarification...",
   "selecciona_motivo": "Select reason",
   "sin_origen_rechazo": "Not applicable / routine adjustment",
+  "selecciona_linea_pedido_origen": "Select which order the rejection belongs to",
+  "linea_pedido_origen_opcion": "{{codigo}} — {{cliente}} · {{cantidad}} pcs · {{fecha}}",
   "registrar_ajuste": "Register adjustment",
   "alertas": {
     "faltan_campos_producto_final": "Select the product, the lot, the quantity and the reason",
     "faltan_campos": "Select the item, the lot, the quantity and the reason",
+    "falta_linea_pedido_origen": "A customer rejection needs the origin order line -- select it before saving",
     "error_guardar": "Error saving the adjustment: {{mensaje}}"
   }
 }

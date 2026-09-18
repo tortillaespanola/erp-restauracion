@@ -7,7 +7,9 @@
     "desde": "Von",
     "hasta": "Bis",
     "articulo_item": "Artikel / Element",
-    "motivo": "Grund"
+    "motivo": "Grund",
+    "rechazos_pendientes": "Kundenreklamationen",
+    "solo_pendientes_resolver": "Nur ungeklärte"
   },
   "buscar_por_nombre_placeholder": "Nach Name suchen...",
   "buscar_por_motivo_placeholder": "Nach Grund suchen...",

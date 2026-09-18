@@ -54,6 +54,13 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
   const [origenRechazo, setOrigenRechazo] = useState(fijo?.origenRechazo ?? '')
   const [guardando, setGuardando] = useState(false)
 
+  // CONTRATO_AJUSTES_RECHAZO_CLIENTE.md, Fase 1: en modo manual (fijo=null, "+ Nuevo ajuste" de
+  // AjustesStock.jsx) origen_rechazo='cliente' no traía ninguna línea de pedido de origen -- así
+  // se creó el ajuste #11 (ver migración 20261026). En modo fijo (AlbaranesVenta.jsx) esto no hace
+  // falta: fijo.lineaPedidoOrigenId ya viene resuelto desde la línea de albarán concreta.
+  const [lineasPedidoCandidatas, setLineasPedidoCandidatas] = useState([])
+  const [lineaPedidoOrigenIdManual, setLineaPedidoOrigenIdManual] = useState('')
+
   useEffect(() => {
     if (fijo) return // modo contextual: no hace falta cargar catálogos, el ítem ya viene fijado
     async function cargarCatalogos() {
@@ -98,6 +105,36 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
     cargarLotes()
   }, [fijo, tipo, itemId])
 
+  useEffect(() => {
+    if (fijo || tipo !== 'producto_final' || !loteId) {
+      setLineasPedidoCandidatas([])
+      setLineaPedidoOrigenIdManual('')
+      return
+    }
+    async function cargarCandidatas() {
+      // Un lote puede haberse repartido entre varios albaranes/pedidos (ver #10 en la migración
+      // 20261026) -- se listan TODAS las líneas de pedido a las que se envió este lote concreto,
+      // el usuario elige cuál es la que se está rechazando. Sin línea de pedido (venta directa sin
+      // pedido, linea_pedido_id null) no hay nada que ofrecer: 'cliente' queda deshabilitado.
+      const { data } = await supabase
+        .from('lineas_albaran_venta')
+        .select('linea_pedido_id, cantidad, albaranes_venta(fecha, clientes(nombre)), lineas_pedido_venta(pedidos_venta(codigo_pedido))')
+        .eq('produccion_pf_id', loteId)
+        .not('linea_pedido_id', 'is', null)
+
+      const vistas = new Set()
+      const candidatas = []
+      for (const l of data || []) {
+        if (vistas.has(l.linea_pedido_id)) continue
+        vistas.add(l.linea_pedido_id)
+        candidatas.push(l)
+      }
+      setLineasPedidoCandidatas(candidatas)
+      setLineaPedidoOrigenIdManual('')
+    }
+    cargarCandidatas()
+  }, [fijo, tipo, loteId])
+
   function seleccionarLote(id) {
     setLoteId(id)
     const idNum = id ? parseInt(id) : null
@@ -111,6 +148,10 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
     if (tipo === 'producto_final') {
       if (!itemId || !loteId || !cantidad || !motivoCategoria) {
         alert(t('ajuste_stock_form:alertas.faltan_campos_producto_final'))
+        return
+      }
+      if (origenRechazo === 'cliente' && !fijo && !lineaPedidoOrigenIdManual) {
+        alert(t('ajuste_stock_form:alertas.falta_linea_pedido_origen'))
         return
       }
     } else if (!itemId || !loteId || !cantidad || !motivo) {
@@ -136,7 +177,7 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
       ;({ error, data } = await supabase.from('ajustes_producto_final').insert({
         produccion_pf_id: parseInt(loteId), cantidad: cant, motivo_categoria: motivoCategoria, motivo_detalle: motivoDetalle || null, fecha,
         origen_rechazo: origenRechazo || null,
-        linea_pedido_origen_id: fijo?.lineaPedidoOrigenId ?? null,
+        linea_pedido_origen_id: fijo?.lineaPedidoOrigenId ?? (origenRechazo === 'cliente' ? parseInt(lineaPedidoOrigenIdManual) : null),
       }).select().single())
     }
 
@@ -250,8 +291,29 @@ export default function AjusteStockForm({ fijo = null, onGuardado, onCancelar })
         <Field label={t('ajuste_stock_form:campos.origen_rechazo_opcional')}>
           <Select value={origenRechazo} onChange={(e) => setOrigenRechazo(e.target.value)}>
             <option value="">{t('ajuste_stock_form:sin_origen_rechazo')}</option>
-            {ORIGENES_RECHAZO.map((valor) => (
+            {(tipo === 'producto_final' && !fijo
+              ? ORIGENES_RECHAZO.filter((valor) => valor !== 'cliente' || lineasPedidoCandidatas.length > 0)
+              : ORIGENES_RECHAZO
+            ).map((valor) => (
               <option key={valor} value={valor}>{t(`enums:origen_rechazo.${valor}`)}</option>
+            ))}
+          </Select>
+        </Field>
+      )}
+
+      {tipo === 'producto_final' && !fijo && origenRechazo === 'cliente' && (
+        <Field label={t('ajuste_stock_form:campos.linea_pedido_origen')}>
+          <Select value={lineaPedidoOrigenIdManual} onChange={(e) => setLineaPedidoOrigenIdManual(e.target.value)} required>
+            <option value="">{t('ajuste_stock_form:selecciona_linea_pedido_origen')}</option>
+            {lineasPedidoCandidatas.map((l) => (
+              <option key={l.linea_pedido_id} value={l.linea_pedido_id}>
+                {t('ajuste_stock_form:linea_pedido_origen_opcion', {
+                  codigo: l.lineas_pedido_venta?.pedidos_venta?.codigo_pedido || t('common:sin_numero'),
+                  cliente: l.albaranes_venta?.clientes?.nombre || t('common:sin_cliente'),
+                  cantidad: l.cantidad,
+                  fecha: formatFecha(l.albaranes_venta?.fecha),
+                })}
+              </option>
             ))}
           </Select>
         </Field>

@@ -41,6 +41,11 @@ function AjustesStock() {
   const [fechaHasta, setFechaHasta] = useState('')
   const [buscarItem, setBuscarItem] = useState('')
   const [buscarMotivo, setBuscarMotivo] = useState('')
+  // CONTRATO_AJUSTES_RECHAZO_CLIENTE.md, Fase 2: vista centralizada de rechazos de cliente sin
+  // resolver -- complementa los badges por lote/producto (Producciones, AlbaranesVenta,
+  // PedidosDelDia) con un filtro sobre el propio histórico, para no tener que recorrer pantalla
+  // por pantalla buscando qué queda pendiente de abono/reenvío/descarte.
+  const [soloPendientes, setSoloPendientes] = useState(false)
 
   async function cargarHistorial() {
     setCargando(true)
@@ -55,6 +60,7 @@ function AjustesStock() {
       const termino = buscarMotivo.trim()
       query = query.or(`motivo.ilike.%${termino}%,motivo_categoria.ilike.%${termino}%`)
     }
+    if (soloPendientes) query = query.eq('origen_rechazo', 'cliente').is('tipo_resolucion', null)
 
     const desde = pagina * PAGE_SIZE
     const { data, error, count } = await query.range(desde, desde + PAGE_SIZE - 1)
@@ -77,7 +83,7 @@ function AjustesStock() {
 
   useEffect(() => {
     cargarHistorial()
-  }, [pagina, fechaDesde, fechaHasta, buscarItem, buscarMotivo])
+  }, [pagina, fechaDesde, fechaHasta, buscarItem, buscarMotivo, soloPendientes])
 
   // Cualquier cambio de filtro vuelve a la página 1 -- si no, se puede quedar "atascado" en una
   // página que ya no existe para el nuevo filtro (ej. filtrar y quedarse en la página 3 de 1).
@@ -88,6 +94,7 @@ function AjustesStock() {
   const handleFechaHasta = conFiltro(setFechaHasta)
   const handleBuscarItem = conFiltro(setBuscarItem)
   const handleBuscarMotivo = conFiltro(setBuscarMotivo)
+  const handleSoloPendientes = conFiltro(setSoloPendientes)
 
   async function handleBorrar(a) {
     if (!confirm(t('ajustes_stock:alertas.confirmar_borrar'))) return
@@ -125,6 +132,12 @@ function AjustesStock() {
           </Field>
           <Field label={t('ajustes_stock:filtros.motivo')} className="w-56">
             <Input type="text" placeholder={t('ajustes_stock:buscar_por_motivo_placeholder')} value={buscarMotivo} onChange={(e) => handleBuscarMotivo(e.target.value)} />
+          </Field>
+          <Field label={t('ajustes_stock:filtros.rechazos_pendientes')} className="w-56">
+            <label className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer">
+              <input type="checkbox" checked={soloPendientes} onChange={(e) => handleSoloPendientes(e.target.checked)} />
+              {t('ajustes_stock:filtros.solo_pendientes_resolver')}
+            </label>
           </Field>
         </CardBody>
       </Card>
